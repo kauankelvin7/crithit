@@ -1,0 +1,17 @@
+package br.com.crithit.api.domain.enums;
+
+public enum AuditAction {
+    INGESTED_RSS,
+    INGESTED_FALLBACK_RAW,
+    MATCHED_SOURCE_ADDED,
+    CREATED_MANUAL,
+    EDITED,
+    APPROVED_PUBLISHED,
+    SCHEDULED,
+    AUTO_PUBLISHED_BY_SCHEDULER,
+    DISCARDED,
+    UNPUBLISHED,
+    REPUBLISHED,
+    SET_MAIN_HEADLINE,
+    UNSET_MAIN_HEADLINE
+}

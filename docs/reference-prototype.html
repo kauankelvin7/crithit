@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CritHit! — Portal de Notícias Geek, Reels & Identidade Visual</title>
+
+  <!-- Google Fonts: Bangers (Display/SFX), Space Grotesk (Editorial/UI), JetBrains Mono (Metadados/Fontes) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paperLight: '#FFFDF5',
+            paperWarm: '#F8F4E6',
+            inkBlack: '#111111',
+            critRed: '#FF2E4C',
+            heroYellow: '#FFD600',
+            cyberCyan: '#00E5FF',
+            villainPurple: '#7B2CBF',
+            powerGreen: '#00E676',
+          },
+          fontFamily: {
+            display: ['"Bangers"', 'cursive'],
+            sans: ['"Space Grotesk"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          boxShadow: {
+            comic: '4px 4px 0px #111111',
+            'comic-lg': '6px 6px 0px #111111',
+            'comic-sm': '2px 2px 0px #111111',
+            'comic-yellow': '4px 4px 0px #FFD600',
+            'comic-red': '4px 4px 0px #FF2E4C',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* =========================================================
+       CRITHIT! — COMIC BOOK / POP-ART PORTAL STYLES
+       ========================================================= */
+    :root,
+    [data-theme="light"] {
+      --paper-light: #FFFDF5;
+      --paper-warm: #F8F4E6;
+      --ink: #111111;
+      --red: #FF2E4C;
+      --yellow: #FFD600;
+      --cyan: #00E5FF;
+      --purple: #7B2CBF;
+      --green: #00E676;
+
+      /* Editorial Semantic Tokens (Light Mode) */
+      --bg-base: #FFFDF5;
+      --bg-surface: #FFFFFF;
+      --bg-surface-alt: #F8F4E6;
+      --ink-primary: #111111;
+      --ink-secondary: #3F3F46;
+      --ink-muted: #5F5F69;
+      --border-strong: #111111;
+      --border-subtle: #D4D0C5;
+      --shadow-hard: 4px 4px 0px #111111;
+      --shadow-hard-hover: 6px 6px 0px #111111;
+      --shadow-hard-sm: 2px 2px 0px #111111;
+      --halftone-dot: rgba(17, 17, 17, 0.065);
+
+      --accent-brand: #E11D48;
+      --accent-brand-soft: rgba(225, 29, 72, 0.10);
+      --accent-games: #2563EB;
+      --accent-games-soft: rgba(37, 99, 235, 0.10);
+      --accent-comics: #D97706;
+      --accent-comics-soft: rgba(217, 119, 6, 0.14);
+      --accent-cinema: #059669;
+      --accent-cinema-soft: rgba(5, 150, 105, 0.10);
+      --accent-tech: #7C3AED;
+      --accent-tech-soft: rgba(124, 58, 237, 0.10);
+
+      --fill-brand: #E11D48;
+      --fill-games: #2563EB;
+      --fill-comics: #B45309;
+      --fill-cinema: #047857;
+      --fill-tech: #7C3AED;
+      --hl-case: uppercase;
+    }
+
+    [data-theme="dark"] {
+      --paper-light: #161922;
+      --paper-warm: #1E2330;
+      --ink: #F4F4F5;
+
+      --bg-base: #0D0F14;
+      --bg-surface: #161922;
+      --bg-surface-alt: #1E2330;
+      --ink-primary: #F4F4F5;
+      --ink-secondary: #A1A1AA;
+      --ink-muted: #9A9AA6;
+      --border-strong: #2A303E;
+      --border-subtle: #232836;
+      --shadow-hard: 4px 4px 0px #050608;
+      --shadow-hard-hover: 6px 6px 0px #000000;
+      --shadow-hard-sm: 2px 2px 0px #050608;
+      --halftone-dot: rgba(244, 244, 245, 0.04);
+
+      --accent-brand: #F43F5E;
+      --accent-brand-soft: rgba(244, 63, 94, 0.16);
+      --accent-games: #60A5FA;
+      --accent-games-soft: rgba(96, 165, 250, 0.16);
+      --accent-comics: #FBBF24;
+      --accent-comics-soft: rgba(251, 191, 36, 0.16);
+      --accent-cinema: #34D399;
+      --accent-cinema-soft: rgba(52, 211, 153, 0.16);
+      --accent-tech: #A78BFA;
+      --accent-tech-soft: rgba(167, 139, 250, 0.16);
+    }
+
+    [data-theme="dark"] .bg-halftone-paper {
+      background-color: var(--bg-base);
+      background-image: radial-gradient(var(--halftone-dot) 1.2px, transparent 1.2px);
+    }
+
+    [data-theme="dark"] .bg-paperLight {
+      background-color: var(--bg-surface) !important;
+      color: var(--ink-primary);
+    }
+
+    [data-theme="dark"] .bg-paperWarm {
+      background-color: var(--bg-surface-alt) !important;
+      color: var(--ink-primary);
+    }
+
+    [data-theme="dark"] .text-inkBlack {
+      color: var(--ink-primary) !important;
+    }
+
+    [data-theme="dark"] .bg-white:not(.text-inkBlack) {
+      background-color: var(--bg-surface) !important;
+      color: var(--ink-primary);
+    }
+
+    [data-theme="dark"] .comic-card,
+    [data-theme="dark"] .comic-btn,
+    [data-theme="dark"] .comic-border,
+    [data-theme="dark"] .comic-border-2 {
+      border-color: var(--border-strong);
+    }
+
+    /* Minimum 11px floor for legibility & accessibility */
+    [class*="text-[9px]"],
+    [class*="text-[10px]"] {
+      font-size: 11px !important;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent-games);
+      outline-offset: 2px;
+    }
+
+    article[onclick]:focus-visible {
+      outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ticker-track,
+      .animate-ping,
+      .animate-pulse {
+        animation: none !important;
+      }
+      html,
+      .reels-scroller {
+        scroll-behavior: auto !important;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--paper-light);
+      color: var(--ink);
+      font-family: 'Space Grotesk', sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+    }
+
+    /* Subtle Comic Halftone Dot Backgrounds */
+    .bg-halftone-paper {
+      background-color: #FFFDF5;
+      background-image: radial-gradient(rgba(17, 17, 17, 0.065) 1.2px, transparent 1.2px);
+      background-size: 12px 12px;
+    }
+
+    .bg-halftone-dark {
+      background-color: #111111;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.085) 1.4px, transparent 1.4px);
+      background-size: 14px 14px;
+    }
+
+    .bg-halftone-overlay {
+      background-image: radial-gradient(rgba(0, 0, 0, 0.22) 1.6px, transparent 1.6px);
+      background-size: 9px 9px;
+    }
+
+    .comic-sunburst {
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(255, 255, 255, 0.14) 0deg 8deg,
+        transparent 8deg 18deg
+      );
+    }
+
+    /* Comic Borders & Tactile Hard-Shadow Buttons */
+    .comic-border {
+      border: 3px solid #111111;
+    }
+
+    .comic-border-2 {
+      border: 2px solid #111111;
+    }
+
+    .comic-card {
+      border: 3px solid #111111;
+      box-shadow: 4px 4px 0px #111111;
+      transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.14s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .comic-card-hover:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #111111;
+    }
+
+    .comic-btn {
+      border: 3px solid #111111;
+      box-shadow: 4px 4px 0px #111111;
+      transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .comic-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0px #111111;
+    }
+
+    .comic-btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0px #111111;
+    }
+
+    /* Bold Comic Display Text Stroke */
+    .comic-headline {
+      font-family: 'Bangers', cursive;
+      letter-spacing: 0.04em;
+      line-height: 1.04;
+      -webkit-text-stroke: 1.5px #111111;
+      text-shadow: 3px 3px 0px #111111;
+    }
+
+    .comic-rank-num {
+      font-family: 'Bangers', cursive;
+      -webkit-text-stroke: 2px #111111;
+      text-shadow: 3px 3px 0px #111111;
+      line-height: 0.9;
+    }
+
+    /* Breaking News Marquee Ticker */
+    @keyframes tickerScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .ticker-track {
+      display: flex;
+      width: max-content;
+      animation: tickerScroll 34s linear infinite;
+    }
+
+    .ticker-track:hover {
+      animation-play-state: paused;
+    }
+
+    /* Reels Vertical Scroll Snap */
+    .reels-scroller {
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .reels-scroller::-webkit-scrollbar {
+      display: none;
+    }
+    .reel-slide {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+
+    .no-scrollbar {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Floating Comic SFX Pop Burst */
+    @keyframes popBurst {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-16deg); }
+      25% { opacity: 1; transform: translate(-50%, -68%) scale(1.2) rotate(6deg); }
+      70% { opacity: 1; transform: translate(-50%, -88%) scale(1.05) rotate(-4deg); }
+      100% { opacity: 0; transform: translate(-50%, -125%) scale(0.9) rotate(8deg); }
+    }
+
+    .sfx-burst {
+      animation: popBurst 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      pointer-events: none;
+    }
+
+    /* Speech Bubble Tail */
+    .speech-bubble {
+      position: relative;
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -11px;
+      left: 22px;
+      border-left: 10px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 11px solid #111111;
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 24px;
+      border-left: 7px solid transparent;
+      border-right: 2px solid transparent;
+      border-top: 8px solid #FFFDF5;
+      z-index: 2;
+    }
+
+    /* Drawer / Modal Enter */
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-enter {
+      animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Toast Notification */
+    @keyframes toastPop {
+      0% { transform: translate(-50%, 24px) scale(0.9); opacity: 0; }
+      15% { transform: translate(-50%, 0) scale(1.03); opacity: 1; }
+      85% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -12px) scale(0.95); opacity: 0; }
+    }
+    .toast-anim {
+      animation: toastPop 2.5s ease forwards;
+    }
+  </style>
+</head>
+<body class="bg-halftone-paper min-h-screen flex flex-col selection:bg-heroYellow selection:text-inkBlack">
+
+  <!-- Prototype Disclaimer Banner -->
+  <div role="note" class="font-mono text-[11px] text-center py-1.5 px-3 border-b-2 border-inkBlack" style="background-color: var(--accent-comics-soft); color: var(--ink-primary);">
+    Protótipo: notícias, autores, comentários e métricas são fictícios; os links de fonte são ilustrativos.
+  </div>
+
+  <!-- =========================================================
+       TOP STICKY NAVIGATION BAR (CNN BRASIL INSPIRED + COMIC)
+       ========================================================= -->
+  <header class="sticky top-0 z-40 bg-inkBlack text-paperLight border-b-[4px] border-heroYellow shadow-[0_4px_0_#111111]">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
+      <!-- Brand Logo -->
+      <button onclick="switchView('home')" class="flex items-center gap-2.5 group focus:outline-none shrink-0">
+        <div class="relative bg-critRed text-heroYellow px-3 py-1 border-[3px] border-paperLight shadow-[3px_3px_0px_#FFD600] -rotate-2 group-hover:rotate-0 transition-transform rounded-lg">
+          <span class="font-display text-2xl sm:text-3xl tracking-wider leading-none block" style="-webkit-text-stroke: 1px #111;">CRITHIT!</span>
+        </div>
+        <div class="hidden xl:flex flex-col text-left leading-tight">
+          <span class="font-mono text-[10px] font-extrabold text-heroYellow uppercase tracking-widest">PORTAL GEEK</span>
+          <span class="font-mono text-[10px] text-paperLight/70">CURADORIA IA + REELS</span>
+        </div>
+      </button>
+
+      <!-- Main 4-View Switcher Tabs -->
+      <nav class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1" aria-label="Navegação Principal">
+        <button
+          id="tab-home"
+          onclick="switchView('home')"
+          class="comic-btn px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 bg-heroYellow text-inkBlack shrink-0"
+        >
+          <span>HOME</span>
+        </button>
+
+        <button
+          id="tab-reels"
+          onclick="switchView('reels')"
+          class="comic-btn px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 bg-paperLight text-inkBlack shrink-0"
+        >
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-critRed opacity-80"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-critRed border border-inkBlack"></span>
+          </span>
+          <span>REELS</span>
+          <span class="hidden sm:inline bg-critRed text-white font-mono text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-inkBlack">LIVE</span>
+        </button>
+
+        <button
+          id="tab-brand"
+          onclick="switchView('brand')"
+          class="comic-btn px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 bg-paperLight text-inkBlack shrink-0"
+        >
+          <span class="hidden md:inline">IDENTIDADE VISUAL</span>
+          <span class="md:hidden">MARCA</span>
+        </button>
+
+        <button
+          id="tab-admin"
+          onclick="switchView('admin')"
+          class="comic-btn px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 bg-paperLight text-inkBlack shrink-0"
+        >
+          <span class="hidden md:inline">ADMIN (REVISÃO)</span>
+          <span class="md:hidden">ADMIN</span>
+          <span id="admin-badge-count" class="bg-critRed text-white font-mono text-[10px] font-extrabold px-1.5 py-0.5 border-2 border-inkBlack rounded-full leading-none">
+            2
+          </span>
+        </button>
+      </nav>
+
+      <!-- Quick Search Input (Desktop) + Theme Toggle -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="hidden lg:flex items-center relative w-52 shrink-0">
+          <input
+            id="global-search"
+            type="search"
+            aria-label="Buscar notícias"
+            oninput="handleSearch(this.value)"
+            placeholder="Buscar notícia geek..."
+            class="w-full bg-paperLight text-inkBlack text-xs font-bold pl-3 pr-8 py-2 rounded-xl border-2 border-heroYellow focus:outline-none focus:ring-2 focus:ring-cyberCyan"
+          />
+          <svg class="w-4 h-4 text-inkBlack/70 absolute right-2.5 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+        </div>
+
+        <button
+          id="theme-toggle"
+          type="button"
+          onclick="toggleTheme()"
+          aria-label="Alternar tema claro e escuro"
+          title="Alternar tema claro/escuro"
+          class="comic-btn bg-paperLight text-inkBlack px-2.5 py-1.5 rounded-xl font-mono text-xs font-extrabold flex items-center gap-1.5 shrink-0"
+        >
+          <span id="theme-toggle-icon" aria-hidden="true">🌙</span>
+          <span class="hidden sm:inline" id="theme-toggle-label">ESCURO</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dedicated Mobile Search Bar -->
+  <div class="lg:hidden px-4 py-2 bg-paperWarm border-b-[3px] border-inkBlack">
+    <div class="relative">
+      <svg class="w-4 h-4 text-inkBlack/70 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input
+        id="mobile-search"
+        type="search"
+        aria-label="Buscar notícias"
+        placeholder="Buscar por título, editoria, resumo..."
+        oninput="handleSearch(this.value)"
+        class="w-full bg-paperLight text-inkBlack text-sm font-bold pl-9 pr-3 py-2 rounded-xl border-2 border-inkBlack focus:outline-none focus:ring-2 focus:ring-cyberCyan"
+      />
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VIEW 1: HOME (CNN BRASIL-INSPIRED GEEK PORTAL — DEFAULT)
+       ========================================================= -->
+  <main id="view-home" class="flex-1 flex flex-col">
+
+    <!-- 1. BREAKING NEWS TICKER ("PLANTÃO GEEK") -->
+    <div class="bg-paperWarm border-b-[3px] border-inkBlack overflow-hidden">
+      <div class="max-w-7xl mx-auto flex items-stretch">
+        <div class="bg-critRed text-white font-display text-lg sm:text-xl tracking-wider px-3 sm:px-4 py-1.5 border-r-[3px] border-inkBlack flex items-center gap-1.5 shrink-0 z-10">
+          <span>⚡ PLANTÃO GEEK</span>
+        </div>
+        <div class="flex-1 overflow-hidden flex items-center py-1.5">
+          <div id="breaking-ticker" class="ticker-track gap-8 px-4 font-mono text-xs font-bold text-inkBlack">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Results Banner (Visible only when user searches) -->
+    <div id="search-results-bar" class="hidden max-w-7xl w-full mx-auto px-4 sm:px-6 pt-5">
+      <div class="bg-cyberCyan/30 comic-card rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span id="search-results-label" class="font-mono text-xs font-extrabold uppercase"></span>
+          <button onclick="clearSearch()" class="comic-btn bg-paperLight px-3 py-1 rounded-lg font-mono text-xs font-bold">Limpar busca ✕</button>
+        </div>
+        <div id="search-results-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- MAIN EDITORIAL CONTAINER -->
+    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-10">
+
+      <!-- 2. HERO SECTION (ABOVE THE FOLD — 12-COL GRID LIKE CNN BRASIL) -->
+      <section aria-label="Destaques Principais" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- LEFT 8 COLS: MAIN HERO + SUB-BULLETS + 3 SECONDARY FEATURED CARDS -->
+        <div class="lg:col-span-8 space-y-6">
+          <!-- Main Hero Story -->
+          <article id="home-hero-main" class="bg-paperLight comic-card comic-card-hover rounded-2xl overflow-hidden cursor-pointer">
+            <!-- Populated by JS -->
+          </article>
+
+          <!-- 3-Column Secondary Featured Cards -->
+          <div id="home-hero-secondary" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- RIGHT 4 COLS: "REELS EM DESTAQUE / AGORA" + 2 "URGENTE" SIDE CARDS -->
+        <aside class="lg:col-span-4 space-y-5">
+          <!-- CNN-Style Right Video/Reels Box -->
+          <div id="home-hero-reels-box" class="bg-inkBlack text-paperLight comic-card rounded-2xl overflow-hidden">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- 2 Compact "URGENTE" Side Cards -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b-[3px] border-inkBlack pb-1.5">
+              <span class="font-display text-2xl tracking-wide text-critRed flex items-center gap-1.5">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-critRed animate-pulse"></span>
+                URGENTE NA REDAÇÃO
+              </span>
+              <span class="font-mono text-[10px] font-extrabold bg-heroYellow px-2 py-0.5 border-2 border-inkBlack rounded">AO VIVO</span>
+            </div>
+            <div id="home-hero-urgent" class="space-y-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- 3. QUICK NEWS STRIP (2 ROWS OF 4 COMPACT HORIZONTAL CARDS — CNN STYLE) -->
+      <section aria-label="Últimas Notícias Rápidas" class="space-y-3">
+        <div class="flex items-center justify-between border-b-[3px] border-inkBlack pb-2">
+          <h2 class="font-display text-3xl tracking-wide flex items-center gap-2">
+            <span class="bg-inkBlack text-heroYellow px-2.5 py-0.5 rounded-lg -skew-x-6 inline-block">GIRO GEEK</span>
+            <span>ÚLTIMAS DO RADAR</span>
+          </h2>
+          <span class="font-mono text-xs font-bold text-inkBlack/60 hidden sm:inline">Fontes BR + Gringa cruzadas a cada 15 min</span>
+        </div>
+        <div id="home-quick-strip" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <!-- Populated by JS (8 items: 2 rows x 4 cols) -->
+        </div>
+      </section>
+
+      <!-- 4. NEWSLETTER / LOOT BANNER -->
+      <section aria-label="Newsletter Loot Diário">
+        <div class="relative bg-heroYellow comic-card rounded-2xl p-5 sm:p-7 overflow-hidden">
+          <div class="absolute inset-0 comic-sunburst opacity-40 pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+            <div class="space-y-1">
+              <span class="inline-block bg-inkBlack text-heroYellow font-mono text-[11px] font-extrabold px-2.5 py-0.5 rounded-md uppercase">
+                🎁 NEWSLETTER GRATUITA • 0% CLICKBAIT
+              </span>
+              <h2 class="font-display text-3xl sm:text-4xl tracking-wide leading-none text-inkBlack">
+                RECEBA O LOOT DIÁRIO NO E-MAIL!
+              </h2>
+              <p class="text-sm font-bold text-inkBlack/80 max-w-xl">
+                O resumo das 5 maiores bombas de Games, HQs, Animes e Cinema da gringa e do Brasil direto na sua caixa de entrada às 8h.
+              </p>
+            </div>
+            <form onsubmit="handleNewsletterSubmit(event)" class="w-full lg:w-auto flex flex-col sm:flex-row gap-2.5 shrink-0">
+              <input
+                id="newsletter-email"
+                type="email"
+                required
+                placeholder="seu.email@devgeek.com"
+                class="bg-paperLight text-inkBlack comic-border rounded-xl px-4 py-3 text-sm font-bold sm:w-64 focus:outline-none focus:ring-4 focus:ring-cyberCyan"
+              />
+              <button type="submit" class="comic-btn bg-critRed text-white font-display text-2xl tracking-wider px-6 py-2.5 rounded-xl">
+                RESGATAR LOOT!
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. COLUNAS & REVIEWS (CNN'S "BLOGS E COLUNAS") -->
+      <section aria-label="Colunas e Reviews" class="space-y-4">
+        <div class="flex items-center justify-between border-b-[3px] border-inkBlack pb-2">
+          <h2 class="font-display text-3xl tracking-wide text-inkBlack">
+            COLUNAS &amp; REVIEWS <span class="text-critRed">•</span>
+          </h2>
+          <span class="font-mono text-xs font-extrabold text-villainPurple">OPINIÃO &amp; NOTAS CRITHIT</span>
+        </div>
+        <div id="home-columns-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- 6. CRITHIT REELS CAROUSEL SECTION (CNN'S VERTICAL "WEB STORIES") -->
+      <section aria-label="CritHit Reels Carrossel" class="bg-inkBlack text-paperLight comic-card rounded-3xl p-5 sm:p-6 bg-halftone-dark space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="bg-critRed text-white font-display text-2xl sm:text-3xl tracking-wider px-3 py-1 border-2 border-paperLight rounded-xl -rotate-1">
+              ▶ CRITHIT REELS
+            </div>
+            <span class="font-mono text-xs text-heroYellow font-bold hidden sm:inline">
+              Notícias verticais 9:16 • Clique em qualquer card para abrir no modo imersivo
+            </span>
+          </div>
+          <button
+            onclick="switchView('reels')"
+            class="comic-btn bg-heroYellow text-inkBlack font-display text-xl tracking-wide px-4 py-1.5 rounded-xl"
+          >
+            VER TODOS OS REELS →
+          </button>
+        </div>
+
+        <!-- Horizontal Row of 6 Vertical 9:16 Comic News Cards -->
+        <div id="home-reels-carousel" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- 7. 3-COLUMN EDITORIAL BLOCKS (CNN'S ECONOMIA / INTERNACIONAL / ESPORTES) -->
+      <section aria-label="Editorias em Destaque" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Column 1: GAMES -->
+        <div id="editorial-col-games" class="bg-paperLight comic-card rounded-2xl overflow-hidden flex flex-col">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Column 2: QUADRINHOS & MANGÁS -->
+        <div id="editorial-col-comics" class="bg-paperLight comic-card rounded-2xl overflow-hidden flex flex-col">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Column 3: CINEMA & SÉRIES -->
+        <div id="editorial-col-cinema" class="bg-paperLight comic-card rounded-2xl overflow-hidden flex flex-col">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- 8. MAIS LIDAS DA SEMANA (CNN'S "MAIS LIDAS") -->
+      <section aria-label="Mais Lidas da Semana" class="bg-paperWarm comic-card rounded-2xl p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between border-b-[3px] border-inkBlack pb-2">
+          <h2 class="font-display text-3xl tracking-wide text-inkBlack flex items-center gap-2">
+            🔥 MAIS LIDAS DA SEMANA
+          </h2>
+          <span class="font-mono text-xs font-extrabold bg-powerGreen px-2.5 py-0.5 border-2 border-inkBlack rounded-lg">TOP 5 HYPE</span>
+        </div>
+        <div id="home-most-read" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 9. FULL DARK COMIC FOOTER (MIRRORING CNN'S BLACK MULTI-COLUMN FOOTER) -->
+    <footer class="mt-auto bg-inkBlack text-paperLight border-t-[4px] border-heroYellow pt-10 pb-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          <!-- Brand + Social -->
+          <div class="lg:col-span-2 space-y-4">
+            <div class="inline-block bg-critRed text-heroYellow px-4 py-1 border-[3px] border-paperLight shadow-[3px_3px_0px_#FFD600] -rotate-2 rounded-xl">
+              <span class="font-display text-4xl tracking-wider">CRITHIT!</span>
+            </div>
+            <p class="text-sm text-paperLight/75 max-w-sm leading-relaxed">
+              Portal independente de jornalismo geek com curadoria automatizada de fontes internacionais e brasileiras, sempre revisado por humanos antes da publicação.
+            </p>
+            <div class="flex items-center gap-2.5">
+              <button onclick="showToast('Seguindo @crithitbr no X/Twitter! ⚡')" class="comic-btn bg-paperLight text-inkBlack w-10 h-10 rounded-xl font-mono text-xs font-extrabold flex items-center justify-center">𝕏</button>
+              <button onclick="showToast('Abrindo Instagram @crithitbr! 📸')" class="comic-btn bg-heroYellow text-inkBlack w-10 h-10 rounded-xl font-mono text-xs font-extrabold flex items-center justify-center">IG</button>
+              <button onclick="showToast('Entrando no Discord da CritHit! 🎮')" class="comic-btn bg-villainPurple text-white w-10 h-10 rounded-xl font-mono text-xs font-extrabold flex items-center justify-center">DC</button>
+              <button onclick="showToast('Canal YouTube CritHit! ▶')" class="comic-btn bg-critRed text-white w-10 h-10 rounded-xl font-mono text-xs font-extrabold flex items-center justify-center">YT</button>
+            </div>
+          </div>
+
+          <!-- Editorial Links -->
+          <div class="space-y-2.5">
+            <h4 class="font-display text-2xl text-heroYellow tracking-wide">EDITORIAS</h4>
+            <ul class="space-y-1.5 text-sm text-paperLight/80 font-medium">
+              <li><button onclick="openReelsWithCategory('GAMES')" class="hover:text-heroYellow transition-colors">Games &amp; Consoles</button></li>
+              <li><button onclick="openReelsWithCategory('QUADRINHOS')" class="hover:text-heroYellow transition-colors">Quadrinhos &amp; Mangás</button></li>
+              <li><button onclick="openReelsWithCategory('CINEMA')" class="hover:text-heroYellow transition-colors">Cinema &amp; Séries</button></li>
+              <li><button onclick="openReelsWithCategory('ANIMES')" class="hover:text-heroYellow transition-colors">Animes &amp; Cultura Pop</button></li>
+              <li><button onclick="openReelsWithCategory('TECH')" class="hover:text-heroYellow transition-colors">Hardware &amp; Tech</button></li>
+            </ul>
+          </div>
+
+          <!-- Platform -->
+          <div class="space-y-2.5">
+            <h4 class="font-display text-2xl text-cyberCyan tracking-wide">PLATAFORMA</h4>
+            <ul class="space-y-1.5 text-sm text-paperLight/80 font-medium">
+              <li><button onclick="switchView('reels')" class="hover:text-cyberCyan transition-colors">Modo Reels 9:16</button></li>
+              <li><button onclick="switchView('brand')" class="hover:text-cyberCyan transition-colors">Identidade Visual</button></li>
+              <li><button onclick="switchView('admin')" class="hover:text-cyberCyan transition-colors">Painel Editorial (Admin)</button></li>
+              <li><button onclick="showToast('Feed RSS público disponível em /rss.xml')" class="hover:text-cyberCyan transition-colors">Feed RSS CritHit!</button></li>
+            </ul>
+          </div>
+
+          <!-- Sources & Compliance -->
+          <div class="space-y-2.5">
+            <h4 class="font-display text-2xl text-powerGreen tracking-wide">TRANSPARÊNCIA</h4>
+            <ul class="space-y-1.5 text-xs font-mono text-paperLight/70">
+              <li>• Fontes: IGN, Variety, ANN, Omelete, Jovem Nerd, Voxel</li>
+              <li>• Revisão Human-in-the-Loop 100% obrigatória</li>
+              <li>• Créditos e links preservados em cada matéria</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="border-t border-white/15 pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-mono text-paperLight/55">
+          <span>© 2026 CritHit! Portal Geek — Todos os direitos reservados.</span>
+          <span>Protótipo Interativo v2.0 • Estilo Editorial + Pop-Art</span>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- =========================================================
+       VIEW 2: REELS (STANDALONE IMMERSIVE VERTICAL 9:16 FEED)
+       ========================================================= -->
+  <section id="view-reels" class="hidden flex-1 bg-halftone-dark text-paperLight flex flex-col items-center justify-center relative w-full">
+    <div class="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 px-0 sm:px-4 py-0 sm:py-4">
+
+      <!-- Left Context Panel (Desktop) -->
+      <aside class="hidden lg:flex flex-col gap-4 w-72 shrink-0">
+        <div class="bg-paperLight text-inkBlack comic-card rounded-2xl p-5">
+          <div class="inline-block bg-cyberCyan text-inkBlack font-mono text-[11px] font-extrabold px-2.5 py-0.5 border-2 border-inkBlack rounded-md -rotate-1 mb-3">
+            MODO REELS • 9:16
+          </div>
+          <h2 class="font-display text-3xl tracking-wide leading-tight mb-2">
+            MARATONA GEEK SEM PARAR!
+          </h2>
+          <p class="text-sm font-medium text-inkBlack/80 leading-relaxed mb-4">
+            Role com o mouse, deslize no touch ou use <kbd class="px-1.5 py-0.5 bg-heroYellow border-2 border-inkBlack rounded font-mono text-xs font-bold">↑</kbd> <kbd class="px-1.5 py-0.5 bg-heroYellow border-2 border-inkBlack rounded font-mono text-xs font-bold">↓</kbd> para navegar.
+          </p>
+          <div class="space-y-2 border-t-2 border-inkBlack/15 pt-3 text-xs font-mono">
+            <div class="flex items-center justify-between">
+              <span class="text-inkBlack/70">Total no Reels:</span>
+              <span id="desktop-feed-count" class="font-extrabold bg-heroYellow px-2 py-0.5 border-2 border-inkBlack rounded">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-inkBlack/70">Salvos por você:</span>
+              <span id="desktop-saved-count" class="font-extrabold bg-cyberCyan px-2 py-0.5 border-2 border-inkBlack rounded">0</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="switchView('home')" class="comic-btn bg-heroYellow text-inkBlack rounded-2xl p-4 text-left">
+          <div class="font-mono text-[10px] uppercase font-extrabold mb-0.5">← VOLTAR PARA CAPA</div>
+          <div class="font-display text-2xl leading-none">PORTAL HOME CRITHIT!</div>
+        </button>
+      </aside>
+
+      <!-- CENTERED 9:16 REELS FRAME -->
+      <div class="relative w-full sm:w-[430px] h-[calc(100dvh-64px)] sm:h-[calc(100dvh-100px)] sm:max-h-[820px] sm:min-h-[600px] sm:rounded-[28px] sm:border-[4px] sm:border-heroYellow sm:shadow-[8px_8px_0px_#000000] overflow-hidden bg-inkBlack flex flex-col">
+        <!-- Category Filter Pills -->
+        <div class="absolute top-3 left-0 right-0 z-20 px-3 pointer-events-none">
+          <div id="reels-category-pills" class="flex items-center gap-2 overflow-x-auto no-scrollbar pointer-events-auto pb-1">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Vertical Scroll-Snap Container -->
+        <div id="reels-container" class="reels-scroller w-full h-full relative">
+          <!-- Slides injected by JS -->
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="absolute top-0 left-0 right-0 h-1.5 bg-black/60 z-30">
+          <div id="reel-progress-bar" class="h-full bg-heroYellow transition-all duration-300" style="width: 15%"></div>
+        </div>
+      </div>
+
+      <!-- Right Floating Navigation Controls (Desktop/Tablet) -->
+      <aside class="hidden sm:flex flex-col items-center gap-3 shrink-0">
+        <button onclick="navigateReel(-1)" title="Anterior (↑)" class="comic-btn w-12 h-12 rounded-2xl bg-paperLight text-inkBlack flex items-center justify-center hover:bg-heroYellow">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+        <div class="bg-inkBlack border-2 border-heroYellow px-2.5 py-1.5 rounded-xl font-mono text-xs font-extrabold text-heroYellow">
+          <span id="reel-index-display">1/8</span>
+        </div>
+        <button onclick="navigateReel(1)" title="Próxima (↓)" class="comic-btn w-12 h-12 rounded-2xl bg-heroYellow text-inkBlack flex items-center justify-center hover:bg-cyberCyan">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       VIEW 3: IDENTIDADE VISUAL (BRAND GUIDE & DESIGN SYSTEM)
+       ========================================================= -->
+  <section id="view-brand" class="hidden flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <!-- Hero Banner -->
+    <div class="relative bg-heroYellow text-inkBlack comic-card rounded-3xl p-6 sm:p-10 overflow-hidden">
+      <div class="absolute inset-0 comic-sunburst opacity-50 pointer-events-none"></div>
+      <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <span class="inline-block bg-inkBlack text-heroYellow font-mono text-xs font-extrabold px-3 py-1 rounded-lg uppercase tracking-widest mb-3">
+            Design System &amp; Brand Book v2.0
+          </span>
+          <h1 class="comic-headline text-5xl sm:text-7xl text-white">IDENTIDADE CRITHIT!</h1>
+          <p class="font-bold text-base sm:text-lg mt-2 max-w-xl">
+            Arquitetura editorial de grande portal de notícias combinada à energia visual das histórias em quadrinhos e Pop-Art.
+          </p>
+        </div>
+        <div class="bg-critRed text-heroYellow comic-card px-6 py-4 rounded-2xl rotate-2 shrink-0">
+          <div class="font-display text-5xl tracking-wider leading-none" style="-webkit-text-stroke: 1.5px #111;">CRITHIT!</div>
+          <div class="font-mono text-[11px] uppercase tracking-widest text-white mt-1">PORTAL + REELS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logo Variations -->
+    <div class="bg-paperLight comic-card rounded-3xl p-6 space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="font-display text-3xl tracking-wide">01. VARIAÇÕES DO LOGOTIPO</h2>
+        <span class="font-mono text-xs font-extrabold bg-cyberCyan px-2.5 py-1 border-2 border-inkBlack rounded-lg">LOGO SYSTEM</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-paperWarm rounded-2xl comic-border p-6 flex flex-col items-center justify-center gap-3">
+          <div class="bg-critRed text-heroYellow px-4 py-1.5 comic-border shadow-comic -rotate-2 rounded-xl">
+            <span class="font-display text-4xl tracking-wider" style="-webkit-text-stroke: 1px #111;">CRITHIT!</span>
+          </div>
+          <span class="font-mono text-xs font-bold text-inkBlack/70">Primário (Fundo Claro)</span>
+        </div>
+        <div class="bg-inkBlack rounded-2xl comic-border p-6 flex flex-col items-center justify-center gap-3 bg-halftone-dark">
+          <div class="bg-heroYellow text-inkBlack px-4 py-1.5 border-[3px] border-paperLight shadow-[4px_4px_0px_#FF2E4C] rotate-1 rounded-xl">
+            <span class="font-display text-4xl tracking-wider">CRITHIT!</span>
+          </div>
+          <span class="font-mono text-xs font-bold text-paperLight/75">Versão Dark / Reels</span>
+        </div>
+        <div class="bg-white rounded-2xl comic-border p-6 flex flex-col items-center justify-center gap-3">
+          <div class="bg-inkBlack text-paperLight px-4 py-1.5 comic-border shadow-comic rounded-xl">
+            <span class="font-display text-4xl tracking-wider">CRITHIT!</span>
+          </div>
+          <span class="font-mono text-xs font-bold text-inkBlack/70">Monocromático / Nanquim</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Color Palette -->
+    <div class="bg-paperLight comic-card rounded-3xl p-6 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="font-display text-3xl tracking-wide">02. PALETA POP-ART (CLIQUE PARA COPIAR HEX)</h2>
+          <p class="text-sm text-inkBlack/70">Papel de HQ claro para leitura longa na Home + cores vibrantes de alto contraste nos destaques e Reels.</p>
+        </div>
+        <span class="font-mono text-xs font-extrabold bg-heroYellow px-3 py-1 border-2 border-inkBlack rounded-lg">7 CORES OFICIAIS</span>
+      </div>
+      <div id="brand-palette-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3.5">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Typography Showcase -->
+    <div class="bg-paperLight comic-card rounded-3xl p-6 space-y-5">
+      <h2 class="font-display text-3xl tracking-wide">03. TIPOGRAFIA &amp; HIERARQUIA</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-heroYellow/30 comic-border rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-[11px] font-bold bg-inkBlack text-heroYellow px-2 py-0.5 rounded">DISPLAY / MANCHETES / RANKING</span>
+            <div class="comic-headline text-5xl text-heroYellow mt-3 mb-2">BANGERS</div>
+            <p class="font-display text-2xl tracking-wide">PLANTÃO GEEK! #1 MAIS LIDA! POW!</p>
+          </div>
+          <div class="mt-4 pt-3 border-t-2 border-inkBlack/15 font-mono text-xs text-inkBlack/75">
+            Títulos de impacto, logotipo, números de ranking e onomatopeias.
+          </div>
+        </div>
+        <div class="bg-cyberCyan/20 comic-border rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-[11px] font-bold bg-inkBlack text-cyberCyan px-2 py-0.5 rounded">EDITORIAL &amp; UI</span>
+            <div class="font-sans font-bold text-3xl mt-3 mb-2 tracking-tight">Space Grotesk</div>
+            <p class="text-sm font-medium leading-relaxed">
+              Combina rigor jornalístico com estética moderna tech. Ideal para escaneabilidade rápida na Home e leitura confortável nas matérias.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t-2 border-inkBlack/15 font-mono text-xs text-inkBlack/75">
+            Pesos: 400, 500, 600, 700.
+          </div>
+        </div>
+        <div class="bg-villainPurple/15 comic-border rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-[11px] font-bold bg-inkBlack text-white px-2 py-0.5 rounded">METADADOS &amp; FONTES</span>
+            <div class="font-mono font-extrabold text-2xl mt-3 mb-2">JetBrains Mono</div>
+            <div class="font-mono text-xs bg-inkBlack text-powerGreen p-3 rounded-xl border-2 border-inkBlack">
+              SRC: IGN US + Omelete<br/>
+              MATCH: 95.4% (pgvector)<br/>
+              STATUS: HUMAN_APPROVED
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t-2 border-inkBlack/15 font-mono text-xs text-inkBlack/75">
+            Selos de fontes cruzadas, horários, notas de review e painel Admin.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comic UI Kit -->
+    <div class="bg-paperLight comic-card rounded-3xl p-6 space-y-5">
+      <h2 class="font-display text-3xl tracking-wide">04. COMIC UI KIT</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white comic-border rounded-2xl p-5 space-y-3">
+          <div class="font-mono text-xs font-extrabold uppercase text-inkBlack/60">Botões Táteis</div>
+          <div class="flex flex-wrap gap-2.5">
+            <button onclick="showToast('ACERTO CRÍTICO! +100 XP')" class="comic-btn bg-heroYellow text-inkBlack font-bold text-xs px-3.5 py-2 rounded-xl">PRIMÁRIO</button>
+            <button onclick="showToast('PLANTÃO URGENTE! ⚡')" class="comic-btn bg-critRed text-white font-bold text-xs px-3.5 py-2 rounded-xl">URGENTE</button>
+            <button onclick="showToast('POWER UP! +50 HP')" class="comic-btn bg-powerGreen text-inkBlack font-bold text-xs px-3.5 py-2 rounded-xl">APROVAR</button>
+          </div>
+        </div>
+        <div class="bg-white comic-border rounded-2xl p-5 space-y-3">
+          <div class="font-mono text-xs font-extrabold uppercase text-inkBlack/60">Badges &amp; Retículas</div>
+          <div class="flex flex-wrap gap-2">
+            <span class="bg-critRed text-white font-display text-lg px-2.5 py-0.5 comic-border-2 -skew-x-6">GAMES</span>
+            <span class="bg-heroYellow text-inkBlack font-display text-lg px-2.5 py-0.5 comic-border-2 -skew-x-6">QUADRINHOS</span>
+            <span class="bg-cyberCyan text-inkBlack font-display text-lg px-2.5 py-0.5 comic-border-2 -skew-x-6">CINEMA</span>
+            <span class="bg-villainPurple text-white font-display text-lg px-2.5 py-0.5 comic-border-2 -skew-x-6">ANIMES</span>
+          </div>
+        </div>
+        <div class="bg-white comic-border rounded-2xl p-5 space-y-3">
+          <div class="font-mono text-xs font-extrabold uppercase text-inkBlack/60">Balão de Fala</div>
+          <div class="speech-bubble bg-paperLight comic-border-2 shadow-comic-sm p-3 rounded-2xl text-xs font-bold">
+            "Home com cara de portal grande + Reels separado = perfeição!"
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       VIEW 4: ADMIN (REVISÃO HUMAN-IN-THE-LOOP)
+       ========================================================= -->
+  <section id="view-admin" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <!-- Admin Header -->
+    <div class="bg-paperLight comic-card rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div>
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+          <span class="bg-villainPurple text-white font-mono text-[11px] font-extrabold px-2.5 py-0.5 comic-border-2 rounded-md">HUMAN-IN-THE-LOOP</span>
+          <span class="font-mono text-xs font-bold text-inkBlack/65">RSS GRINGA + BR → IA → SUA REVISÃO → HOME &amp; REELS</span>
+        </div>
+        <h1 class="font-display text-4xl sm:text-5xl tracking-wide leading-none">FILA DE APROVAÇÃO EDITORIAL</h1>
+      </div>
+      <div id="admin-queue-selector" class="flex flex-wrap items-center gap-2"></div>
+    </div>
+
+    <!-- Published Live Success Banner (Hidden until publish) -->
+    <div id="admin-publish-banner" class="hidden bg-powerGreen text-inkBlack comic-card rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div>
+        <div class="font-display text-3xl tracking-wide leading-none">🚀 PUBLICADO! +100 XP!</div>
+        <p class="text-sm font-bold mt-1">A matéria entrou AO VIVO no topo da <strong>HOME (Destaque Principal)</strong> e no topo do <strong>REELS</strong>!</p>
+      </div>
+      <div class="flex flex-wrap gap-2.5 shrink-0">
+        <button onclick="switchView('home')" class="comic-btn bg-heroYellow text-inkBlack font-display text-xl px-4 py-2 rounded-xl">VER NA HOME →</button>
+        <button onclick="switchView('reels')" class="comic-btn bg-critRed text-white font-display text-xl px-4 py-2 rounded-xl">VER NO REELS ▶</button>
+      </div>
+    </div>
+
+    <!-- Split Screen Workbench -->
+    <div id="admin-workbench" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- LEFT: RAW SCRAPED ENGLISH SOURCE -->
+      <div class="bg-inkBlack text-paperLight comic-card rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute top-0 right-0 bg-cyberCyan text-inkBlack font-mono text-[11px] font-extrabold px-3 py-1 border-l-[3px] border-b-[3px] border-inkBlack rounded-bl-xl">
+          FONTE ORIGINAL (EN-US)
+        </div>
+        <div class="space-y-4 mt-4">
+          <div class="flex flex-wrap items-center gap-2 font-mono text-xs">
+            <span id="orig-source-badge" class="bg-villainPurple text-white px-2.5 py-1 border-2 border-paperLight rounded-lg font-bold">IGN US</span>
+            <span id="orig-cross-badge" class="bg-white/10 text-cyberCyan px-2.5 py-1 border border-cyberCyan/50 rounded-lg font-bold">Match: 94%</span>
+            <span id="orig-time" class="text-white/60">Coletado há 6 min</span>
+          </div>
+
+          <div class="bg-black/60 border-2 border-white/15 rounded-2xl p-4 space-y-3">
+            <div class="font-mono text-[10px] uppercase tracking-wider text-heroYellow">Original URL</div>
+            <div id="orig-url" class="font-mono text-xs text-cyberCyan break-all"></div>
+            <div class="font-mono text-[10px] uppercase tracking-wider text-heroYellow pt-2 border-t border-white/10">Raw Headline</div>
+            <h3 id="orig-title" class="text-lg font-bold leading-snug text-white"></h3>
+            <div class="font-mono text-[10px] uppercase tracking-wider text-heroYellow pt-2 border-t border-white/10">Raw Excerpt</div>
+            <p id="orig-excerpt" class="text-sm text-white/80 leading-relaxed"></p>
+          </div>
+
+          <div class="bg-heroYellow/10 border-2 border-heroYellow/40 rounded-2xl p-4">
+            <div class="font-mono text-xs font-bold text-heroYellow mb-1.5">🤖 PIPELINE DE INGESTÃO &amp; CRUZAMENTO:</div>
+            <ul id="orig-ai-logs" class="font-mono text-xs text-white/80 space-y-1"></ul>
+          </div>
+        </div>
+        <div class="mt-5 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-mono text-white/60">
+          <span>Status: <strong class="text-heroYellow">PENDING_REVIEW</strong></span>
+          <span>Aguardando aprovação humana</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: EDITABLE PT-BR AI DRAFT -->
+      <div class="bg-paperLight text-inkBlack comic-card rounded-3xl p-6 flex flex-col justify-between space-y-4">
+        <div class="space-y-3.5">
+          <div class="flex items-center justify-between">
+            <span class="bg-heroYellow text-inkBlack font-mono text-xs font-extrabold px-3 py-1 comic-border-2 rounded-lg">RASCUNHO IA (PT-BR)</span>
+            <span class="font-mono text-xs font-bold text-inkBlack/60">Edite antes de publicar</span>
+          </div>
+
+          <div>
+            <label for="draft-title" class="block font-mono text-xs font-extrabold uppercase mb-1">Manchete (Home + Reels)</label>
+            <input id="draft-title" type="text" class="w-full bg-white comic-border-2 rounded-xl px-3.5 py-2.5 font-bold text-sm focus:outline-none focus:ring-4 focus:ring-heroYellow" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="draft-category" class="block font-mono text-xs font-extrabold uppercase mb-1">Editoria</label>
+              <select id="draft-category" class="w-full bg-white comic-border-2 rounded-xl px-3 py-2.5 font-bold text-sm focus:outline-none focus:ring-4 focus:ring-heroYellow">
+                <option value="GAMES">GAMES</option>
+                <option value="QUADRINHOS">QUADRINHOS</option>
+                <option value="CINEMA">CINEMA</option>
+                <option value="ANIMES">ANIMES</option>
+                <option value="TECH">TECH</option>
+              </select>
+            </div>
+            <div>
+              <label for="draft-sources" class="block font-mono text-xs font-extrabold uppercase mb-1">Fontes Cruzadas</label>
+              <input id="draft-sources" type="text" class="w-full bg-white comic-border-2 rounded-xl px-3.5 py-2.5 font-mono text-xs font-bold focus:outline-none focus:ring-4 focus:ring-heroYellow" />
+            </div>
+          </div>
+
+          <div>
+            <label for="draft-summary" class="block font-mono text-xs font-extrabold uppercase mb-1">Resumo / Lead (Cartão Reels)</label>
+            <textarea id="draft-summary" rows="2" class="w-full bg-heroYellow/20 comic-border-2 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-heroYellow"></textarea>
+          </div>
+
+          <div>
+            <label for="draft-body" class="block font-mono text-xs font-extrabold uppercase mb-1">Corpo Completo da Matéria (Portal Home)</label>
+            <textarea id="draft-body" rows="4" class="w-full bg-white comic-border-2 rounded-xl px-3.5 py-2 text-sm font-medium leading-relaxed focus:outline-none focus:ring-4 focus:ring-heroYellow"></textarea>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t-2 border-inkBlack/15 flex flex-col sm:flex-row gap-3">
+          <button onclick="approveCurrentDraft()" class="comic-btn flex-1 bg-powerGreen hover:bg-heroYellow text-inkBlack font-display text-2xl tracking-wider py-3 px-5 rounded-2xl">
+            ⚡ APROVAR E PUBLICAR
+          </button>
+          <button id="discard-draft-btn" onclick="discardCurrentDraft()" class="comic-btn bg-white hover:bg-critRed hover:text-white text-inkBlack font-mono text-xs font-extrabold py-3 px-4 rounded-2xl">
+            DESCARTAR
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty Queue State -->
+    <div id="admin-empty-state" class="hidden bg-paperLight comic-card rounded-3xl p-10 text-center space-y-4">
+      <div class="inline-block bg-cyberCyan comic-border shadow-comic px-5 py-2 rounded-2xl font-display text-4xl -rotate-2">
+        FILA ZERADA! BOOYAH!
+      </div>
+      <p class="text-sm font-bold max-w-md mx-auto">Todas as notícias coletadas pelos workers RSS já foram revisadas.</p>
+      <div class="flex flex-wrap justify-center gap-3">
+        <button onclick="switchView('home')" class="comic-btn bg-heroYellow text-inkBlack font-bold px-5 py-2.5 rounded-xl">Ver Portal Home</button>
+        <button onclick="simulateNewRssFetch()" class="comic-btn bg-villainPurple text-white font-bold px-5 py-2.5 rounded-xl">🔄 Simular Nova Coleta RSS</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       MODAL 1: COMIC ARTICLE READER (HOME & REELS)
+       ========================================================= -->
+  <div id="reader-modal" role="dialog" aria-modal="true" aria-labelledby="reader-title" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4">
+    <div class="modal-enter w-full sm:max-w-2xl max-h-[90dvh] bg-paperLight text-inkBlack comic-card rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden">
+      <div class="bg-heroYellow px-5 py-3.5 border-b-[3px] border-inkBlack flex items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span id="reader-category" class="bg-inkBlack text-heroYellow font-display text-lg px-2.5 py-0.5 rounded -skew-x-6">GAMES</span>
+          <span id="reader-time" class="font-mono text-xs font-bold text-inkBlack/80">Há 20 min • 1 min de leitura</span>
+        </div>
+        <button onclick="closeModal('reader-modal')" class="comic-btn w-9 h-9 rounded-xl bg-paperLight font-extrabold flex items-center justify-center">✕</button>
+      </div>
+
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-4">
+        <h2 id="reader-title" class="font-display text-3xl sm:text-4xl tracking-wide leading-tight"></h2>
+
+        <!-- Visual Banner inside Reader -->
+        <div id="reader-artwork-wrap" class="w-full h-44 rounded-2xl comic-border overflow-hidden relative flex items-center justify-center">
+          <!-- Injected by JS -->
+        </div>
+
+        <div id="reader-lead" class="bg-heroYellow/30 comic-border-2 rounded-xl p-3.5 text-sm font-bold leading-relaxed"></div>
+
+        <p id="reader-body" class="text-sm sm:text-base text-inkBlack/90 leading-relaxed font-medium"></p>
+
+        <div class="space-y-2">
+          <div class="font-mono text-xs font-extrabold uppercase text-villainPurple">⚡ DESTAQUES DA PAUTA</div>
+          <ul id="reader-bullets" class="space-y-1.5 text-sm font-medium"></ul>
+        </div>
+
+        <div id="reader-tags" class="flex flex-wrap gap-2 pt-1"></div>
+
+        <div class="bg-inkBlack text-paperLight comic-border-2 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div class="font-mono text-[10px] font-bold text-cyberCyan uppercase">🔗 Fontes Cruzadas &amp; Revisão Humana</div>
+            <div id="reader-sources" class="font-mono text-xs text-white/90 mt-0.5"></div>
+          </div>
+          <button id="reader-open-reels-btn" class="comic-btn bg-critRed text-white font-display text-xl tracking-wide px-4 py-2 rounded-xl shrink-0">
+            ▶ ABRIR NO MODO REELS
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL 2: COMMENTS SPEECH-BUBBLE DRAWER
+       ========================================================= -->
+  <div id="comments-modal" role="dialog" aria-modal="true" aria-label="Comentários da notícia" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4">
+    <div class="modal-enter w-full sm:max-w-md max-h-[82dvh] bg-paperLight text-inkBlack comic-card rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden">
+      <div class="bg-cyberCyan px-5 py-3.5 border-b-[3px] border-inkBlack flex items-center justify-between">
+        <h3 class="font-display text-2xl tracking-wide">COMENTÁRIOS CRITHIT!</h3>
+        <button onclick="closeModal('comments-modal')" class="comic-btn w-9 h-9 rounded-xl bg-paperLight font-extrabold flex items-center justify-center">✕</button>
+      </div>
+      <div id="comments-list" class="p-5 overflow-y-auto space-y-5 flex-1 bg-halftone-paper"></div>
+      <form onsubmit="submitComment(event)" class="p-3.5 bg-white border-t-[3px] border-inkBlack flex items-center gap-2">
+        <input id="comment-input" type="text" required placeholder="Escreva seu comentário geek..." class="flex-1 bg-paperLight comic-border-2 rounded-xl px-3.5 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-heroYellow" />
+        <button type="submit" class="comic-btn bg-heroYellow text-inkBlack font-display text-xl px-4 py-1.5 rounded-xl">ENVIAR</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL 3: CROSS-REFERENCED SOURCES POPOVER
+       ========================================================= -->
+  <div id="sources-modal" role="dialog" aria-modal="true" aria-label="Cruzamento de fontes" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="modal-enter w-full max-w-md bg-paperLight text-inkBlack comic-card rounded-3xl overflow-hidden">
+      <div class="bg-villainPurple text-white px-5 py-3.5 border-b-[3px] border-inkBlack flex items-center justify-between">
+        <span class="font-display text-2xl tracking-wide text-heroYellow">CRUZAMENTO DE FONTES</span>
+        <button onclick="closeModal('sources-modal')" class="comic-btn w-8 h-8 rounded-lg bg-paperLight text-inkBlack font-extrabold flex items-center justify-center">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div class="flex items-center justify-between bg-heroYellow/40 comic-border-2 rounded-xl p-3">
+          <span class="font-mono text-xs font-bold">Match Semântico (pgvector):</span>
+          <span id="sources-match-score" class="font-mono text-sm font-extrabold bg-inkBlack text-powerGreen px-2 py-0.5 rounded">95%</span>
+        </div>
+        <div id="sources-breakdown" class="space-y-2.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-6 left-1/2 z-[60] pointer-events-none"></div>
+
+  <!-- =========================================================
+       APPLICATION DATA & INTERACTIVE LOGIC
+       ========================================================= -->
+  <script>
+    /* =======================================================
+       1. CRISP INLINE SVG COMIC ARTWORKS & AVATARS
+       ======================================================= */
+    const COMIC_SVGS = {
+      spider: `<svg viewBox="0 0 360 260" class="w-full h-full"><rect width="360" height="260" fill="none"/><g stroke="#111" stroke-width="2.5" opacity="0.22"><line x1="180" y1="0" x2="180" y2="260"/><line x1="0" y1="130" x2="360" y2="130"/><circle cx="180" cy="130" r="60" fill="none"/><circle cx="180" cy="130" r="115" fill="none"/></g><polygon points="180,14 206,68 270,48 242,102 308,130 242,158 270,212 206,192 180,246 154,192 90,212 118,158 52,130 118,102 90,48 154,68" fill="#FFD600" stroke="#111" stroke-width="4.5"/><ellipse cx="180" cy="130" rx="68" ry="80" fill="#FF2E4C" stroke="#111" stroke-width="5"/><path d="M180 50 V210 M112 130 H248 M132 76 Q180 112 228 76 M128 182 Q180 150 232 182" stroke="#111" stroke-width="3" fill="none"/><path d="M128 112 Q154 104 168 138 Q140 150 128 112 Z" fill="#FFFDF5" stroke="#111" stroke-width="6"/><path d="M232 112 Q206 104 192 138 Q220 150 232 112 Z" fill="#FFFDF5" stroke="#111" stroke-width="6"/><g transform="translate(226, 26) rotate(10)"><rect width="84" height="30" rx="6" fill="#00E5FF" stroke="#111" stroke-width="3.5"/><text x="42" y="22" text-anchor="middle" font-family="Bangers" font-size="21" fill="#111">THWIP!</text></g></svg>`,
+      gamepad: `<svg viewBox="0 0 360 260" class="w-full h-full"><circle cx="180" cy="120" r="88" fill="#FFD600" stroke="#111" stroke-width="5"/><line x1="94" y1="145" x2="266" y2="145" stroke="#FF2E4C" stroke-width="7"/><line x1="108" y1="164" x2="252" y2="164" stroke="#FF2E4C" stroke-width="6"/><g transform="translate(0, 6) rotate(-5 180 130)"><path d="M98 98 C76 98 60 138 66 180 C72 212 102 218 120 190 L140 164 H220 L240 190 C258 218 288 212 294 180 C300 138 284 98 262 98 Z" fill="#FFFDF5" stroke="#111" stroke-width="5.5"/><path d="M110 120 H126 V136 H142 V152 H126 V168 H110 V152 H94 V136 H110 Z" fill="#111"/><circle cx="236" cy="126" r="9.5" fill="#FF2E4C" stroke="#111" stroke-width="3"/><circle cx="256" cy="144" r="9.5" fill="#00E5FF" stroke="#111" stroke-width="3"/><circle cx="236" cy="162" r="9.5" fill="#FFD600" stroke="#111" stroke-width="3"/><circle cx="216" cy="144" r="9.5" fill="#00E676" stroke="#111" stroke-width="3"/></g><g transform="translate(26, 20) rotate(-10)"><rect width="92" height="32" rx="6" fill="#FF2E4C" stroke="#111" stroke-width="3.5"/><text x="46" y="23" text-anchor="middle" font-family="Bangers" font-size="21" fill="#FFFDF5">CRIT HIT!</text></g></svg>`,
+      anime: `<svg viewBox="0 0 360 260" class="w-full h-full"><polygon points="180,10 202,82 272,34 234,102 318,116 240,152 302,208 216,184 198,252 168,186 92,226 128,154 44,136 126,104 76,38 156,84" fill="#00E5FF" stroke="#111" stroke-width="4.5"/><path d="M62 222 L280 34 L298 48 L88 236 Z" fill="#FFFDF5" stroke="#111" stroke-width="5"/><path d="M104 192 L268 50" stroke="#FFD600" stroke-width="4.5"/><ellipse cx="96" cy="200" rx="18" ry="8" transform="rotate(-42 96 200)" fill="#FFD600" stroke="#111" stroke-width="4"/><path d="M48 242 L88 206" stroke="#FF2E4C" stroke-width="12" stroke-linecap="round"/><g transform="translate(216, 178) rotate(-6)"><rect width="96" height="34" rx="6" fill="#FFD600" stroke="#111" stroke-width="3.5"/><text x="48" y="25" text-anchor="middle" font-family="Bangers" font-size="23" fill="#111">SLASH!!</text></g></svg>`,
+      batman: `<svg viewBox="0 0 360 260" class="w-full h-full"><circle cx="180" cy="130" r="94" fill="#FFD600" stroke="#111" stroke-width="5.5"/><path d="M180 86 L190 108 L200 86 C218 108 246 110 264 98 C254 134 232 160 212 162 C200 164 190 170 180 188 C170 170 160 164 148 162 C128 160 106 134 96 98 C114 110 142 108 160 86 L170 108 Z" fill="#111111" stroke="#111" stroke-width="4"/><g transform="translate(208, 192) rotate(5)"><rect width="104" height="32" rx="6" fill="#111" stroke="#FFD600" stroke-width="3.5"/><text x="52" y="23" text-anchor="middle" font-family="Bangers" font-size="21" fill="#FFD600">GOTHAM!</text></g></svg>`,
+      console: `<svg viewBox="0 0 360 260" class="w-full h-full"><rect x="46" y="54" width="268" height="150" rx="26" fill="#111" stroke="#111" stroke-width="5"/><path d="M46 80 C46 64 58 54 76 54 H96 V204 H76 C58 204 46 192 46 178 Z" fill="#00E5FF" stroke="#111" stroke-width="4.5"/><circle cx="71" cy="102" r="11" fill="#111"/><path d="M264 54 H284 C302 54 314 64 314 80 V178 C314 192 302 204 284 204 H264 Z" fill="#FF2E4C" stroke="#111" stroke-width="4.5"/><circle cx="289" cy="144" r="11" fill="#111"/><rect x="108" y="68" width="144" height="122" rx="10" fill="#FFD600" stroke="#111" stroke-width="4"/><text x="180" y="128" text-anchor="middle" font-family="Bangers" font-size="36" fill="#111">60 FPS!</text><text x="180" y="158" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="800" fill="#FF2E4C">NEXT-GEN 4K</text></svg>`,
+      cinema: `<svg viewBox="0 0 360 260" class="w-full h-full"><circle cx="180" cy="130" r="96" fill="#FF2E4C" stroke="#111" stroke-width="5.5"/><g transform="translate(82, 66) rotate(-4)"><rect x="0" y="34" width="196" height="114" rx="10" fill="#111" stroke="#111" stroke-width="5"/><rect x="0" y="6" width="196" height="32" rx="6" fill="#FFFDF5" stroke="#111" stroke-width="4.5"/><path d="M24 6 L44 38 M68 6 L88 38 M112 6 L132 38 M156 6 L176 38" stroke="#111" stroke-width="9"/><text x="98" y="106" text-anchor="middle" font-family="Bangers" font-size="32" fill="#00E5FF">AÇÃO! TAKE 1</text></g></svg>`,
+      tech: `<svg viewBox="0 0 360 260" class="w-full h-full"><rect x="76" y="42" width="208" height="176" rx="22" fill="#111" stroke="#00E5FF" stroke-width="5"/><rect x="96" y="62" width="168" height="136" rx="12" fill="#7B2CBF" stroke="#111" stroke-width="4"/><text x="180" y="128" text-anchor="middle" font-family="Bangers" font-size="40" fill="#FFD600">RTX AI!</text><text x="180" y="160" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="800" fill="#00E676">NEURAL RENDER</text><g stroke="#FFD600" stroke-width="5"><line x1="42" y1="90" x2="76" y2="90"/><line x1="42" y1="130" x2="76" y2="130"/><line x1="42" y1="170" x2="76" y2="170"/><line x1="284" y1="90" x2="318" y2="90"/><line x1="284" y1="130" x2="318" y2="130"/><line x1="284" y1="170" x2="318" y2="170"/></g></svg>`
+    };
+
+    const AVATAR_SVGS = [
+      `<svg viewBox="0 0 100 100" class="w-full h-full"><rect width="100" height="100" fill="#FFD600"/><circle cx="50" cy="44" r="24" fill="#FFFDF5" stroke="#111" stroke-width="4"/><path d="M26 38 Q50 14 74 38" fill="#FF2E4C" stroke="#111" stroke-width="4"/><rect x="33" y="40" width="14" height="10" rx="2" fill="#00E5FF" stroke="#111" stroke-width="3"/><rect x="53" y="40" width="14" height="10" rx="2" fill="#00E5FF" stroke="#111" stroke-width="3"/><path d="M40 58 Q50 66 60 58" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/><path d="M18 96 C22 72 78 72 82 96" fill="#111"/></svg>`,
+      `<svg viewBox="0 0 100 100" class="w-full h-full"><rect width="100" height="100" fill="#00E5FF"/><circle cx="50" cy="46" r="24" fill="#FFFDF5" stroke="#111" stroke-width="4"/><path d="M24 44 C24 14 76 14 76 44 C76 30 62 24 50 24 C38 24 24 30 24 44 Z" fill="#7B2CBF" stroke="#111" stroke-width="4"/><circle cx="41" cy="46" r="3.5" fill="#111"/><circle cx="59" cy="46" r="3.5" fill="#111"/><path d="M42 58 Q50 64 58 58" fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round"/><path d="M18 96 C22 72 78 72 82 96" fill="#FF2E4C" stroke="#111" stroke-width="4"/></svg>`,
+      `<svg viewBox="0 0 100 100" class="w-full h-full"><rect width="100" height="100" fill="#FF2E4C"/><circle cx="50" cy="46" r="24" fill="#FFFDF5" stroke="#111" stroke-width="4"/><path d="M24 34 L38 18 L52 28 L68 18 L76 38 Z" fill="#111"/><circle cx="41" cy="46" r="3.5" fill="#111"/><circle cx="59" cy="46" r="3.5" fill="#111"/><path d="M41 59 H59" stroke="#111" stroke-width="3.5" stroke-linecap="round"/><path d="M18 96 C22 72 78 72 82 96" fill="#FFD600" stroke="#111" stroke-width="4"/></svg>`,
+      `<svg viewBox="0 0 100 100" class="w-full h-full"><rect width="100" height="100" fill="#00E676"/><circle cx="50" cy="46" r="24" fill="#FFFDF5" stroke="#111" stroke-width="4"/><path d="M24 44 Q50 12 76 44" fill="#111"/><rect x="28" y="39" width="44" height="11" rx="5" fill="#111"/><rect x="34" y="42" width="12" height="5" rx="2" fill="#FFD600"/><rect x="54" y="42" width="12" height="5" rx="2" fill="#FFD600"/><path d="M18 96 C22 72 78 72 82 96" fill="#7B2CBF" stroke="#111" stroke-width="4"/></svg>`
+    ];
+
+    /* =======================================================
+       2. RICH PORTAL & REELS NEWS DATASET (PT-BR)
+       ======================================================= */
+    let newsItems = [
+      {
+        id: 'news-1',
+        category: 'GAMES',
+        timeAgo: 'Há 14 min',
+        views: '84k',
+        svgKey: 'gamepad',
+        bgGradient: 'from-[#FF2E4C] via-[#9D0208] to-[#111111]',
+        sourcesPill: 'IGN US + Voxel',
+        matchScore: '97%',
+        sourcesDetail: [
+          { name: 'IGN US (EUA)', lang: 'EN-US', snippet: 'Rockstar showcases new Vice City dynamic weather and AI crowd systems in GTA VI.' },
+          { name: 'Voxel (BR)', lang: 'PT-BR', snippet: 'Novos detalhes técnicos de GTA VI revelam evolução absurda de física e rotinas de NPCs.' }
+        ],
+        headline: 'GTA VI REVELA SISTEMA DE CLIMA EXTREMO E NPCS COM ROTINA REAL EM VICE CITY',
+        subBullets: [
+          'Mais de 70% dos interiores de lojas e clubes serão exploráveis sem telas de loading',
+          'Polícia de Leonida agora utiliza drones táticos e bloqueios coordenados em tempo real',
+          'Análise técnica mostra ray tracing global rodando estável nos consoles atuais'
+        ],
+        summary: 'A Rockstar liberou novos detalhes técnicos de Leonida mostrando furacões tropicais que alteram o trânsito e a física das perseguições em tempo real.',
+        body: 'Os novos trechos de bastidores apresentados pela Rockstar Games confirmam o salto geracional prometido para GTA VI. O motor RAGE atualizado simula correntes de vento, alagamentos temporários e reações orgânicas de centenas de NPCs simultâneos na praia de Vice City. Segundo o cruzamento das análises da IGN US e do Voxel, o sistema de perseguição policial foi totalmente reconstruído para responder de forma tática às escolhas do jogador.',
+        bullets: [
+          'Clima dinâmico afeta dirigibilidade de carros esportivos e embarcações.',
+          'NPCs lembram de interações recentes e reagem a transmissões nas redes sociais do jogo.',
+          'Modo cooperativo na campanha principal segue em sigilo, mas há novas pistas no trailer.'
+        ],
+        tags: ['#GTAVI', '#Rockstar', '#PS5', '#Xbox', '#ViceCity'],
+        likes: 4120,
+        liked: false,
+        saved: false,
+        comments: [
+          { user: '@vice_city_dev', text: 'Meu console vai levantar voo rodando essa física de furacão kkk' },
+          { user: '@lucia_main', text: '70% dos interiores exploráveis muda tudo num mundo aberto!' }
+        ]
+      },
+      {
+        id: 'news-2',
+        category: 'QUADRINHOS',
+        timeAgo: 'Há 32 min',
+        views: '62k',
+        svgKey: 'spider',
+        bgGradient: 'from-[#FFD600] via-[#D97706] to-[#111111]',
+        sourcesPill: 'ComicBook + Jovem Nerd',
+        matchScore: '95%',
+        sourcesDetail: [
+          { name: 'ComicBook.com (EUA)', lang: 'EN-US', snippet: 'Marvel unveils massive Spider-Verse crossover uniting Ultimate Peter and Miles Morales.' },
+          { name: 'Jovem Nerd (BR)', lang: 'PT-BR', snippet: 'Marvel anuncia nova saga do Aranhaverso com roteiro de Jonathan Hickman.' }
+        ],
+        headline: 'NOVO ARANHAVERSO UNE HOMEM-ARANHA ULTIMATE E MILES MORALES EM MINISSÉRIE ÉPICA',
+        subBullets: [
+          'Roteiro assinado por Jonathan Hickman e Cody Ziglar em 5 edições mensais',
+          'Capas variantes em estética Pop-Art já viraram febre entre colecionadores'
+        ],
+        summary: 'A Marvel oficializou o encontro do Peter Parker casado do novo Universo Ultimate com Miles Morales contra uma ruptura dimensional.',
+        body: 'O maior fenômeno recente dos quadrinhos da Marvel acaba de ganhar um crossover de peso. Peter Parker do Universo Ultimate vai cruzar caminhos com Miles Morales em uma história fechada que promete redefinir o multiverso aracnídeo. A arte principal fica por conta de Marco Checchetto, mantendo o ritmo cinematográfico que conquistou os leitores.',
+        bullets: [
+          'Minissérie terá 5 edições com lançamento simultâneo digital.',
+          'Panini Brasil já sinalizou publicação em formato encadernado no próximo semestre.',
+          'Vilão inédito mistura tecnologia do Criador com herdeiros clássicos.'
+        ],
+        tags: ['#HomemAranha', '#MarvelComics', '#Ultimate', '#Quadrinhos'],
+        likes: 2890,
+        liked: false,
+        saved: false,
+        comments: [
+          { user: '@peter_br', text: 'Melhor fase do Aranha nos últimos 15 anos, fácil!' }
+        ]
+      },
+      {
+        id: 'news-3',
+        category: 'ANIMES',
+        timeAgo: 'Há 48 min',
+        views: '71k',
+        svgKey: 'anime',
+        bgGradient: 'from-[#00E5FF] via-[#023E8A] to-[#111111]',
+        sourcesPill: 'ANN + IntoxiAnime',
+        matchScore: '93%',
+        sourcesDetail: [
+          { name: 'Anime News Network', lang: 'EN-US', snippet: 'Solo Leveling Season 3 greenlit by A-1 Pictures with upgraded sakuga team.' },
+          { name: 'IntoxiAnime (BR)', lang: 'PT-BR', snippet: 'Confirmado! Novo arco de Solo Leveling ganha teaser frenético e equipe reforçada.' }
+        ],
+        headline: 'SOLO LEVELING CONFIRMA NOVA TEMPORADA COM O ARCO MAIS INSANO DO MANHWA',
+        subBullets: [
+          'Hiroyuki Sawano retorna na trilha sonora explosiva das batalhas',
+          'Estreia simultânea confirmada na Crunchyroll com dublagem PT-BR'
+        ],
+        summary: 'A-1 Pictures liberou teaser eletrizante confirmando a adaptação do arco dos Monarcas com orçamento ampliado para cenas sakuga.',
+        body: 'Os fãs de Sung Jinwoo já podem comemorar: a A-1 Pictures confirmou a produção da nova temporada de Solo Leveling focada no confronto contra os Monarcas. O diretor revelou que o cronograma foi estendido para entregar lutas com nível de cinema e menos cortes em relação ao manhwa original.',
+        bullets: [
+          'Trilha sonora novamente assinada por Hiroyuki Sawano.',
+          'Dublagem brasileira confirmada com o elenco original.',
+          'Primeiro episódio terá duração especial de 48 minutos.'
+        ],
+        tags: ['#SoloLeveling', '#Animes', '#Crunchyroll', '#Manhwa'],
+        likes: 3450,
+        liked: false,
+        saved: false,
+        comments: [
+          { user: '@jinwoo_shadow', text: 'ARISE!! Já arrepiei só de pensar na trilha sonora!' }
+        ]
+      },
+      {
+        id: 'news-4',
+        category: 'CINEMA',
+        timeAgo: 'Há 1h',
+        views: '53k',
+        svgKey: 'batman',
+        bgGradient: 'from-[#334155] via-[#1E293B] to-[#111111]',
+        sourcesPill: 'Variety + Omelete',
+        matchScore: '94%',
+        sourcesDetail: [
+          { name: 'Variety (EUA)', lang: 'EN-US', snippet: 'Matt Reeves locks The Batman Part II script with winter Gotham setting.' },
+          { name: 'Omelete (BR)', lang: 'PT-BR', snippet: 'Batman Parte II confirma Gotham congelada e vilão clássico inédito.' }
+        ],
+        headline: 'BATMAN PARTE II: GOTHAM CONGELADA E VILÃO CLÁSSICO CONFIRMADOS NO ROTEIRO',
+        subBullets: [
+          'Filmagens começam no estúdio Leavesden com fotografia noir de Greig Fraser',
+          'Eventos acontecem imediatamente após o final explosivo de Pinguim'
+        ],
+        summary: 'Matt Reeves finalizou o roteiro da sequência estrelada por Robert Pattinson, mergulhando Gotham em um inverno noir implacável.',
+        body: 'Após meses de refinamento, o roteiro de Batman Parte II foi entregue à Warner e aprovado sem ressalvas. A história retoma a cidade inundada agora sob uma nevasca histórica, preparando o terreno para conspirações nas sombras da alta sociedade de Gotham.',
+        bullets: [
+          'Robert Pattinson e Colin Farrell retornam em papéis centrais.',
+          'Corte das Corujas é o nome mais forte nos bastidores.',
+          'Lançamento exclusivo em IMAX garantido.'
+        ],
+        tags: ['#TheBatman', '#DCStudios', '#Cinema', '#Gotham'],
+        likes: 2150,
+        liked: false,
+        saved: false,
+        comments: [
+          { user: '@detetive_morcego', text: 'Clima de inverno noir + Corte das Corujas = obra-prima!' }
+        ]
+      },
+      {
+        id: 'news-5',
+        category: 'GAMES',
+        timeAgo: 'Há 2h',
+        views: '49k',
+        svgKey: 'console',
+        bgGradient: 'from-[#7B2CBF] via-[#3C096C] to-[#111111]',
+        sourcesPill: 'Kotaku + Eurogamer PT',
+        matchScore: '91%',
+        sourcesDetail: [
+          { name: 'Kotaku (EUA)', lang: 'EN-US', snippet: 'Nintendo next-gen handheld unlocks free 60 FPS boost patches for Zelda and Mario.' },
+          { name: 'Eurogamer PT', lang: 'PT-BR', snippet: 'Novo portátil da Nintendo roda clássicos de Zelda a 60 FPS sem custo extra.' }
+        ],
+        headline: 'NOVO PORTÁTIL DA NINTENDO DESBLOQUEIA 60 FPS GRÁTIS EM ZELDA E MARIO',
+        subBullets: ['Retrocompatibilidade física total com cartuchos antigos'],
+        summary: 'Patch gratuito de retrocompatibilidade entrega resolução dinâmica em 4K no dock e 60 FPS cravados em Tears of the Kingdom.',
+        body: 'A Nintendo surpreendeu a comunidade ao confirmar que os upgrades de desempenho para seus maiores sucessos da geração anterior serão totalmente gratuitos para quem já possui os jogos físicos ou digitais.',
+        bullets: [
+          'Tears of the Kingdom roda sem quedas nas ilhas celestes.',
+          'Tempos de carregamento reduzidos em até 65%.',
+          'Saves na nuvem sincronizam automaticamente.'
+        ],
+        tags: ['#Nintendo', '#Zelda', '#Games', '#60FPS'],
+        likes: 2640,
+        liked: false,
+        saved: false,
+        comments: [
+          { user: '@link_hyrule', text: 'Rejogar Zelda a 60 FPS vai ser mágico!' }
+        ]
+      },
+      {
+        id: 'news-6',
+        category: 'CINEMA',
+        timeAgo: 'Há 2h',
+        views: '58k',
+        svgKey: 'cinema',
+        bgGradient: 'from-[#FF5400] via-[#9E0059] to-[#111111]',
+        sourcesPill: 'THR + CinePOP',
+        matchScore: '92%',
+        sourcesDetail: [
+          { name: 'The Hollywood Reporter', lang: 'EN-US', snippet: 'Beyond the Spider-Verse locks final sprint with 6 brand-new animation styles.' },
+          { name: 'CinePOP (BR)', lang: 'PT-BR', snippet: 'Além do Aranhaverso promete 6 estilos inéditos de animação na batalha final.' }
+        ],
+        headline: 'ALÉM DO ARANHAVERSO TERÁ 6 ESTILOS DE ANIMAÇÃO INÉDITOS NO CLÍMAX',
+        subBullets: ['Mistura de mangá anos 80, pixel-art 16 bits e pintura a óleo'],
+        summary: 'Phil Lord e Chris Miller revelaram que a conclusão da trilogia vai misturar traços de HQ clássica, pixel-art e pintura em tempo real.',
+        body: 'A equipe da Sony Pictures Imageworks desenvolveu shaders inéditos para alternar estilos artísticos no meio de uma mesma cena de ação, elevando ainda mais o padrão estabelecido pelos dois primeiros filmes.',
+        bullets: [
+          'Trilha sonora de Metro Boomin e Daniel Pemberton confirmada.',
+          'Batalha final terá mais de 18 minutos ininterruptos.',
+          'Pré-venda especial em salas IMAX prevista para breve.'
+        ],
+        tags: ['#Aranhaverso', '#Animação', '#Cinema', '#Sony'],
+        likes: 3290,
+        liked: false,
+        saved: false,
+        comments: []
+      },
+      {
+        id: 'news-7',
+        category: 'TECH',
+        timeAgo: 'Há 3h',
+        views: '36k',
+        svgKey: 'tech',
+        bgGradient: 'from-[#00B4D8] via-[#480CA8] to-[#111111]',
+        sourcesPill: 'The Verge + Adrenaline',
+        matchScore: '90%',
+        sourcesDetail: [
+          { name: 'The Verge (EUA)', lang: 'EN-US', snippet: 'Next-gen neural rendering cuts GPU power draw by 40% in 4K gaming.' },
+          { name: 'Adrenaline (BR)', lang: 'PT-BR', snippet: 'Nova técnica de renderização neural reduz consumo de placas de vídeo em 40%.' }
+        ],
+        headline: 'RENDERIZAÇÃO NEURAL PROMETE 4K A 120 FPS CONSUMINDO 40% MENOS ENERGIA',
+        subBullets: ['Tecnologia chega via atualização de driver para placas intermediárias'],
+        summary: 'Novo algoritmo de reconstrução por IA reduz drasticamente o uso de VRAM sem sacrificar nitidez em texturas complexas.',
+        body: 'Engenheiros de gráficos apresentaram benchmarks reais mostrando jogos de mundo aberto rodando em 4K nativo percebido com consumo térmico muito menor, beneficiando notebooks gamers e PCs compactos.',
+        bullets: [
+          'Redução de até 40% no consumo elétrico em jogos pesados.',
+          'Compatível com engines Unreal Engine 5 e Godot.',
+          'SDK aberto para desenvolvedores indie.'
+        ],
+        tags: ['#Hardware', '#PCGamer', '#IA', '#Tech'],
+        likes: 1580,
+        liked: false,
+        saved: false,
+        comments: []
+      },
+      {
+        id: 'news-8',
+        category: 'QUADRINHOS',
+        timeAgo: 'Há 4h',
+        views: '41k',
+        svgKey: 'batman',
+        bgGradient: 'from-[#10B981] via-[#064E3B] to-[#111111]',
+        sourcesPill: 'Polygon + Omelete',
+        matchScore: '91%',
+        sourcesDetail: [
+          { name: 'Polygon (EUA)', lang: 'EN-US', snippet: 'DC Absolute Universe tops comic sales charts for third straight month.' },
+          { name: 'Omelete (BR)', lang: 'PT-BR', snippet: 'Linha Absolute da DC domina vendas mundiais de HQs pelo terceiro mês.' }
+        ],
+        headline: 'UNIVERSO ABSOLUTE DA DC DOMINA VENDAS DE HQS PELO TERCEIRO MÊS SEGUIDO',
+        subBullets: ['Absolute Batman e Absolute Mulher-Maravilha lideram reimpressões'],
+        summary: 'Aposta ousada da DC em versões reinventadas da Trindade bateu recordes de tiragem nas comic shops e já tem edição nacional garantida.',
+        body: 'Com propostas mais sombrias e visuais marcantes, as revistas da linha Absolute conquistaram tanto leitores veteranos quanto novatos que nunca tinham comprado HQs mensais.',
+        bullets: [
+          'Mais de 500 mil cópias somadas só nas primeiras edições.',
+          'Panini confirmou formato mensal de capa cartão no Brasil.',
+          'Novos títulos de Flash e Lanterna Verde chegam no próximo ciclo.'
+        ],
+        tags: ['#DCComics', '#AbsoluteBatman', '#HQs'],
+        likes: 1840,
+        liked: false,
+        saved: false,
+        comments: []
+      }
+    ];
+
+    /* Columnists & Reviews Data */
+    const COLUMNS_DATA = [
+      {
+        name: 'Lucas "Byte" Silva',
+        role: 'Crítico de Games',
+        score: '9.5/10',
+        scoreColor: 'bg-powerGreen text-inkBlack',
+        headline: 'Por que o novo indie brasileiro de pixel-art merece estar no GOTY deste ano',
+        avatarIdx: 0,
+        linkedNewsId: 'news-1'
+      },
+      {
+        name: 'Marina "Tinta" Costa',
+        role: 'Editora de HQs',
+        score: '10/10',
+        scoreColor: 'bg-heroYellow text-inkBlack',
+        headline: 'Review: O Universo Ultimate devolveu a alma e a ousadia aos quadrinhos mensais',
+        avatarIdx: 1,
+        linkedNewsId: 'news-2'
+      },
+      {
+        name: 'Renato "Sakuga" Sato',
+        role: 'Colunista de Animes',
+        score: '9.2/10',
+        scoreColor: 'bg-cyberCyan text-inkBlack',
+        headline: 'A nova geração de estúdios japoneses e o segredo por trás das lutas cinematográficas',
+        avatarIdx: 2,
+        linkedNewsId: 'news-3'
+      },
+      {
+        name: 'Carla "Frame" Nunes',
+        role: 'Cinema & Séries',
+        score: '8.8/10',
+        scoreColor: 'bg-critRed text-white',
+        headline: 'Do streaming às salas IMAX: como o cinema de heróis está se reinventando',
+        avatarIdx: 3,
+        linkedNewsId: 'news-4'
+      }
+    ];
+
+    /* Pending Human-in-the-Loop Drafts */
+    let pendingDrafts = [
+      {
+        id: 'draft-101',
+        sourceName: 'IGN US',
+        rawUrl: 'https://www.ign.com/articles/hollow-knight-silksong-steamdb-rating-update',
+        crossMatch: 'Match: 94% com Adrenaline BR',
+        fetchedAt: 'Coletado há 6 min',
+        rawTitle: 'Hollow Knight: Silksong Shadow-Drop Rumors Heat Up After Store Page Metadata Update',
+        rawExcerpt: 'Sharp-eyed fans spotted fresh localization strings, achievement icons, and age rating certifications added to SteamDB and eShop backends this morning, pointing to an imminent showcase reveal.',
+        aiLogs: [
+          '✓ RSS coletado via worker #02 (feeds.ign.com)',
+          '✓ Cruzamento pgvector: 94% similar a pauta do Adrenaline BR',
+          '✓ Adaptação PT-BR + JSON estruturado gerado com sucesso',
+          '⏳ Aguardando revisão humana para publicar na HOME e no REELS'
+        ],
+        draftTitle: 'SILKSONG VEM AÍ?! ATUALIZAÇÃO NA STEAM E CLASSIFICAÇÃO INDICATIVA AGITAM A WEB',
+        draftCategory: 'GAMES',
+        draftSources: 'IGN US + Adrenaline',
+        draftSummary: 'Arquivos de localização em português, ícones de conquistas e classificação etária surgiram na SteamDB hoje cedo, indicando anúncio iminente de Silksong.',
+        draftBody: 'A comunidade de Hollow Knight voltou a entrar em alerta máximo nesta manhã. Registros públicos da SteamDB e da eShop revelaram a inclusão de pacotes completos de tradução em português brasileiro e ícones finais de conquistas para Hollow Knight: Silksong. Cruzando informações da IGN US e do Adrenaline, o movimento costuma preceder anúncios oficiais de data de lançamento em poucos dias.',
+        svgKey: 'gamepad',
+        bgGradient: 'from-[#FF2E4C] via-[#7B2CBF] to-[#111111]'
+      },
+      {
+        id: 'draft-102',
+        sourceName: 'Anime News Network',
+        rawUrl: 'https://www.animenewsnetwork.com/news/one-piece-remake-wit-studio-character-sheets',
+        crossMatch: 'Match: 91% com JBox BR',
+        fetchedAt: 'Coletado há 19 min',
+        rawTitle: 'One Piece Remake by WIT Studio Reveals First Character Sheets and Vibrant Color Palette',
+        rawExcerpt: 'Netflix and WIT Studio shared vibrant new concept art for East Blue Luffy, Zoro, and Nami, blending classic hand-drawn manga textures with modern cinematic lighting.',
+        aiLogs: [
+          '✓ RSS coletado via worker #04 (animenewsnetwork.com)',
+          '✓ Cruzamento semântico concluído com JBox BR (91%)',
+          '✓ Resumo otimizado para leitura rápida na Home e Reels',
+          '⏳ Aguardando revisão do editor'
+        ],
+        draftTitle: 'REMAKE DE ONE PIECE PELO WIT STUDIO REVELA VISUAL INCRÍVEL DO BANDO',
+        draftCategory: 'ANIMES',
+        draftSources: 'ANN + JBox',
+        draftSummary: 'As novas artes conceituais de Luffy, Zoro e Nami no arco East Blue misturam a textura clássica do mangá com iluminação cinematográfica.',
+        draftBody: 'O aguardado remake The One Piece, produzido pelo renomado WIT Studio em parceria com a Netflix, teve suas primeiras fichas oficiais de personagens divulgadas. Os traços resgatam o carisma original de Eiichiro Oda no início da jornada pelo East Blue, agora acompanhados de uma paleta vibrante e ritmo mais ágil sem fillers.',
+        svgKey: 'anime',
+        bgGradient: 'from-[#00E5FF] via-[#3A0CA3] to-[#111111]'
+      }
+    ];
+
+    /* Brand Palette Data */
+    const BRAND_COLORS = [
+      { name: 'Comic Paper', hex: '#FFFDF5', role: 'Fundo Portal' },
+      { name: 'Ink Black', hex: '#111111', role: 'Bordas & Footer' },
+      { name: 'Crit Red', hex: '#FF2E4C', role: 'Games & Urgente' },
+      { name: 'Hero Yellow', hex: '#FFD600', role: 'Destaque & HQs' },
+      { name: 'Cyber Cyan', hex: '#00E5FF', role: 'Cinema & Tech' },
+      { name: 'Villain Purple', hex: '#7B2CBF', role: 'Animes & Fontes' },
+      { name: 'Power Green', hex: '#00E676', role: 'Publicado & XP' }
+    ];
+
+    /* =======================================================
+       3. APP STATE & HELPERS
+       ======================================================= */
+    let currentView = 'home';
+    let activeReelsCategory = 'TODOS';
+    let currentReelIndex = 0;
+    let activeCommentNewsId = null;
+    let selectedDraftIndex = 0;
+
+    const REELS_CATEGORIES = ['TODOS', 'GAMES', 'QUADRINHOS', 'CINEMA', 'ANIMES', 'TECH'];
+    const SFX_WORDS = ['POW!', 'CRIT!', 'BAM!', 'ZAP!', 'BOOM!'];
+
+    function getCategoryBadgeStyle(cat) {
+      const map = {
+        GAMES: 'bg-critRed text-white',
+        QUADRINHOS: 'bg-heroYellow text-inkBlack',
+        CINEMA: 'bg-cyberCyan text-inkBlack',
+        ANIMES: 'bg-villainPurple text-white',
+        TECH: 'bg-powerGreen text-inkBlack'
+      };
+      return map[cat] || 'bg-heroYellow text-inkBlack';
+    }
+
+    function formatNumber(num) {
+      return num >= 1000 ? (num / 1000).toFixed(1).replace('.0', '') + 'k' : String(num);
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    /* =======================================================
+       4. VIEW SWITCHING & DEEP-LINKING TO SPECIFIC REEL
+       ======================================================= */
+    function switchView(view) {
+      currentView = view;
+      ['home', 'reels', 'brand', 'admin'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
+        const btn = document.getElementById(`tab-${v}`);
+        if (v === view) {
+          btn.classList.remove('bg-paperLight');
+          btn.classList.add('bg-heroYellow');
+          btn.setAttribute('aria-current', 'page');
+        } else {
+          btn.classList.remove('bg-heroYellow');
+          btn.classList.add('bg-paperLight');
+          btn.removeAttribute('aria-current');
+        }
+      });
+
+      if (view === 'home') renderHomePortal();
+      if (view === 'reels') {
+        renderReelsCategoryPills();
+        renderReels();
+        updateReelsProgressUI();
+      }
+      if (view === 'admin') renderAdminView();
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* Jump from Home Reels Carousel or Reader straight to a specific Reel item */
+    function openSpecificReel(newsId) {
+      activeReelsCategory = 'TODOS';
+      switchView('reels');
+      const idx = newsItems.findIndex(n => n.id === newsId);
+      currentReelIndex = idx >= 0 ? idx : 0;
+      setTimeout(() => {
+        const scroller = document.getElementById('reels-container');
+        if (scroller) {
+          scroller.scrollTo({ top: currentReelIndex * scroller.clientHeight, behavior: 'instant' });
+          updateReelsProgressUI();
+        }
+      }, 30);
+    }
+
+    function openReelsWithCategory(cat) {
+      activeReelsCategory = cat;
+      currentReelIndex = 0;
+      switchView('reels');
+    }
+
+    /* =======================================================
+       5. RENDER HOME PORTAL (CNN BRASIL STRUCTURE + COMIC UI)
+       ======================================================= */
+    function renderHomePortal() {
+      // 1. Breaking News Ticker
+      const tickerEl = document.getElementById('breaking-ticker');
+      const tickerItems = newsItems.slice(0, 6).map(item => `
+        <button onclick="openReader('${item.id}')" class="inline-flex items-center gap-2 hover:text-critRed transition-colors whitespace-nowrap">
+          <span class="${getCategoryBadgeStyle(item.category)} px-1.5 py-0.5 text-[10px] border border-inkBlack rounded font-extrabold">${item.category}</span>
+          <span>${item.headline}</span>
+          <span class="text-critRed">★</span>
+        </button>
+      `).join('');
+      tickerEl.innerHTML = tickerItems + tickerItems; // Duplicate for seamless loop
+
+      // 2. Hero Main Story (newsItems[0])
+      const hero = newsItems[0];
+      document.getElementById('home-hero-main').onclick = () => openReader(hero.id);
+      document.getElementById('home-hero-main').innerHTML = `
+        <div class="p-5 sm:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="${getCategoryBadgeStyle(hero.category)} font-display text-lg px-2.5 py-0.5 comic-border-2 -skew-x-6">${hero.category}</span>
+              <span class="font-mono text-xs font-bold text-inkBlack/65">${hero.timeAgo}</span>
+              ${hero.isNew ? `<span class="bg-powerGreen text-inkBlack font-mono text-[10px] font-extrabold px-2 py-0.5 border-2 border-inkBlack rounded animate-pulse">RECÉM PUBLICADO!</span>` : ''}
+            </div>
+            <span class="font-mono text-[11px] font-extrabold bg-paperWarm px-2.5 py-0.5 border-2 border-inkBlack rounded-lg text-villainPurple">
+              🔗 ${hero.sourcesPill}
+            </span>
+          </div>
+
+          <h1 class="font-display text-4xl sm:text-5xl tracking-wide leading-[1.03] text-inkBlack hover:text-critRed transition-colors">
+            ${hero.headline}
+          </h1>
+
+          <!-- CNN-Style Sub-Bullets under Main Headline -->
+          <ul class="space-y-1.5 text-sm font-bold text-inkBlack/80">
+            ${(hero.subBullets || hero.bullets.slice(0, 3)).map(b => `
+              <li class="flex items-start gap-2">
+                <span class="text-critRed font-extrabold">▪</span>
+                <span>${b}</span>
+              </li>
+            `).join('')}
+          </ul>
+
+          <!-- Hero Comic Illustration Banner -->
+          <div class="relative w-full h-56 sm:h-64 rounded-2xl comic-border overflow-hidden bg-gradient-to-br ${hero.bgGradient} flex items-center justify-center">
+            <div class="absolute inset-0 comic-sunburst opacity-35"></div>
+            <div class="absolute inset-0 bg-halftone-overlay"></div>
+            <div class="relative z-10 w-72 sm:w-80 h-full flex items-center justify-center p-2">
+              ${COMIC_SVGS[hero.svgKey] || COMIC_SVGS.gamepad}
+            </div>
+            <div class="absolute bottom-3 right-3 bg-heroYellow text-inkBlack font-mono text-[11px] font-extrabold px-3 py-1 comic-border-2 rounded-lg shadow-comic-sm">
+              LER MATÉRIA COMPLETA →
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 3. Secondary Hero 3-Column Cards (newsItems[1..3])
+      document.getElementById('home-hero-secondary').innerHTML = newsItems.slice(1, 4).map(item => `
+        <article onclick="openReader('${item.id}')" class="bg-paperLight comic-card comic-card-hover rounded-2xl overflow-hidden cursor-pointer flex flex-col">
+          <div class="h-32 bg-gradient-to-br ${item.bgGradient} border-b-[3px] border-inkBlack relative flex items-center justify-center p-2 overflow-hidden">
+            <div class="absolute inset-0 bg-halftone-overlay opacity-70"></div>
+            <div class="relative z-10 h-28 w-36">${COMIC_SVGS[item.svgKey] || COMIC_SVGS.spider}</div>
+            <span class="absolute top-2 left-2 ${getCategoryBadgeStyle(item.category)} font-mono text-[10px] font-extrabold px-2 py-0.5 border-2 border-inkBlack rounded">${item.category}</span>
+          </div>
+          <div class="p-3.5 flex-1 flex flex-col justify-between gap-2">
+            <h3 class="font-bold text-sm leading-snug hover:text-critRed transition-colors">${item.headline}</h3>
+            <span class="font-mono text-[10px] font-bold text-inkBlack/55">${item.sourcesPill} • ${item.timeAgo}</span>
+          </div>
+        </article>
+      `).join('');
+
+      // 4. Right Column: "REELS EM DESTAQUE / AGORA" Box (CNN Video Box Style)
+      const featuredReel = newsItems[2] || newsItems[0];
+      document.getElementById('home-hero-reels-box').innerHTML = `
+        <div class="bg-critRed text-white px-4 py-2.5 border-b-[3px] border-inkBlack flex items-center justify-between">
+          <span class="font-display text-2xl tracking-wider flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-heroYellow animate-ping"></span>
+            REELS EM DESTAQUE • AGORA
+          </span>
+          <span class="font-mono text-[10px] font-extrabold bg-inkBlack text-heroYellow px-2 py-0.5 rounded">9:16</span>
+        </div>
+        <div onclick="openSpecificReel('${featuredReel.id}')" class="relative h-72 bg-gradient-to-b ${featuredReel.bgGradient} cursor-pointer group overflow-hidden flex flex-col justify-between p-4">
+          <div class="absolute inset-0 comic-sunburst opacity-30"></div>
+          <div class="absolute inset-0 bg-halftone-overlay"></div>
+          <div class="relative z-10 flex items-center justify-between">
+            <span class="${getCategoryBadgeStyle(featuredReel.category)} font-mono text-[10px] font-extrabold px-2 py-0.5 border-2 border-inkBlack rounded">${featuredReel.category}</span>
+            <span class="bg-black/75 text-heroYellow font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-heroYellow/40">👁 ${featuredReel.views}</span>
+          </div>
+          <!-- Center Play Button + Illustration -->
+          <div class="relative z-10 flex items-center justify-center my-auto">
+            <div class="w-40 h-32 opacity-90 group-hover:scale-105 transition-transform">${COMIC_SVGS[featuredReel.svgKey]}</div>
+            <div class="absolute w-16 h-16 rounded-full bg-heroYellow text-inkBlack comic-border shadow-comic flex items-center justify-center group-hover:scale-110 transition-transform">
+              <svg class="w-8 h-8 ml-1 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+          </div>
+          <div class="relative z-10 bg-inkBlack/90 border-2 border-heroYellow rounded-xl p-3">
+            <div class="font-display text-xl tracking-wide leading-tight text-white">${featuredReel.headline}</div>
+            <div class="font-mono text-[10px] text-heroYellow font-bold mt-1">CLIQUE PARA ABRIR O FEED REELS →</div>
+          </div>
+        </div>
+      `;
+
+      // 5. Right Column: 2 Compact "URGENTE" Side Cards
+      document.getElementById('home-hero-urgent').innerHTML = newsItems.slice(4, 6).map(item => `
+        <article onclick="openReader('${item.id}')" class="bg-paperLight comic-card comic-card-hover rounded-xl p-3 flex items-center gap-3 cursor-pointer">
+          <div class="w-20 h-20 rounded-xl comic-border-2 bg-gradient-to-br ${item.bgGradient} shrink-0 flex items-center justify-center p-1 overflow-hidden">
+            ${COMIC_SVGS[item.svgKey]}
+          </div>
+          <div class="space-y-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="${getCategoryBadgeStyle(item.category)} font-mono text-[9px] font-extrabold px-1.5 py-0.5 border border-inkBlack rounded">${item.category}</span>
+              <span class="font-mono text-[10px] text-inkBlack/60 font-bold">${item.timeAgo}</span>
+            </div>
+            <h4 class="font-bold text-xs sm:text-sm leading-snug line-clamp-2 hover:text-critRed">${item.headline}</h4>
+          </div>
+        </article>
+      `).join('');
+
+      // 6. Quick News Strip (2 rows x 4 cols = 8 compact horizontal cards)
+      document.getElementById('home-quick-strip').innerHTML = newsItems.slice(0, 8).map(item => `
+        <article onclick="openReader('${item.id}')" class="bg-paperLight comic-card comic-card-hover rounded-xl p-2.5 flex items-center gap-3 cursor-pointer">
+          <div class="w-16 h-16 rounded-lg comic-border-2 bg-gradient-to-br ${item.bgGradient} shrink-0 flex items-center justify-center p-1 overflow-hidden">
+            ${COMIC_SVGS[item.svgKey]}
+          </div>
+          <div class="min-w-0 space-y-1">
+            <span class="${getCategoryBadgeStyle(item.category)} inline-block font-mono text-[9px] font-extrabold px-1.5 py-0.5 border border-inkBlack rounded">${item.category}</span>
+            <h4 class="font-bold text-xs leading-snug line-clamp-2 hover:text-critRed">${item.headline}</h4>
+          </div>
+        </article>
+      `).join('');
+
+      // 7. Columns & Reviews (4 Circular Comic Avatars)
+      document.getElementById('home-columns-grid').innerHTML = COLUMNS_DATA.map(col => `
+        <article onclick="openReader('${col.linkedNewsId}')" class="bg-paperLight comic-card comic-card-hover rounded-2xl p-4 flex flex-col justify-between gap-3 cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-14 h-14 rounded-full comic-border overflow-hidden shrink-0 shadow-comic-sm">
+              ${AVATAR_SVGS[col.avatarIdx]}
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-sm leading-tight truncate">${col.name}</div>
+              <div class="font-mono text-[10px] font-bold text-inkBlack/60">${col.role}</div>
+              <span class="${col.scoreColor} inline-block mt-1 font-mono text-[10px] font-extrabold px-2 py-0.5 border-2 border-inkBlack rounded-md">★ ${col.score}</span>
+            </div>
+          </div>
+          <p class="text-xs sm:text-sm font-bold leading-snug border-t-2 border-inkBlack/10 pt-2.5 hover:text-critRed">
+            "${col.headline}"
+          </p>
+        </article>
+      `).join('');
+
+      // 8. CRITHIT REELS Carousel (6 Vertical 9:16 Cards)
+      document.getElementById('home-reels-carousel').innerHTML = newsItems.slice(0, 6).map(item => `
+        <article
+          onclick="openSpecificReel('${item.id}')"
+          class="relative aspect-[9/16] rounded-2xl border-[3px] border-paperLight shadow-[4px_4px_0px_#FFD600] overflow-hidden cursor-pointer group bg-gradient-to-b ${item.bgGradient} flex flex-col justify-between p-3 hover:-translate-y-1 transition-transform"
+        >
+          <div class="absolute inset-0 bg-halftone-overlay opacity-75"></div>
+          <div class="relative z-10 flex items-center justify-between gap-1">
+            <span class="${getCategoryBadgeStyle(item.category)} font-mono text-[9px] font-extrabold px-1.5 py-0.5 border border-inkBlack rounded">${item.category}</span>
+            <span class="bg-black/75 text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded">▶ ${item.views}</span>
+          </div>
+          <div class="relative z-10 my-auto px-1 group-hover:scale-105 transition-transform">
+            ${COMIC_SVGS[item.svgKey]}
+          </div>
+          <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none"></div>
+          <h3 class="relative z-10 font-display text-lg tracking-wide leading-tight text-white line-clamp-3">
+            ${item.headline}
+          </h3>
+        </article>
+      `).join('');
+
+      // 9. 3-Column Editorial Blocks (GAMES / QUADRINHOS / CINEMA)
+      renderEditorialColumn('editorial-col-games', 'GAMES', 'bg-critRed text-white', ['GAMES', 'TECH']);
+      renderEditorialColumn('editorial-col-comics', 'QUADRINHOS & MANGÁS', 'bg-heroYellow text-inkBlack', ['QUADRINHOS', 'ANIMES']);
+      renderEditorialColumn('editorial-col-cinema', 'CINEMA & SÉRIES', 'bg-cyberCyan text-inkBlack', ['CINEMA', 'ANIMES']);
+
+      // 10. Mais Lidas da Semana (Top 5 Ranked with Giant Bangers #1-#5)
+      const top5 = [...newsItems].sort((a, b) => b.likes - a.likes).slice(0, 5);
+      document.getElementById('home-most-read').innerHTML = top5.map((item, idx) => `
+        <article onclick="openReader('${item.id}')" class="bg-paperLight comic-card comic-card-hover rounded-xl p-3.5 cursor-pointer flex flex-col justify-between gap-2">
+          <div class="flex items-start gap-2.5">
+            <span class="comic-rank-num text-5xl text-heroYellow shrink-0">#${idx + 1}</span>
+            <h4 class="font-bold text-xs sm:text-sm leading-snug hover:text-critRed">${item.headline}</h4>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-inkBlack/10 font-mono text-[10px] font-bold text-inkBlack/60">
+            <span>${item.category}</span>
+            <span>🔥 ${formatNumber(item.likes)}</span>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function renderEditorialColumn(containerId, title, headerClasses, matchCategories) {
+      const container = document.getElementById(containerId);
+      const matching = newsItems.filter(n => matchCategories.includes(n.category));
+      // Ensure we always have 5 items (1 featured + 4 list) by supplementing from general pool if needed
+      const pool = [...matching, ...newsItems.filter(n => !matching.includes(n))].slice(0, 5);
+      const featured = pool[0];
+      const listItems = pool.slice(1, 5);
+
+      container.innerHTML = `
+        <div class="${headerClasses} px-4 py-2.5 border-b-[3px] border-inkBlack flex items-center justify-between">
+          <h3 class="font-display text-2xl tracking-wider">${title}</h3>
+          <button onclick="openReelsWithCategory('${matchCategories[0]}')" class="font-mono text-[10px] font-extrabold underline">Ver Reels →</button>
+        </div>
+        <!-- Large Featured Card with Overlaid Title -->
+        <article onclick="openReader('${featured.id}')" class="relative h-48 bg-gradient-to-br ${featured.bgGradient} border-b-[3px] border-inkBlack cursor-pointer group overflow-hidden flex items-end p-4">
+          <div class="absolute inset-0 bg-halftone-overlay opacity-70"></div>
+          <div class="absolute inset-0 flex items-center justify-center p-4 opacity-90 group-hover:scale-105 transition-transform">
+            <div class="w-44 h-36">${COMIC_SVGS[featured.svgKey]}</div>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent"></div>
+          <h4 class="relative z-10 font-display text-2xl tracking-wide leading-tight text-white group-hover:text-heroYellow transition-colors">
+            ${featured.headline}
+          </h4>
+        </article>
+        <!-- 4 Compact List Items -->
+        <div class="divide-y-2 divide-inkBlack/10 p-3 flex-1 flex flex-col justify-between">
+          ${listItems.map(item => `
+            <article onclick="openReader('${item.id}')" class="py-2.5 first:pt-1 last:pb-1 flex items-center gap-3 cursor-pointer group">
+              <div class="w-14 h-12 rounded-lg comic-border-2 bg-gradient-to-br ${item.bgGradient} shrink-0 flex items-center justify-center p-0.5 overflow-hidden">
+                ${COMIC_SVGS[item.svgKey]}
+              </div>
+              <h5 class="font-bold text-xs leading-snug group-hover:text-critRed transition-colors line-clamp-2">
+                ${item.headline}
+              </h5>
+            </article>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    /* Quick Search Handler */
+    function handleSearch(query) {
+      document.querySelectorAll('#global-search, #mobile-search').forEach(el => {
+        if (el.value !== query) el.value = query;
+      });
+      const q = query.trim().toLowerCase();
+      const bar = document.getElementById('search-results-bar');
+      if (!q) {
+        bar.classList.add('hidden');
+        return;
+      }
+      if (currentView !== 'home') switchView('home');
+      const found = newsItems.filter(n =>
+        n.headline.toLowerCase().includes(q) ||
+        n.category.toLowerCase().includes(q) ||
+        n.summary.toLowerCase().includes(q) ||
+        (n.sourcesPill && n.sourcesPill.toLowerCase().includes(q))
+      );
+      bar.classList.remove('hidden');
+      document.getElementById('search-results-label').textContent = `Resultados para "${query}" (${found.length})`;
+      document.getElementById('search-results-grid').innerHTML = found.length
+        ? found.map(item => `
+            <button onclick="openReader('${item.id}')" class="bg-paperLight comic-border-2 rounded-xl p-3 text-left hover:bg-heroYellow/30 transition-colors">
+              <span class="${getCategoryBadgeStyle(item.category)} font-mono text-[9px] font-extrabold px-1.5 py-0.5 border border-inkBlack rounded">${item.category}</span>
+              <div class="font-bold text-xs mt-1.5 line-clamp-2">${item.headline}</div>
+            </button>
+          `).join('')
+        : `<p class="font-mono text-xs font-bold col-span-full">Nenhuma notícia encontrada com esse termo.</p>`;
+    }
+
+    function clearSearch() {
+      document.querySelectorAll('input[type="search"], #global-search, #mobile-search').forEach(el => {
+        el.value = '';
+      });
+      document.getElementById('search-results-bar').classList.add('hidden');
+    }
+
+    function handleNewsletterSubmit(ev) {
+      ev.preventDefault();
+      const email = document.getElementById('newsletter-email');
+      showToast(`LOOT ATIVADO PARA ${email.value.toUpperCase()}! 🎁`);
+      email.value = '';
+    }
+
+    /* =======================================================
+       6. VIEW 2: STANDALONE REELS RENDERING & INTERACTIONS
+       ======================================================= */
+    function getFilteredReels() {
+      if (activeReelsCategory === 'TODOS') return newsItems;
+      return newsItems.filter(n => n.category === activeReelsCategory);
+    }
+
+    function renderReelsCategoryPills() {
+      document.getElementById('reels-category-pills').innerHTML = REELS_CATEGORIES.map(cat => {
+        const active = cat === activeReelsCategory;
+        return `
+          <button
+            onclick="setReelsCategory('${cat}')"
+            class="shrink-0 px-3 py-1 rounded-xl font-mono text-[11px] font-extrabold border-2 border-inkBlack transition-transform active:scale-95 ${
+              active ? 'bg-heroYellow text-inkBlack shadow-comic-sm' : 'bg-black/75 text-white hover:bg-black'
+            }"
+          >${cat}</button>
+        `;
+      }).join('');
+    }
+
+    function setReelsCategory(cat) {
+      activeReelsCategory = cat;
+      currentReelIndex = 0;
+      renderReelsCategoryPills();
+      renderReels();
+      document.getElementById('reels-container').scrollTo({ top: 0, behavior: 'instant' });
+      updateReelsProgressUI();
+    }
+
+    function renderReels() {
+      const container = document.getElementById('reels-container');
+      const savedScrollTop = container.scrollTop;
+      const items = getFilteredReels();
+      document.getElementById('desktop-feed-count').textContent = `${newsItems.length} notícias`;
+      document.getElementById('desktop-saved-count').textContent = newsItems.filter(n => n.saved).length;
+
+      if (!items.length) {
+        container.innerHTML = `
+          <div class="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-inkBlack">
+            <div class="bg-heroYellow text-inkBlack comic-border px-4 py-2 rounded-xl font-display text-3xl mb-3">SEM REELS AQUI!</div>
+            <button onclick="setReelsCategory('TODOS')" class="comic-btn bg-cyberCyan text-inkBlack font-bold px-4 py-2 rounded-xl text-sm">Ver Todos</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items.map((item, idx) => `
+        <article data-reel-index="${idx}" class="reel-slide relative w-full h-full flex flex-col justify-between overflow-hidden bg-gradient-to-b ${item.bgGradient} select-none">
+          <div class="absolute inset-0 comic-sunburst opacity-35 pointer-events-none"></div>
+          <div class="absolute inset-0 bg-halftone-overlay pointer-events-none"></div>
+
+          <!-- Center Comic Illustration -->
+          <div class="relative flex-1 flex items-center justify-center pt-12 pb-2 px-6 pointer-events-none">
+            <div class="w-72 h-56 drop-shadow-[6px_6px_0_#111]">
+              ${COMIC_SVGS[item.svgKey] || COMIC_SVGS.gamepad}
+            </div>
+          </div>
+
+          <!-- Floating SFX Layer -->
+          <div id="sfx-layer-${item.id}" class="absolute inset-0 pointer-events-none z-30"></div>
+
+          <!-- Bottom Dark Scrim -->
+          <div class="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-[#090A0F] via-[#090A0F]/85 to-transparent pointer-events-none"></div>
+
+          <!-- Right Action Stack -->
+          <div class="absolute right-3 bottom-24 z-20 flex flex-col items-center gap-3.5">
+            <button onclick="toggleLike('${item.id}')" class="flex flex-col items-center gap-1">
+              <div class="comic-btn w-12 h-12 rounded-2xl flex items-center justify-center ${item.liked ? 'bg-critRed text-white' : 'bg-paperLight text-inkBlack'}">
+                <svg class="w-6 h-6 ${item.liked ? 'fill-current' : 'fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+              </div>
+              <span class="font-mono text-[11px] font-extrabold text-white bg-black/80 px-1.5 py-0.5 rounded">${formatNumber(item.likes)}</span>
+            </button>
+
+            <button onclick="openComments('${item.id}')" class="flex flex-col items-center gap-1">
+              <div class="comic-btn w-12 h-12 rounded-2xl bg-paperLight text-inkBlack flex items-center justify-center hover:bg-cyberCyan">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <span class="font-mono text-[11px] font-extrabold text-white bg-black/80 px-1.5 py-0.5 rounded">${item.comments.length}</span>
+            </button>
+
+            <button onclick="toggleSave('${item.id}')" class="flex flex-col items-center gap-1">
+              <div class="comic-btn w-12 h-12 rounded-2xl flex items-center justify-center ${item.saved ? 'bg-heroYellow text-inkBlack' : 'bg-paperLight text-inkBlack'}">
+                <svg class="w-6 h-6 ${item.saved ? 'fill-current' : 'fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              </div>
+              <span class="font-mono text-[10px] font-bold text-white/90">${item.saved ? 'Salvo' : 'Salvar'}</span>
+            </button>
+          </div>
+
+          <!-- Bottom Editorial Overlay -->
+          <div class="relative z-10 px-4 pr-[72px] pb-5 space-y-2.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="${getCategoryBadgeStyle(item.category)} font-display text-lg px-2.5 py-0.5 comic-border-2 -skew-x-6">${item.category}</span>
+              <button onclick="openSourcesModal('${item.id}')" class="bg-black/85 hover:bg-villainPurple text-cyberCyan hover:text-white border-2 border-cyberCyan px-2.5 py-0.5 rounded-lg font-mono text-[10px] font-bold">
+                🔗 ${item.sourcesPill}
+              </button>
+            </div>
+            <h2 class="comic-headline text-[27px] sm:text-[30px] text-white">${item.headline}</h2>
+            <div class="bg-paperLight text-inkBlack comic-border shadow-comic rounded-xl p-3 relative">
+              <div class="absolute -top-2.5 left-3 bg-heroYellow border-2 border-inkBlack px-1.5 font-mono text-[9px] font-extrabold">RESUMO CRITHIT!</div>
+              <p class="text-[13px] font-medium leading-snug mt-0.5">${item.summary}</p>
+            </div>
+            <button onclick="openReader('${item.id}')" class="comic-btn w-full bg-heroYellow hover:bg-cyberCyan text-inkBlack font-display text-xl tracking-wider py-2 px-4 rounded-xl">
+              📖 LER MATÉRIA COMPLETA
+            </button>
+          </div>
+        </article>
+      `).join('');
+
+      container.style.scrollBehavior = 'auto';
+      container.scrollTop = savedScrollTop;
+      requestAnimationFrame(() => {
+        container.style.scrollBehavior = '';
+      });
+    }
+
+    function navigateReel(dir) {
+      const scroller = document.getElementById('reels-container');
+      const items = getFilteredReels();
+      if (!items.length) return;
+      currentReelIndex = Math.max(0, Math.min(items.length - 1, currentReelIndex + dir));
+      scroller.scrollTo({ top: currentReelIndex * scroller.clientHeight, behavior: 'smooth' });
+      updateReelsProgressUI();
+    }
+
+    function updateReelsProgressUI() {
+      const total = Math.max(1, getFilteredReels().length);
+      document.getElementById('reel-index-display').textContent = `${Math.min(currentReelIndex + 1, total)}/${total}`;
+      document.getElementById('reel-progress-bar').style.width = `${((currentReelIndex + 1) / total) * 100}%`;
+    }
+
+    function toggleLike(id) {
+      const item = newsItems.find(n => n.id === id);
+      if (!item) return;
+      item.liked = !item.liked;
+      item.likes += item.liked ? 1 : -1;
+      renderReels();
+      if (item.liked) {
+        setTimeout(() => {
+          const layer = document.getElementById(`sfx-layer-${id}`);
+          if (!layer) return;
+          const word = SFX_WORDS[Math.floor(Math.random() * SFX_WORDS.length)];
+          const el = document.createElement('div');
+          el.className = 'sfx-burst absolute left-1/2 top-1/2 z-40';
+          el.innerHTML = `<div class="bg-heroYellow comic-border shadow-comic-lg px-5 py-2 rounded-2xl -rotate-6"><span class="comic-headline text-5xl" style="color:#FF2E4C;">${word}</span></div>`;
+          layer.appendChild(el);
+          setTimeout(() => el.remove(), 950);
+        }, 20);
+      }
+    }
+
+    function toggleSave(id) {
+      const item = newsItems.find(n => n.id === id);
+      if (!item) return;
+      item.saved = !item.saved;
+      renderReels();
+      showToast(item.saved ? 'SALVO NA SUA COLEÇÃO! ⭐' : 'Removido dos salvos.');
+    }
+
+    /* =======================================================
+       7. MODALS (READER, COMMENTS, SOURCES)
+       ======================================================= */
+    function openReader(id) {
+      const item = newsItems.find(n => n.id === id);
+      if (!item) return;
+
+      document.getElementById('reader-category').textContent = item.category;
+      document.getElementById('reader-time').textContent = `${item.timeAgo} • 1 min de leitura`;
+      document.getElementById('reader-title').textContent = item.headline;
+      document.getElementById('reader-lead').textContent = item.summary;
+      const transparencyNote = '<p class="font-mono text-xs opacity-75 border-t border-current/20 pt-3 mt-3">Texto adaptado a partir da fonte citada, com apoio de ferramenta de IA, e revisado pela redação antes da publicação.</p>';
+      document.getElementById('reader-body').innerHTML = `<p>${escapeHtml(item.body)}</p>${transparencyNote}`;
+      document.getElementById('reader-sources').textContent = `${item.sourcesPill} (Match semântico: ${item.matchScore})`;
+
+      const artWrap = document.getElementById('reader-artwork-wrap');
+      artWrap.className = `w-full h-44 rounded-2xl comic-border overflow-hidden relative flex items-center justify-center bg-gradient-to-br ${item.bgGradient}`;
+      artWrap.innerHTML = `<div class="absolute inset-0 bg-halftone-overlay opacity-70"></div><div class="relative z-10 w-56 h-40">${COMIC_SVGS[item.svgKey]}</div>`;
+
+      document.getElementById('reader-bullets').innerHTML = item.bullets.map(b => `
+        <li class="flex items-start gap-2"><span class="bg-heroYellow border-2 border-inkBlack text-[10px] font-extrabold px-1.5 rounded mt-0.5">▸</span><span>${b}</span></li>
+      `).join('');
+
+      document.getElementById('reader-tags').innerHTML = (item.tags || []).map(t => `
+        <span class="bg-paperWarm border-2 border-inkBlack px-2.5 py-0.5 rounded-lg font-mono text-xs font-bold">${t}</span>
+      `).join('');
+
+      document.getElementById('reader-open-reels-btn').onclick = () => {
+        closeModal('reader-modal');
+        openSpecificReel(item.id);
+      };
+
+      document.getElementById('reader-modal').classList.remove('hidden');
+    }
+
+    function openComments(id) {
+      activeCommentNewsId = id;
+      renderCommentsList();
+      document.getElementById('comments-modal').classList.remove('hidden');
+    }
+
+    function renderCommentsList() {
+      const item = newsItems.find(n => n.id === activeCommentNewsId);
+      if (!item) return;
+      document.getElementById('comments-list').innerHTML = item.comments.length
+        ? item.comments.map(c => `
+            <div class="speech-bubble bg-paperLight comic-border-2 shadow-comic-sm p-3.5 rounded-2xl">
+              <div class="font-mono text-xs font-extrabold text-villainPurple mb-1">${c.user}</div>
+              <p class="text-sm font-medium">${escapeHtml(c.text)}</p>
+            </div>
+          `).join('')
+        : `<p class="font-mono text-xs text-center text-inkBlack/60 py-6">Seja o primeiro a comentar nesta pauta!</p>`;
+    }
+
+    function submitComment(ev) {
+      ev.preventDefault();
+      const input = document.getElementById('comment-input');
+      const text = input.value.trim();
+      const item = newsItems.find(n => n.id === activeCommentNewsId);
+      if (item && text) {
+        item.comments.push({ user: '@voce_dev', text });
+        input.value = '';
+        renderCommentsList();
+        renderReels();
+        showToast('COMENTÁRIO PUBLICADO! 💬');
+      }
+    }
+
+    function openSourcesModal(id) {
+      const item = newsItems.find(n => n.id === id);
+      if (!item) return;
+      document.getElementById('sources-match-score').textContent = item.matchScore;
+      document.getElementById('sources-breakdown').innerHTML = item.sourcesDetail.map(s => `
+        <div class="bg-white comic-border-2 rounded-xl p-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-mono text-xs font-extrabold">${s.name}</span>
+            <span class="font-mono text-[10px] font-bold bg-cyberCyan px-1.5 py-0.5 border border-inkBlack rounded">${s.lang}</span>
+          </div>
+          <p class="text-xs text-inkBlack/80 italic">"${s.snippet}"</p>
+        </div>
+      `).join('');
+      document.getElementById('sources-modal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    /* =======================================================
+       8. VIEW 3: BRAND PALETTE RENDERING
+       ======================================================= */
+    function renderBrandPalette() {
+      document.getElementById('brand-palette-grid').innerHTML = BRAND_COLORS.map(c => `
+        <button onclick="copyHex('${c.hex}', '${c.name}')" class="comic-btn rounded-2xl overflow-hidden text-left flex flex-col bg-white">
+          <div class="h-20 w-full border-b-[3px] border-inkBlack flex items-end p-2" style="background-color: ${c.hex};">
+            <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded border-2 border-inkBlack bg-white text-inkBlack">${c.hex}</span>
+          </div>
+          <div class="p-2.5">
+            <div class="font-bold text-xs leading-tight">${c.name}</div>
+            <div class="font-mono text-[9px] text-inkBlack/60 mt-0.5">${c.role}</div>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    function copyHex(hex, name) {
+      copyTextToClipboard(hex);
+      showToast(`COR COPIADA: ${hex} (${name}) 🎨`);
+    }
+
+    /* =======================================================
+       9. VIEW 4: ADMIN (HUMAN-IN-THE-LOOP) WORKFLOW
+       ======================================================= */
+    function renderAdminView() {
+      const badge = document.getElementById('admin-badge-count');
+      badge.textContent = pendingDrafts.length;
+      badge.classList.toggle('hidden', pendingDrafts.length === 0);
+
+      const workbench = document.getElementById('admin-workbench');
+      const empty = document.getElementById('admin-empty-state');
+      const selector = document.getElementById('admin-queue-selector');
+
+      if (!pendingDrafts.length) {
+        workbench.classList.add('hidden');
+        empty.classList.remove('hidden');
+        selector.innerHTML = `<span class="font-mono text-xs font-bold text-inkBlack/50">0 pendentes</span>`;
+        return;
+      }
+
+      workbench.classList.remove('hidden');
+      empty.classList.add('hidden');
+      if (selectedDraftIndex >= pendingDrafts.length) selectedDraftIndex = 0;
+
+      selector.innerHTML = pendingDrafts.map((d, i) => `
+        <button onclick="selectDraft(${i})" class="comic-btn px-3 py-1.5 rounded-xl font-mono text-xs font-extrabold ${i === selectedDraftIndex ? 'bg-heroYellow text-inkBlack' : 'bg-white text-inkBlack'}">
+          Pauta #${i + 1} (${d.sourceName})
+        </button>
+      `).join('');
+
+      const d = pendingDrafts[selectedDraftIndex];
+      document.getElementById('orig-source-badge').textContent = d.sourceName;
+      document.getElementById('orig-cross-badge').textContent = d.crossMatch;
+      document.getElementById('orig-time').textContent = d.fetchedAt;
+      document.getElementById('orig-url').textContent = d.rawUrl;
+      document.getElementById('orig-title').textContent = d.rawTitle;
+      document.getElementById('orig-excerpt').textContent = d.rawExcerpt;
+      document.getElementById('orig-ai-logs').innerHTML = d.aiLogs.map(l => `<li>${l}</li>`).join('');
+
+      document.getElementById('draft-title').value = d.draftTitle;
+      document.getElementById('draft-category').value = d.draftCategory;
+      document.getElementById('draft-sources').value = d.draftSources;
+      document.getElementById('draft-summary').value = d.draftSummary;
+      document.getElementById('draft-body').value = d.draftBody;
+    }
+
+    let pendingDiscardConfirm = false;
+    let discardConfirmTimer = null;
+
+    function selectDraft(idx) {
+      selectedDraftIndex = idx;
+      pendingDiscardConfirm = false;
+      clearTimeout(discardConfirmTimer);
+      renderAdminView();
+    }
+
+    function approveCurrentDraft() {
+      if (!pendingDrafts.length) return;
+      const d = pendingDrafts[selectedDraftIndex];
+      if (d.rawUrl && !/^https?:\/\//i.test(d.rawUrl.trim())) {
+        showToast('A URL da fonte precisa começar com http:// ou https://');
+        return;
+      }
+
+      const newArticle = {
+        id: 'pub-' + Date.now(),
+        category: document.getElementById('draft-category').value,
+        timeAgo: 'Agora mesmo',
+        views: '1.2k',
+        svgKey: d.svgKey,
+        bgGradient: d.bgGradient,
+        sourcesPill: document.getElementById('draft-sources').value.trim() || d.draftSources,
+        matchScore: '94%',
+        sourcesDetail: [
+          { name: `${d.sourceName} (Original)`, lang: 'EN-US', snippet: d.rawTitle },
+          { name: 'Curadoria CritHit! (Revisado)', lang: 'PT-BR', snippet: document.getElementById('draft-summary').value.trim() }
+        ],
+        headline: (document.getElementById('draft-title').value.trim() || d.draftTitle).toUpperCase(),
+        subBullets: [
+          'Notícia traduzida e cruzada automaticamente de fontes internacionais e BR',
+          'Aprovada ao vivo no painel Human-in-the-Loop da CritHit!'
+        ],
+        summary: document.getElementById('draft-summary').value.trim() || d.draftSummary,
+        body: document.getElementById('draft-body').value.trim() || d.draftBody,
+        bullets: [
+          'Publicada simultaneamente na Capa (Home) e no Feed Reels 9:16.',
+          'Verificação editorial humana concluída com créditos à fonte original.'
+        ],
+        tags: ['#CritHit', '#PlantãoGeek', '#' + document.getElementById('draft-category').value],
+        likes: 1,
+        liked: false,
+        saved: false,
+        isNew: true,
+        comments: [{ user: '@crithit_bot', text: 'Pauta aprovada pelo editor e publicada ao vivo! ⚡' }]
+      };
+
+      // Add LIVE to top of BOTH Home and Reels!
+      newsItems.unshift(newArticle);
+      pendingDrafts.splice(selectedDraftIndex, 1);
+
+      renderAdminView();
+      renderHomePortal();
+      renderReels();
+
+      document.getElementById('admin-publish-banner').classList.remove('hidden');
+      showToast('PUBLICADO! +100 XP — HOME & REELS ATUALIZADOS! 🚀');
+    }
+
+    function discardCurrentDraft() {
+      if (!pendingDrafts.length) return;
+      const btn = document.getElementById('discard-draft-btn');
+      if (!pendingDiscardConfirm) {
+        pendingDiscardConfirm = true;
+        if (btn) {
+          btn.textContent = 'CONFIRMAR DESCARTE';
+          btn.style.backgroundColor = 'var(--fill-brand)';
+          btn.style.color = '#FFFFFF';
+        }
+        clearTimeout(discardConfirmTimer);
+        discardConfirmTimer = setTimeout(() => {
+          pendingDiscardConfirm = false;
+          if (btn) {
+            btn.textContent = 'DESCARTAR';
+            btn.style.backgroundColor = '';
+            btn.style.color = '';
+          }
+        }, 4000);
+        return;
+      }
+
+      pendingDiscardConfirm = false;
+      clearTimeout(discardConfirmTimer);
+      pendingDrafts.splice(selectedDraftIndex, 1);
+      renderAdminView();
+      showToast('Rascunho descartado.');
+    }
+
+    function simulateNewRssFetch() {
+      pendingDrafts.push({
+        id: 'draft-' + Date.now(),
+        sourceName: 'Variety US',
+        rawUrl: 'https://variety.com/2026/film/news/teen-titans-animated-comic-style-movie',
+        crossMatch: 'Match: 92% com Omelete BR',
+        fetchedAt: 'Coletado agora mesmo',
+        rawTitle: 'DC Studios Greenlights Stylized Teen Titans Animated Feature With Comic Halftone Art',
+        rawExcerpt: 'DC Studios announced a bold new Teen Titans animated film embracing thick ink outlines and vibrant pop-art color palettes.',
+        aiLogs: [
+          '✓ Novo RSS capturado (variety.com)',
+          '✓ Match semântico validado com Omelete (92%)',
+          '✓ Rascunho PT-BR pronto para sua revisão'
+        ],
+        draftTitle: 'NOVOS TITÃS GANHAM FILME ANIMADO COM VISUAL DE QUADRINHOS POP-ART',
+        draftCategory: 'CINEMA',
+        draftSources: 'Variety + Omelete',
+        draftSummary: 'A DC Studios anunciou o novo longa animado dos Jovens Titãs apostando em traços de nanquim e cores vibrantes inspiradas nas HQs.',
+        draftBody: 'Seguindo o sucesso das animações estilizadas no cinema, a DC Studios revelou que o próximo filme dos Jovens Titãs terá estética totalmente inspirada em quadrinhos clássicos, combinando retículas halftone e ritmo frenético.',
+        svgKey: 'cinema',
+        bgGradient: 'from-[#7B2CBF] via-[#3C096C] to-[#111111]'
+      });
+      renderAdminView();
+      showToast('NOVA PAUTA COLETADA VIA RSS! ⚡');
+    }
+
+    /* =======================================================
+       10. UTILITIES & BOOTSTRAP
+       ======================================================= */
+    function copyTextToClipboard(text) {
+      try {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast-anim bg-heroYellow text-inkBlack comic-card px-5 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-extrabold whitespace-nowrap';
+      toast.textContent = msg;
+      container.innerHTML = '';
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 2550);
+    }
+
+    function applyTheme(theme) {
+      const resolved = theme === 'dark' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', resolved);
+      const icon = document.getElementById('theme-toggle-icon');
+      const label = document.getElementById('theme-toggle-label');
+      if (icon) icon.textContent = resolved === 'dark' ? '☀️' : '🌙';
+      if (label) label.textContent = resolved === 'dark' ? 'CLARO' : 'ESCURO';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try {
+        localStorage.setItem('crithit-theme', next);
+      } catch (e) {}
+    }
+
+    function setupEvents() {
+      const makeArticlesFocusable = () => {
+        document.querySelectorAll('article[onclick]:not([tabindex])').forEach(el => {
+          el.tabIndex = 0;
+        });
+      };
+      new MutationObserver(makeArticlesFocusable).observe(document.body, { childList: true, subtree: true });
+      makeArticlesFocusable();
+
+      document.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.matches && e.target.matches('article[onclick]')) {
+          e.preventDefault();
+          e.target.click();
+        }
+      });
+
+      const scroller = document.getElementById('reels-container');
+      let scrollTimer;
+      scroller.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+          const h = scroller.clientHeight || 1;
+          currentReelIndex = Math.round(scroller.scrollTop / h);
+          updateReelsProgressUI();
+        }, 60);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (e.key === 'Escape') {
+          closeModal('reader-modal');
+          closeModal('comments-modal');
+          closeModal('sources-modal');
+        }
+        if (currentView === 'reels') {
+          if (e.key === 'ArrowDown') { e.preventDefault(); navigateReel(1); }
+          if (e.key === 'ArrowUp') { e.preventDefault(); navigateReel(-1); }
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      let savedTheme = 'light';
+      try {
+        savedTheme = localStorage.getItem('crithit-theme') || 'light';
+      } catch (e) {}
+      applyTheme(savedTheme);
+      renderHomePortal();
+      renderBrandPalette();
+      renderReelsCategoryPills();
+      renderReels();
+      renderAdminView();
+      setupEvents();
+    });
+  </script>
+</body>
+</html>

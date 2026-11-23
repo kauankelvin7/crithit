@@ -1,0 +1,128 @@
+name: crithit
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: crithit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-crithit}
+      POSTGRES_USER: ${POSTGRES_USER:-crithit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crithit_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - crithit_pgdata:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crithit} -d ${POSTGRES_DB:-crithit}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - crithit-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: crithit-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - crithit_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - crithit-net
+
+  api:
+    profiles: ["app"]
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: crithit-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-crithit}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-crithit}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-crithit_dev_password}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-crithit-dev-jwt-secret-change-me-with-at-least-32-chars}
+      JWT_ISSUER: ${JWT_ISSUER:-crithit-api}
+      JWT_ACCESS_EXPIRATION_SECONDS: ${JWT_ACCESS_EXPIRATION_SECONDS:-900}
+      JWT_REFRESH_EXPIRATION_SECONDS: ${JWT_REFRESH_EXPIRATION_SECONDS:-604800}
+      VISITOR_HASH_SALT: ${VISITOR_HASH_SALT:-crithit-dev-visitor-salt-change-me}
+      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-editor@crithit.com.br}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-ChangeMe123!}
+      ADMIN_SEED_NAME: ${ADMIN_SEED_NAME:-Rafael Mendes}
+      LLM_PROVIDER_BASE_URL: ${LLM_PROVIDER_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-gpt-4o-mini}
+      LLM_EMBEDDING_MODEL: ${LLM_EMBEDDING_MODEL:-text-embedding-3-small}
+      LLM_EMBEDDING_DIMENSIONS: ${LLM_EMBEDDING_DIMENSIONS:-1536}
+      REVALIDATE_WEBHOOK_URL: ${REVALIDATE_WEBHOOK_URL:-http://web:3000/api/revalidate}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-crithit-dev-revalidate-secret-change-me}
+      APP_WEB_PUBLIC_URL: ${APP_WEB_PUBLIC_URL:-http://localhost:3000}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+    networks:
+      - crithit-net
+
+  web:
+    profiles: ["app"]
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    container_name: crithit-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      INTERNAL_API_BASE_URL: ${INTERNAL_API_BASE_URL:-http://api:8080}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-crithit-dev-revalidate-secret-change-me}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - crithit-net
+
+volumes:
+  crithit_pgdata:
+    name: crithit_pgdata
+  crithit_redisdata:
+    name: crithit_redisdata
+
+networks:
+  crithit-net:
+    name: crithit-net
+    driver: bridge

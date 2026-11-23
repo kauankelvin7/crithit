@@ -1,0 +1,43 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+infra/.env
+*.pem
+*.key
+
+# Java / Spring Boot (apps/api)
+apps/api/target/
+apps/api/build/
+apps/api/.gradle/
+*.jar
+*.war
+*.log
+
+# Node / Next.js (apps/web)
+apps/web/node_modules/
+apps/web/.next/
+apps/web/out/
+apps/web/dist/
+apps/web/coverage/
+apps/web/playwright-report/
+apps/web/test-results/
+apps/web/tsconfig.tsbuildinfo
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Infra volumes
+infra/data/

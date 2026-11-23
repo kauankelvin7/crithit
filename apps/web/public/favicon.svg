@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CritHit">
+  <rect width="64" height="64" rx="10" fill="#111318" />
+  <rect x="6" y="6" width="52" height="52" rx="6" fill="#E11D48" stroke="#FFD600" stroke-width="4" />
+  <path d="M22 20h20v7H29v5h11v7H29v5h13v7H22V20z" fill="#FFFFFF" />
+</svg>
