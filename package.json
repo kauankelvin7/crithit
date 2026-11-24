@@ -1,0 +1,19 @@
+{
+  "name": "crithit-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CritHit! — Portal Editorial de Jornalismo Geek (API Spring Boot, Portal Next.js 15 e Agente Jornalista OpenBot + Gemini)",
+  "scripts": {
+    "agent:curate": "node scripts/editorial-autopilot.mjs --mode=curate",
+    "agent:author": "node scripts/editorial-autopilot.mjs --mode=author",
+    "agent:live": "node scripts/editorial-autopilot.mjs --mode=live",
+    "agent:test": "node --test scripts/editorial-autopilot.test.mjs",
+    "openbot:start": "openbot start",
+    "web:typecheck": "npm --prefix apps/web run typecheck",
+    "web:test": "npm --prefix apps/web test",
+    "web:build": "npm --prefix apps/web run build"
+  },
+  "engines": {
+    "node": ">=20.12.0"
+  }
+}

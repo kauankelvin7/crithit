@@ -9,6 +9,8 @@ Este arquivo define a arquitetura, os comandos de validação, as regras inegoci
 - **`/docs`**: Especificações de produto, arquitetura, banco/OpenAPI, tokens de design system, relatório de QA e status atual (`01` a `09` + `reference-prototype.html` + `qa-screenshots/`).
 - **`/apps/api`**: Backend REST & Worker Editorial em **Java 21 + Spring Boot 3.4.5 + Maven + Flyway + PostgreSQL 16 (`pgvector`) + Redis 7 + Rome + JSoup**.
 - **`/apps/web`**: Portal Web, Reels 9:16, Leitor e Painel Admin BFF em **Next.js 15 (App Router) + TypeScript estrito + Tailwind CSS + `lucide-react`**.
+- **`/agents/journalist`**: Workspace do Agente Jornalista (**OpenBot + Gemini**) contendo `AGENT.md`, `openbot.config.json` e `README.md`.
+- **`/scripts`**: Automação editorial em Node.js nativo (`editorial-autopilot.mjs` + suíte `editorial-autopilot.test.mjs`).
 - **`/infra`**: `docker-compose.yml`, `.env.example` (sem segredos reais) e scripts SQL iniciais (`init-db/01-init-pgvector.sql`).
 - **`.github/workflows/ci.yml`**: Pipeline CI com jobs `api-test` (JDK 21 + Docker/Testcontainers) e `web-test-and-e2e` (Node 20 + `typecheck` + Vitest + `next build` + Playwright + `@axe-core/playwright`).
 
@@ -64,6 +66,14 @@ mvn -f apps/api/pom.xml test
 
 # Executar API localmente
 mvn -f apps/api/pom.xml spring-boot:run
+```
+
+### Agente Jornalista (OpenBot + Gemini — Raiz do Monorepo)
+```powershell
+npm run agent:curate     # Login, trigger RSS, polimento Gemini, publica até 8 variadas e agenda o restante (20 min)
+npm run agent:author     # Gera via Gemini 1 Review com nota + 1 Coluna autoral via POST /admin/articles
+npm run agent:live       # Ciclo contínuo a cada 15 minutos
+npm run agent:test       # Suíte node:test dos contratos e regras do editorial-autopilot.mjs
 ```
 
 ### Infraestrutura Docker (`/infra`)

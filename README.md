@@ -9,6 +9,10 @@ Portal independente de jornalismo geek com curadoria automatizada (RSS internaci
 ```text
 CritHit/
 ├── .github/workflows/ci.yml    # Pipeline CI (Java 21 + Testcontainers pgvector & Next.js + Playwright/Axe)
+├── agents/
+│   └── journalist/             # Workspace do Agente Jornalista CritHit! (OpenBot + Gemini)
+├── scripts/
+│   └── editorial-autopilot.mjs # Automação editorial CLI (curate / author / live)
 ├── docs/                       # Documentação completa (Fases 1 a 5)
 │   ├── 01-visao-produto.md
 │   ├── 02-epicos-e-historias.md
@@ -103,4 +107,26 @@ npm run build
 
 # 3. Testes E2E + Auditoria WCAG 2.1 AA (Playwright + @axe-core/playwright em Modo Claro e Escuro)
 npx playwright test
+```
+
+---
+
+## 5. Agente Jornalista & Redação Automatizada (OpenBot + Gemini)
+
+O workspace [`agents/journalist/`](./agents/journalist/README.md) define a persona, as regras editoriais (PT-BR direto, sem clickbait, zero emojis, formato Reels em 3 lâminas) e o manifesto `openbot.config.json` para integração com **OpenBot** e **Google Gemini** (`gemini-3.5-flash`, configurado em `infra/.env` sem versionar chaves).
+
+Com a API local rodando (`http://localhost:8080/api/v1`):
+
+```powershell
+# Curadoria RSS -> polimento via Gemini -> publica até 8 variadas (5 editorias) e agenda as demais a cada 20 min
+npm run agent:curate
+
+# Produção Autoral -> gera via Gemini e cria 1 Review com nota + 1 Coluna via POST /admin/articles
+npm run agent:author
+
+# Ciclo contínuo -> coleta, curadoria e agendamento a cada 15 minutos
+npm run agent:live
+
+# Testes automatizados do script editorial
+npm run agent:test
 ```

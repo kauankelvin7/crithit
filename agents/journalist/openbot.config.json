@@ -1,0 +1,62 @@
+{
+  "version": "1",
+  "name": "crithit-journalist",
+  "displayName": "CritHit! Agente Jornalista",
+  "description": "Agente editorial automatizado do portal CritHit! para curadoria RSS, reescrita PT-BR sem clickbait, agendamento e produção de colunas/reviews autorais.",
+  "workspace": {
+    "access": "workspace-only",
+    "root": "../..",
+    "allowedFolders": [
+      "agents/journalist",
+      "scripts",
+      "docs"
+    ]
+  },
+  "agent": {
+    "instructionsFile": "./AGENT.md",
+    "language": "pt-BR",
+    "constraints": {
+      "noUnicodeEmojis": true,
+      "maxHeadlineLength": 85,
+      "reelsBulletsCount": 3,
+      "requireHttpSourceUrl": true
+    }
+  },
+  "providers": {
+    "default": "gemini-openai-compat",
+    "gemini-openai-compat": {
+      "type": "openai-compatible",
+      "baseUrlEnv": "LLM_PROVIDER_BASE_URL",
+      "apiKeyEnv": "LLM_API_KEY",
+      "modelEnv": "LLM_CHAT_MODEL",
+      "defaultBaseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "defaultModel": "gemini-3.5-flash"
+    }
+  },
+  "environment": {
+    "envFile": "../../infra/.env",
+    "required": [
+      "LLM_API_KEY",
+      "ADMIN_SEED_EMAIL",
+      "ADMIN_SEED_PASSWORD"
+    ],
+    "optional": {
+      "CRITHIT_API_URL": "http://localhost:8080/api/v1",
+      "LLM_PROVIDER_BASE_URL": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "LLM_CHAT_MODEL": "gemini-3.5-flash"
+    }
+  },
+  "commands": {
+    "curate": "node ../../scripts/editorial-autopilot.mjs --mode=curate",
+    "author": "node ../../scripts/editorial-autopilot.mjs --mode=author",
+    "live": "node ../../scripts/editorial-autopilot.mjs --mode=live"
+  },
+  "schedules": [
+    {
+      "id": "curate-every-15m",
+      "cron": "*/15 * * * *",
+      "command": "curate",
+      "description": "Coleta RSS, polimento editorial via Gemini, publicação balanceada e agendamento a cada 20 minutos."
+    }
+  ]
+}
