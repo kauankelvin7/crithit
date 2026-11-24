@@ -173,6 +173,16 @@ export function AdminDashboard() {
     setEditingPublished(null);
   };
 
+  const extractErrorMessage = async (res: Response, fallback: string): Promise<string> => {
+    const err = (await res.json().catch(() => ({}))) as {
+      message?: string;
+      fieldErrors?: Array<{ field?: string; message?: string }>;
+    };
+    const firstFieldMsg = err.fieldErrors?.[0]?.message;
+    if (firstFieldMsg) return firstFieldMsg;
+    return err.message || fallback;
+  };
+
   const handleSaveEdits = async (articleId: string, payload: AdminArticleUpsertRequest) => {
     setBusy(true);
     setBanner(null);
@@ -183,8 +193,7 @@ export function AdminDashboard() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        setBanner({ type: 'error', message: err.message || 'Erro ao salvar alterações.' });
+        setBanner({ type: 'error', message: await extractErrorMessage(res, 'Erro ao salvar alterações.') });
         return;
       }
       const updated = (await res.json()) as AdminArticleDetail;
@@ -214,8 +223,10 @@ export function AdminDashboard() {
         body: JSON.stringify({ setAsMainHeadline, edits: payload }),
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        setBanner({ type: 'error', message: err.message || 'Não foi possível publicar a matéria.' });
+        setBanner({
+          type: 'error',
+          message: await extractErrorMessage(res, 'Não foi possível publicar a matéria.'),
+        });
         return;
       }
       const published = (await res.json()) as AdminArticleDetail;
@@ -244,8 +255,10 @@ export function AdminDashboard() {
         body: JSON.stringify({ scheduledAt: scheduledAtIso, edits: payload }),
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        setBanner({ type: 'error', message: err.message || 'Falha ao agendar publicação.' });
+        setBanner({
+          type: 'error',
+          message: await extractErrorMessage(res, 'Falha ao agendar publicação.'),
+        });
         return;
       }
       setBanner({
@@ -285,10 +298,13 @@ export function AdminDashboard() {
     try {
       const res = await fetch(
         `/api/bff/admin/articles/${encodeURIComponent(articleId)}/main-headline`,
-        { method: 'POST' },
+        { method: 'PATCH' },
       );
       if (!res.ok) {
-        setBanner({ type: 'error', message: 'Erro ao promover Manchete Principal.' });
+        setBanner({
+          type: 'error',
+          message: await extractErrorMessage(res, 'Erro ao promover Manchete Principal.'),
+        });
         return;
       }
       setBanner({ type: 'success', message: 'Manchete Principal da Home atualizada atomicamente.' });
@@ -369,12 +385,15 @@ export function AdminDashboard() {
     setBanner(null);
     try {
       const res = await fetch(`/api/bff/admin/rss-sources/${encodeURIComponent(source.id)}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !source.active }),
       });
       if (!res.ok) {
-        setBanner({ type: 'error', message: 'Erro ao atualizar status da fonte RSS.' });
+        setBanner({
+          type: 'error',
+          message: await extractErrorMessage(res, 'Erro ao atualizar status da fonte RSS.'),
+        });
         return;
       }
       setBanner({ type: 'success', message: `Fonte ${source.name} atualizada.` });

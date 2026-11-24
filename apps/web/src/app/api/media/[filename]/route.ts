@@ -1,7 +1,5 @@
-import { readFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveMediaStorage } from '@/lib/media-storage';
 
 const SAFE_FILENAME_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|avif)$/i;
@@ -25,11 +23,11 @@ export async function GET(
 
   const ext = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
   const contentType = EXT_TO_MIME[ext] ?? 'application/octet-stream';
-  const filePath = path.join(os.tmpdir(), 'crithit-uploads', filename);
 
   try {
-    const data = await readFile(filePath);
-    return new NextResponse(data, {
+    const storage = resolveMediaStorage();
+    const data = await storage.read(filename);
+    return new NextResponse(new Uint8Array(data), {
       status: 200,
       headers: {
         'Content-Type': contentType,

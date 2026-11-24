@@ -11,12 +11,12 @@
 
 | Camada / Suíte | Ferramenta | Escopo Validado | Resultado Real | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| **Backend (`/apps/api`)** | JUnit 5, Mockito, Spring MockMvc, Testcontainers | Pipeline RSS/Rome/JSoup, deduplicação semântica (`pgvector >= 0.82`), adaptação LLM + fallback seguro, máquina de estados (`PENDING_REVIEW`, `SCHEDULED`, `PUBLISHED`, `UNPUBLISHED`, `DISCARDED`), unicidade de Manchete Principal, segurança URL/JWT e controllers | **21 executados: 19 aprovados, 0 falhas, 0 erros, 2 ignorados** *(Testcontainers `PgVectorAndFlywayIntegrationTest` pulado automaticamente por ausência de Docker daemon ativo no host Windows)* | APROVADO |
-| **Frontend Unit/Comp (`/apps/web`)** | Vitest 3 + React Testing Library + jsdom | `ThemeToggle`, `AttributionBadge`/`TransparencyNotice`, `ReelsPlayer` (filtros/estado vazio), `AdminArticleForm` (bloqueio `javascript:` e campos obrigatórios), `PublishedArticlesTab` (confirmação em 2 passos ao `Tirar do ar`) | **5/5 arquivos, 9/9 testes aprovados** | APROVADO |
+| **Backend (`/apps/api`)** | JUnit 5, Mockito, Spring MockMvc, Testcontainers, JaCoCo (`0.8.12`) | Pipeline RSS/Rome/JSoup, extração de capa (`CoverImageExtractor`), sanitização (`HtmlSanitizer`), deduplicação semântica (`pgvector >= 0.82`), adaptação LLM + fallback seguro, máquina de estados, agendador (`ScheduledArticlePublisher`), slugs (`SlugService`), interações/dedup 6h (`InteractionService`), segurança URL/JWT/blacklist (`JwtService`, `JwtBlacklistService`) e controllers | **43 listados: 41/41 ativos aprovados, 0 falhas, 0 erros, 2 ignorados** *(Testcontainers `PgVectorAndFlywayIntegrationTest` pulado por ausência de Docker local)* — **Cobertura JaCoCo:** `53,8%` instruções (`6.477/12.031`), `52,5%` linhas (`1.376/2.619`), `54,4%` métodos (`319/586`), `71,7%` classes (`86/120`, `100%` em `security`) | APROVADO |
+| **Frontend Unit/Comp (`/apps/web`)** | Vitest 3 + React Testing Library + jsdom | `ThemeToggle`, `AttributionBadge`/`TransparencyNotice`, `ReelsPlayer` (filtros/estado vazio), `AdminArticleForm` (bloqueio `javascript:` e campos obrigatórios), `PublishedArticlesTab` (confirmação em 2 passos), `url.ts` (`http(s)` estrito), `CommentsDrawer` (escape XSS, limites e `Escape`), BFF Auth (`HttpOnly` sem expor tokens no JSON) e `isMockFallbackEnabled` (desativado em produção) | **9/9 arquivos, 19/19 testes aprovados** | APROVADO |
 | **Build & Typecheck (`/apps/web`)** | TypeScript (`tsc --noEmit`) + Next.js 15 (`next build`) | Checagem estrita de tipos (inclusive suíte E2E), ESLint Next.js e build de produção SSR/ISR (`standalone`), incluindo rotas de mídia, `robots.txt` e `sitemap.xml` | **0 erros de tipo, 0 erros de lint, 14/14 rotas compiladas** | APROVADO |
-| **E2E Funcional (`/apps/web`)** | Playwright (`@playwright/test` + Chromium) | Fluxos 1 a 4 (Home com isolamento total do `/admin`, Busca Desktop/Mobile, Newsletter, Tema persistente, Reels 9:16 + deep-link + XSS + scroll + focus trap, Leitor `/noticia/[slug]` CURADORIA/AUTORAL/404, Painel Admin via acesso direto `/admin` + BFF `HttpOnly` + preview/upload local de capa + split-screen + ações editoriais) | **12/12 cenários E2E aprovados** | APROVADO |
+| **E2E Funcional & Visual (`/apps/web`)** | Playwright (`@playwright/test` + Chromium) | Fluxos 1 a 4 (Home com isolamento total do `/admin`, Busca Desktop/Mobile, Newsletter, Tema persistente, Reels 9:16 + deep-link + XSS + scroll + focus trap, Leitor `/noticia/[slug]` CURADORIA/AUTORAL/404, Painel Admin via acesso direto `/admin` + BFF `HttpOnly` + preview/upload local de capa + split-screen + ações editoriais + auditoria visual Desktop `1440x900` e Mobile `390x844`) | **15/15 cenários E2E e visuais aprovados** | APROVADO |
 | **Auditoria Automatizada (`/apps/web`)** | `@axe-core/playwright` (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`) + verificadores DOM/HTTP | 4 rotas (`/`, `/reels`, `/noticia/<slug>`, `/admin`) em **Modo Claro** e **Modo Escuro**, zero emojis Unicode, `font-size >= 11px`, `<meta name="viewport">` sem `user-scalable=no`, headers HTTP de segurança | **13/13 auditorias aprovadas (0 violações `critical`/`serious`)** | APROVADO |
-| **Total Playwright** | `npx playwright test` | `home.spec.ts`, `reels.spec.ts`, `article.spec.ts`, `admin.spec.ts`, `audit.spec.ts` | **25/25 testes aprovados (100%)** | APROVADO |
+| **Total Playwright** | `npx playwright test` | `home.spec.ts`, `reels.spec.ts`, `article.spec.ts`, `admin.spec.ts`, `audit.spec.ts`, `visual-ux-audit.spec.ts` | **28/28 testes aprovados (100%)** | APROVADO |
 
 ---
 
@@ -80,20 +80,32 @@ A auditoria automatizada com Playwright + `@axe-core/playwright` detectou **3 de
 
 ## 4. Detalhamento das Suítes Executadas
 
-### 4.1 Backend (`/apps/api`) — Maven Surefire
+### 4.1 Backend (`/apps/api`) — Maven Surefire + JaCoCo
 Comando executado:
 ```powershell
 C:\Users\Kauan\tools\apache-maven-3.9.12\bin\mvn.cmd -f "c:\Users\Kauan\Desktop\CritHit\apps\api\pom.xml" test
 ```
-Resultados por classe:
+Resultados por classe (13 classes de teste):
 - `LlmAdaptationServiceTest`: **2/2 aprovados** (retry em 429 + fallback seguro `FALLBACK_RAW`)
+- `CoverImageExtractorTest`: **3/3 aprovados** (prioridade `media:content > enclosure > og:image`, bloqueio anti-SSRF/loopback/IPs privados/`.svg` e fallback determinístico `coverArtKey` por editoria)
 - `RssIngestionServiceTest`: **5/5 aprovados** (deduplicação URL, `pgvector >= 0.82`, skip `DISCARDED`, adaptação IA, fallback e disparo assíncrono de notificação editorial)
+- `HtmlSanitizerTest`: **3/3 aprovados** (remoção de `<script>`, `<iframe>`, `<svg onload>`, `onerror`/`onclick`, `javascript:` e preservação de acentuação/pontuação PT-BR)
+- `JwtServiceTest`: **3/3 aprovados** (geração e extração de `subject`/`ROLE_ADMIN`/`ROLE_EDITOR`, rejeição de token expirado/adulterado/tipo incorreto e revogação via `JwtBlacklistService`)
 - `UrlSecurityValidatorTest`: **3/3 aprovados** (bloqueio de `javascript:`, `data:`, loopback/IPs privados SSRF)
 - `AdminArticleServiceTest`: **5/5 aprovados** (transições de estado, unicidade de Manchete Principal, `UNPUBLISHED` preservando histórico)
-- `EditorialNotificationServiceTest`: **4/4 aprovados** (disparo webhook Discord, disparo Bot API Telegram, modo desabilitado sem variáveis de ambiente e resiliência a erro/timeout HTTP sem afetar a transação RSS)
-- `ControllersWebMvcTest`: **4/4 aprovados** (endpoints públicos, proteção JWT `/api/v1/admin/**`, validação DTO)
+- `EditorialNotificationServiceTest`: **4/4 aprovados** (disparo webhook Discord, disparo Bot API Telegram, modo desabilitado sem variáveis de ambiente e resiliência a erro/timeout HTTP)
+- `InteractionServiceTest`: **3/3 aprovados** (toggle idempotente `LIKE`/`SAVE` sem contadores negativos, deduplicação de `VIEW` por 6h no Redis e sanitização/validação de comentários)
+- `ScheduledArticlePublisherTest`: **3/3 aprovados** (promoção automática `SCHEDULED <= now` -> `PUBLISHED` com revalidação ISR, preservação de agendamentos futuros e bloqueio/log quando atribuição é inválida)
+- `SlugServiceTest`: **3/3 aprovados** (normalização `kebab-case` sem acentos e resolução de colisões `-2`, `-3`)
+- `ControllersWebMvcTest`: **4/4 aprovados** (endpoints públicos, proteção JWT `/api/v1/admin/**`, `PATCH` em `main-headline`, `PUT` em `rss-sources/{id}` e validação DTO)
 - `PgVectorAndFlywayIntegrationTest`: **2 ignorados localmente** *(Testcontainers anotado com `@Testcontainers(disabledWithoutDocker = true)`; executado automaticamente no job `api-test` do GitHub Actions `.github/workflows/ci.yml` com Docker ativo)*
-- **Total Backend:** **25 testes (`23/23` ativos aprovados, `0` falhas, `0` erros, `2` ignorados sem Docker daemon local)**
+- **Total Backend:** **43 testes (`41/41` ativos aprovados, `0` falhas, `0` erros, `2` ignorados sem Docker daemon local)**
+- **Resumo de Cobertura JaCoCo (`apps/api/target/site/jacoco/index.html`):**
+  - **Instruções:** `6.477 / 12.031` (**53,8%**)
+  - **Linhas:** `1.376 / 2.619` (**52,5%**)
+  - **Branches:** `360 / 936` (**38,5%**)
+  - **Métodos:** `319 / 586` (**54,4%**)
+  - **Classes:** `86 / 120` (**71,7%**, com **100%** das classes cobertas em `br.com.crithit.api.security` — `9/9`)
 
 ### 4.2 Frontend Unit & Component (`/apps/web`) — Vitest + RTL
 Comando executado:
@@ -106,7 +118,11 @@ npm test
 - `src/tests/attribution.test.tsx`: **3/3 aprovados**
 - `src/tests/reels-filters.test.tsx`: **2/2 aprovados**
 - `src/tests/theme-toggle.test.tsx`: **1/1 aprovado**
-- **Total:** **5/5 arquivos, 9/9 testes aprovados**
+- `src/tests/url.test.ts`: **2/2 aprovados** (bloqueio de `javascript:`, `data:`, `vbscript:`, `file:` e aceitação estrita de `http(s)://`)
+- `src/tests/comments-drawer.test.tsx`: **3/3 aprovados** (escape XSS como texto puro, limites mín/máx e fechamento via `Escape`)
+- `src/tests/bff-auth.test.ts`: **2/2 aprovados** (`accessToken`/`refreshToken` gravados exclusivamente em cookies `HttpOnly` no login e limpos com `Max-Age=0` no logout)
+- `src/tests/api-client-fallback.test.ts`: **3/3 aprovados** (`isMockFallbackEnabled()` desativado por padrão em `NODE_ENV=production` e propagação de erro quando offline sem flag)
+- **Total:** **9/9 arquivos, 19/19 testes aprovados**
 
 ### 4.3 Frontend E2E & Auditoria WCAG (`/apps/web`) — Playwright + `@axe-core/playwright`
 Comando executado:
@@ -120,7 +136,8 @@ npx playwright test
 - `tests/e2e/article.spec.ts`: **3/3 aprovados**
 - `tests/e2e/admin.spec.ts`: **3/3 aprovados**
 - `tests/e2e/audit.spec.ts`: **13/13 aprovados** (`axe-core` Light + Dark nas 4 rotas = 8; Zero emojis + `font-size >= 11px` + viewport nas 4 rotas = 4; Headers HTTP de segurança = 1)
-- **Total:** **25/25 testes aprovados**
+- `tests/e2e/visual-ux-audit.spec.ts`: **3/3 aprovados** (geometria em tempo real Desktop `1440x900` e Mobile `390x844` + screenshots)
+- **Total:** **28/28 testes aprovados**
 
 ---
 

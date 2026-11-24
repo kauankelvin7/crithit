@@ -25,6 +25,19 @@ export function getSiteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 }
 
+/**
+ * Controla explicitamente o fallback para dados de demonstração (mock-data.ts).
+ * Em produção (`NODE_ENV === 'production'`), permanece DESATIVADO por padrão
+ * para nunca exibir notícias fictícias silenciosamente caso a API falhe.
+ * Para pré-visualização offline ou E2E sem Docker, defina `ENABLE_MOCK_FALLBACK=true`.
+ */
+export function isMockFallbackEnabled(): boolean {
+  const raw = process.env.ENABLE_MOCK_FALLBACK?.trim().toLowerCase();
+  if (raw === 'true' || raw === '1') return true;
+  if (raw === 'false' || raw === '0') return false;
+  return process.env.NODE_ENV !== 'production';
+}
+
 async function fetchJsonWithTimeout<T>(
   url: string,
   options: RequestInit & { next?: { revalidate?: number; tags?: string[] } },
@@ -58,8 +71,11 @@ export async function fetchHomeData(): Promise<HomeResponse> {
     return await fetchJsonWithTimeout<HomeResponse>(`${baseUrl}/api/v1/home`, {
       next: { revalidate: 60, tags: ['home', 'home-feed'] },
     });
-  } catch {
-    return buildMockHomeResponse();
+  } catch (err) {
+    if (isMockFallbackEnabled()) {
+      return buildMockHomeResponse();
+    }
+    throw err;
   }
 }
 
@@ -77,7 +93,10 @@ export async function fetchArticleBySlug(slug: string): Promise<PublicArticleDet
     if (status === 404) {
       return null;
     }
-    return buildMockArticleDetail(slug);
+    if (isMockFallbackEnabled()) {
+      return buildMockArticleDetail(slug);
+    }
+    throw err;
   }
 }
 
@@ -98,12 +117,18 @@ export async function fetchReelsFeed(params?: {
         next: { revalidate: 60, tags: ['reels', 'reels-feed'] },
       },
     );
-  } catch {
-    return buildMockReelsResponse(params?.category, params?.focusSlug);
+  } catch (err) {
+    if (isMockFallbackEnabled()) {
+      return buildMockReelsResponse(params?.category, params?.focusSlug);
+    }
+    throw err;
   }
 }
 
-export async function searchPublishedArticles(queryText: string, category?: Category): Promise<PublicArticlePage> {
+export async function searchPublishedArticles(
+  queryText: string,
+  category?: Category,
+): Promise<PublicArticlePage> {
   const baseUrl = getApiBaseUrl();
   const params = new URLSearchParams();
   if (queryText.trim()) params.set('q', queryText.trim());
@@ -115,7 +140,10 @@ export async function searchPublishedArticles(queryText: string, category?: Cate
       `${baseUrl}/api/v1/articles?${params.toString()}`,
       { cache: 'no-store' },
     );
-  } catch {
+  } catch (err) {
+    if (!isMockFallbackEnabled()) {
+      throw err;
+    }
     const q = queryText.trim().toLowerCase();
     const filtered = MOCK_ARTICLES.filter((a) => {
       const catMatch = !category || a.category === category;

@@ -85,15 +85,13 @@ export function SiteFooter() {
             verificado.
           </p>
           <div className="flex items-center gap-2 pt-1">
-            <a
-              href="https://crithit.com.br"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Site oficial CritHit! (abre em nova aba)"
+            <Link
+              href="/"
+              aria-label="Capa oficial CritHit!"
               className="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight"
             >
               <Globe className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            </a>
+            </Link>
             <Link
               href="/reels"
               aria-label="Feed de Reels CritHit!"

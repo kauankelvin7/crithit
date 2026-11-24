@@ -554,7 +554,7 @@ export async function setupApiMocks(page: Page, options: MockApiOptions = {}) {
     const actionMatch = path.match(
       /^\/articles\/([^/]+)\/(approve|schedule|discard|main-headline|unpublish|republish)$/,
     );
-    if (actionMatch && method === 'POST') {
+    if (actionMatch && (method === 'POST' || (method === 'PATCH' && actionMatch[2] === 'main-headline'))) {
       const id = decodeURIComponent(actionMatch[1]);
       const action = actionMatch[2];
       const item = articles.find((a) => a.id === id);
@@ -650,6 +650,24 @@ export async function setupApiMocks(page: Page, options: MockApiOptions = {}) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(rssSources),
+      });
+    }
+
+    const rssUpdateMatch = path.match(/^\/rss-sources\/([^/]+)$/);
+    if (rssUpdateMatch && (method === 'PUT' || method === 'PATCH')) {
+      const id = decodeURIComponent(rssUpdateMatch[1]);
+      const source = rssSources.find((s) => s.id === id);
+      if (!source) {
+        return route.fulfill({ status: 404, body: JSON.stringify({ message: 'Fonte não encontrada.' }) });
+      }
+      const body = (route.request().postDataJSON() ?? {}) as { active?: boolean };
+      if (typeof body.active === 'boolean') {
+        source.active = body.active;
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(source),
       });
     }
 

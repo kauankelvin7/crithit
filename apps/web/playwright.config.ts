@@ -33,5 +33,9 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      ...process.env,
+      ENABLE_MOCK_FALLBACK: 'true',
+    },
   },
 });

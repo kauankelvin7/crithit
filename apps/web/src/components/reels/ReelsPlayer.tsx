@@ -41,7 +41,7 @@ import {
   validateCommentInput,
 } from '@/lib/comments-api';
 import { formatCompactNumber, formatRelativeDate } from '@/lib/format';
-import type { Category, CommentDto, PublicArticleSummary } from '@/lib/types';
+import type { Category, CommentDto, MatchedSourceDto, PublicArticleSummary } from '@/lib/types';
 import { getSafeHttpUrl } from '@/lib/url';
 
 type FilterOption = 'TODOS' | Category;
@@ -106,8 +106,11 @@ export function ReelsPlayer({
     Boolean(initialFocusSlug && !initialFocusFound),
   );
 
-  // Estado sincronizado dos comentários para o Painel Direito Desktop (xl+)
+  // Estado sincronizado dos comentários e fontes cruzadas para o Painel Direito Desktop (xl+)
   const [panelCommentsByArticle, setPanelCommentsByArticle] = useState<Record<string, CommentDto[]>>({});
+  const [matchedSourcesByArticle, setMatchedSourcesByArticle] = useState<
+    Record<string, MatchedSourceDto[]>
+  >({});
   const [panelLoading, setPanelLoading] = useState(false);
   const [panelAuthor, setPanelAuthor] = useState('');
   const [panelBody, setPanelBody] = useState('');
@@ -213,10 +216,13 @@ export function ReelsPlayer({
     }
   }, [initialItems]);
 
-  // Carrega comentários do Reel ativo para o Painel Direito Desktop (xl+)
+  // Carrega comentários e fontes cruzadas do Reel ativo para o Painel Direito Desktop (xl+)
   useEffect(() => {
     if (!activeArticle) return;
     const articleId = activeArticle.id;
+    const articleSlug = activeArticle.slug;
+    const hasInlineSources =
+      Array.isArray(activeArticle.matchedSources) && activeArticle.matchedSources.length > 0;
     let active = true;
     setPanelLoading(true);
     setPanelError('');
@@ -233,10 +239,28 @@ export function ReelsPlayer({
         if (active) setPanelLoading(false);
       });
 
+    if (!hasInlineSources && !matchedSourcesByArticle[articleId] && typeof fetch === 'function') {
+      fetch(`/api/public/articles/${encodeURIComponent(articleSlug)}`)
+        .then(async (res) => {
+          if (!res.ok) return null;
+          return (await res.json()) as { matchedSources?: MatchedSourceDto[] };
+        })
+        .then((detail) => {
+          if (!active || !detail?.matchedSources?.length) return;
+          setMatchedSourcesByArticle((prev) => ({
+            ...prev,
+            [articleId]: detail.matchedSources!,
+          }));
+        })
+        .catch(() => {
+          // Mantém fallback da atribuição primária
+        });
+    }
+
     return () => {
       active = false;
     };
-  }, [activeArticle]);
+  }, [activeArticle, matchedSourcesByArticle]);
 
   // Posiciona no deep-link ?id=<slug> na montagem inicial via scroll interno do container
   useEffect(() => {
@@ -576,6 +600,10 @@ export function ReelsPlayer({
     if (activeArticle.matchedSources && activeArticle.matchedSources.length > 0) {
       return activeArticle.matchedSources;
     }
+    const fetched = matchedSourcesByArticle[activeArticle.id];
+    if (fetched && fetched.length > 0) {
+      return fetched;
+    }
     return [
       {
         id: `fallback-${activeArticle.id}`,
@@ -588,7 +616,7 @@ export function ReelsPlayer({
         fetchedAt: activeArticle.publishedAt,
       },
     ];
-  }, [activeArticle]);
+  }, [activeArticle, matchedSourcesByArticle]);
 
   const activePanelComments = activeArticle
     ? (panelCommentsByArticle[activeArticle.id] ?? [])

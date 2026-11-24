@@ -25,6 +25,8 @@ import br.com.crithit.api.web.exception.BusinessValidationException;
 import br.com.crithit.api.web.exception.InvalidStateTransitionException;
 import br.com.crithit.api.web.exception.ResourceNotFoundException;
 import jakarta.persistence.criteria.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +46,8 @@ import java.util.UUID;
 
 @Service
 public class AdminArticleService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminArticleService.class);
 
     private final ArticleRepository articleRepository;
     private final ArticleSourceRepository articleSourceRepository;
@@ -376,7 +380,16 @@ public class AdminArticleService {
                 ArticleStatus.SCHEDULED, now);
         int count = 0;
         for (Article article : due) {
-            validateAttributionAndContent(article);
+            if (article.getScheduledAt() != null && article.getScheduledAt().isAfter(now)) {
+                continue;
+            }
+            try {
+                validateAttributionAndContent(article);
+            } catch (BusinessValidationException ex) {
+                log.error("Blocked scheduled publication for article '{}' (id={}): {}",
+                        article.getSlug(), article.getId(), ex.getMessage());
+                continue;
+            }
             Instant publishedAt = article.getScheduledAt() != null ? article.getScheduledAt() : now;
             article.setStatus(ArticleStatus.PUBLISHED);
             article.setPublishedAt(publishedAt);

@@ -1,6 +1,7 @@
 package br.com.crithit.api.rss;
 
 import br.com.crithit.api.config.AppProperties;
+import br.com.crithit.api.domain.enums.Category;
 import br.com.crithit.api.security.UrlSecurityValidator;
 import com.rometools.rome.feed.synd.SyndEnclosure;
 import com.rometools.rome.feed.synd.SyndEntry;
@@ -95,15 +96,26 @@ public class CoverImageExtractor {
         return null;
     }
 
+    public record CoverResolution(String coverImageUrl, String coverArtKey) {}
+
+    public String resolveFallbackCoverArtKey(Category category) {
+        return (category != null ? category : Category.GAMES).defaultCoverArtKey();
+    }
+
+    public CoverResolution resolveCover(
+            SyndEntry entry,
+            String articleUrl,
+            Category category,
+            boolean fetchPageMetadata
+    ) {
+        String validUrl = extractValidCoverUrl(entry, articleUrl, fetchPageMetadata);
+        return new CoverResolution(validUrl, resolveFallbackCoverArtKey(category));
+    }
+
     private String extractFromHtmlMeta(String articleUrl) {
         try {
             URI safeUri = urlSecurityValidator.assertSafeForOutboundFetch(articleUrl);
-            Document doc = Jsoup.connect(safeUri.toString())
-                    .userAgent(userAgent)
-                    .timeout(connectTimeoutMs)
-                    .maxBodySize(1024 * 1024)
-                    .followRedirects(false)
-                    .get();
+            Document doc = fetchHtmlDocument(safeUri);
 
             String[] selectors = {
                     "meta[property=og:image]",
@@ -125,11 +137,30 @@ public class CoverImageExtractor {
         return null;
     }
 
+    protected Document fetchHtmlDocument(URI safeUri) throws Exception {
+        return Jsoup.connect(safeUri.toString())
+                .userAgent(userAgent)
+                .timeout(connectTimeoutMs)
+                .maxBodySize(1024 * 1024)
+                .followRedirects(false)
+                .get();
+    }
+
     public boolean isSafeImageUrl(String candidate) {
         if (!urlSecurityValidator.isValidHttpUrl(candidate)) {
             return false;
         }
-        String lower = candidate.trim().toLowerCase(Locale.ROOT);
+        String trimmed = candidate.trim();
+        try {
+            URI uri = URI.create(trimmed);
+            String host = uri.getHost();
+            if (host == null || isPrivateOrLoopbackHost(host)) {
+                return false;
+            }
+        } catch (Exception ex) {
+            return false;
+        }
+        String lower = trimmed.toLowerCase(Locale.ROOT);
         int queryIdx = lower.indexOf('?');
         String pathOnly = queryIdx > 0 ? lower.substring(0, queryIdx) : lower;
         for (String blocked : BLOCKED_EXTENSIONS) {
@@ -138,6 +169,25 @@ public class CoverImageExtractor {
             }
         }
         return !lower.contains("1x1") && !lower.contains("pixel");
+    }
+
+    private boolean isPrivateOrLoopbackHost(String rawHost) {
+        String host = rawHost.toLowerCase(Locale.ROOT);
+        if ("localhost".equals(host) || host.endsWith(".localhost") || host.endsWith(".local")) {
+            return true;
+        }
+        boolean looksLikeIpLiteral = host.startsWith("[")
+                || host.indexOf(':') >= 0
+                || host.matches("^\\d{1,3}(\\.\\d{1,3}){3}$");
+        if (looksLikeIpLiteral) {
+            try {
+                java.net.InetAddress addr = java.net.InetAddress.getByName(host);
+                return urlSecurityValidator.isBlockedAddress(addr);
+            } catch (Exception ex) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String resolveAbsolute(String baseUrl, String candidate) {

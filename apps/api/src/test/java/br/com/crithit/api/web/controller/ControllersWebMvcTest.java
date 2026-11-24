@@ -23,6 +23,7 @@ import br.com.crithit.api.web.dto.AttributionInfo;
 import br.com.crithit.api.web.dto.HomeResponse;
 import br.com.crithit.api.web.dto.PublicArticleSummary;
 import br.com.crithit.api.web.dto.ReelsFeedResponse;
+import br.com.crithit.api.web.dto.RssSourceDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -44,7 +45,9 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -145,6 +148,37 @@ class ControllersWebMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"))
                 .andExpect(jsonPath("$.isMainHeadline").value(true));
+
+        when(adminArticleService.setMainHeadline(eq(id), any()))
+                .thenReturn(sampleAdminDetail(id, ArticleStatus.PUBLISHED));
+
+        mockMvc.perform(patch("/api/v1/admin/articles/{id}/main-headline", id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isMainHeadline").value(true));
+
+        UUID sourceId = UUID.randomUUID();
+        when(adminRssSourceService.update(eq(sourceId), any()))
+                .thenReturn(new RssSourceDto(
+                        sourceId,
+                        "Gematsu",
+                        "https://www.gematsu.com/feed",
+                        "https://www.gematsu.com",
+                        "en",
+                        Category.GAMES,
+                        false,
+                        0,
+                        null,
+                        Instant.now(),
+                        null
+                ));
+
+        mockMvc.perform(put("/api/v1/admin/rss-sources/{id}", sourceId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
     }
 
     @Test

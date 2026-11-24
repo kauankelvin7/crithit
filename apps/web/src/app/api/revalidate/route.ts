@@ -9,7 +9,16 @@ interface RevalidatePayload {
 
 export async function POST(request: NextRequest) {
   const configuredSecret =
-    process.env.REVALIDATE_SECRET || 'crithit-dev-revalidate-secret-change-me';
+    process.env.REVALIDATE_SECRET ||
+    (process.env.NODE_ENV !== 'production' ? 'crithit-dev-revalidate-secret-change-me' : '');
+
+  if (!configuredSecret) {
+    return NextResponse.json(
+      { message: 'REVALIDATE_SECRET não configurado no servidor.' },
+      { status: 503 },
+    );
+  }
+
   const providedSecret = request.headers.get('x-revalidate-secret');
 
   if (!providedSecret || providedSecret !== configuredSecret) {

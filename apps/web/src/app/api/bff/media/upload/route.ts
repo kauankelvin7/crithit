@@ -1,9 +1,6 @@
-import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
 import { ACCESS_TOKEN_COOKIE, isAllowedOrigin } from '@/lib/bff-utils';
+import { resolveMediaStorage } from '@/lib/media-storage';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TO_EXT: Record<string, string> = {
@@ -45,30 +42,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadDir = path.join(os.tmpdir(), 'crithit-uploads');
-    await mkdir(uploadDir, { recursive: true });
-
-    const filename = `${randomUUID()}.${ext}`;
-    const targetPath = path.join(uploadDir, filename);
+    const storage = resolveMediaStorage();
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(targetPath, buffer);
+    const stored = await storage.save(buffer, ext, file.type);
 
     const origin = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, '');
-    const url = `${origin}/api/media/${filename}`;
+    const url = stored.publicPath.startsWith('http')
+      ? stored.publicPath
+      : `${origin}${stored.publicPath}`;
 
     return NextResponse.json(
       {
         url,
-        filename,
-        mimeType: file.type,
-        size: file.size,
+        filename: stored.filename,
+        mimeType: stored.mimeType,
+        size: stored.size,
       },
       { status: 201 },
     );
-  } catch {
-    return NextResponse.json(
-      { message: 'Erro ao processar o envio da imagem de capa.' },
-      { status: 500 },
-    );
+  } catch (err) {
+    const message =
+      err instanceof Error && err.message.includes('MEDIA_STORAGE_DRIVER')
+        ? err.message
+        : 'Erro ao processar o envio da imagem de capa.';
+    return NextResponse.json({ message }, { status: 500 });
   }
 }
