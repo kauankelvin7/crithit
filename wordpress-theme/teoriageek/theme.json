@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 2,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "800px",
+      "wideSize": "1280px"
+    },
+    "color": {
+      "palette": [
+        { "slug": "tg-brand", "color": "#116EBF", "name": "Azul Teoria Geek" },
+        { "slug": "tg-highlight", "color": "#FFD600", "name": "Amarelo Destaque" },
+        { "slug": "tg-alert", "color": "#BE123C", "name": "Vermelho Plantão" },
+        { "slug": "tg-paper", "color": "#F6F4EE", "name": "Papel Editorial" },
+        { "slug": "tg-white", "color": "#FFFFFF", "name": "Branco Puro" },
+        { "slug": "tg-ink", "color": "#111111", "name": "Tinta Escura" },
+        { "slug": "tg-chrome", "color": "#111318", "name": "Chrome Escuro" },
+        { "slug": "tg-games", "color": "#1D4ED8", "name": "Editoria Games" },
+        { "slug": "tg-cinema", "color": "#047857", "name": "Editoria Filmes & Séries" },
+        { "slug": "tg-animes", "color": "#0E7490", "name": "Editoria Animes" },
+        { "slug": "tg-comics", "color": "#B45309", "name": "Editoria Literatura & HQs" },
+        { "slug": "tg-tech", "color": "#6D28D9", "name": "Editoria Especiais & Tech" }
+      ]
+    },
+    "typography": {
+      "fontFamilies": [
+        {
+          "fontFamily": "'Barlow Condensed', system-ui, sans-serif",
+          "slug": "headline",
+          "name": "Barlow Condensed (Manchetes)"
+        },
+        {
+          "fontFamily": "'Space Grotesk', system-ui, sans-serif",
+          "slug": "sans",
+          "name": "Space Grotesk (Interface)"
+        },
+        {
+          "fontFamily": "'Plus Jakarta Sans', system-ui, sans-serif",
+          "slug": "reading",
+          "name": "Plus Jakarta Sans (Leitura)"
+        },
+        {
+          "fontFamily": "'JetBrains Mono', ui-monospace, monospace",
+          "slug": "mono",
+          "name": "JetBrains Mono (Metadados)"
+        },
+        {
+          "fontFamily": "'Bangers', Impact, cursive",
+          "slug": "display",
+          "name": "Bangers (Selo Pop-Art)"
+        }
+      ]
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "var(--bg-base)",
+      "text": "var(--ink-primary)"
+    },
+    "typography": {
+      "fontFamily": "var(--font-reading)",
+      "lineHeight": "1.7"
+    }
+  }
+}

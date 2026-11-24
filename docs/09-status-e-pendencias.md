@@ -66,3 +66,43 @@ Todas as **5 fases planejadas** do monorepo, a **evolução completa de UX/UI De
 
 5. **Validação do Pipeline CI no GitHub:**
    - Acompanhar a primeira execução de `.github/workflows/ci.yml` (`api-test` + `web-test-and-e2e`) no GitHub Actions após o push.
+
+---
+
+## 3. Evoluções Recentes Concluídas (Commits `7346489` e `fb88054`)
+
+- **Reels 2.0, Refinamento Editorial & Admin Isolado (`7346489`):**
+  - Remoção total de `9:16` e jargões técnicos da UI pública e do `/admin`.
+  - Canvas *full-bleed* no `/reels` com Micro-Stories em 3 lâminas, Drawer escuro em `< 1280px`, foco inline em `>= 1280px` e seletor `Para Você | Em Alta | Salvos` no mobile.
+  - Painel `/admin` 100% isolado (cabeçalho próprio `CRITHIT! REDAÇÃO`, `+ Nova Matéria Autoral`, `Preview Reels`, filtro `Agendadas` + `cancel-schedule` no backend).
+  - Compatibilidade Vercel em `apps/web/next.config.ts` e seção de preview rápido no `README.md`.
+  - Validado com `23/23` testes Vitest e `30/30` testes Playwright (`0` violações WCAG 2.1 AA).
+- **Agente Jornalista OpenBot + Gemini 3.5 Flash (`fb88054`):**
+  - Workspace `/agents/journalist/` (`AGENT.md`, `openbot.config.json`, `README.md`), `scripts/editorial-autopilot.mjs` (`curate`, `author`, `live`) e suíte `scripts/editorial-autopilot.test.mjs` (`5/5` aprovados) + teste real `HTTP 200` com `gemini-3.5-flash`.
+
+---
+
+## 4. Nova Frente em Andamento — Tema WordPress Nativo `teoriageek` (`/wordpress-theme/teoriageek/`)
+
+Checkpoint detalhado em [wordpress-theme/teoriageek/PROGRESSO.md](../wordpress-theme/teoriageek/PROGRESSO.md) e levantamento completo em [wordpress-theme/teoriageek/MIGRATION_AUDIT.md](../wordpress-theme/teoriageek/MIGRATION_AUDIT.md).
+
+### O que já foi concluído (sem alterar `/apps/web` ou `/apps/api`):
+1. **Reconhecimento somente leitura do `teoriageek.com.br` (`MIGRATION_AUDIT.md`):**
+   - 25 categorias reais mapeadas (destaque para slugs reais `animes-mangas`, `livros-hqs`, `especial-teoria-geek`, `destaque`, `noticias`, `criticas`, `reviews`, `games`, `filmes`, `series`).
+   - Paleta real (`#116EBF`, `#E29C04`/`#FFD600`, `#BE123C`), logos (`300x190` e `120x120`) e links das 6 redes sociais.
+   - Mapeamento do HTML legado de posts antigos (`.ficha`, `.rev-series`, `.rev-games`, `.capa`, `.col`, `.tit`, `.sinop`, `span[style*="#999"]`, `.div-selo`, `.selo`, `.youtube-embed`, `p.v1MsoNormal`).
+2. **Base PHP & Painel Sem Código criados em `/wordpress-theme/teoriageek/`:**
+   - `style.css`, `theme.json`, `functions.php` (anti-FOUC Claro/Escuro no `<head>`, menus, 3 áreas de widgets opcionais, enqueue).
+   - `inc/helpers.php` (paleta das 25 categorias, cálculo de contraste WCAG, extrator automático de 3 pontos-chave para posts antigos, ícones SVG inline sem emojis, arte Pop-Art fallback, views/likes).
+   - `inc/customizer.php` (`Aparência > Personalizar`: logos, cores em 1 clique, mapeamento dinâmico de categorias da capa, 6 redes sociais e texto do selo Reels).
+   - `inc/meta-boxes.php` (Meta Box nativa **"Ficha Editorial"** no editor de posts sem ACF: Manchete Principal, Plantão, Formato, Nota `0–10`, 3 Pontos-Chave e Fonte externa opcional).
+   - `inc/template-tags.php` (badges, breadcrumb, menu fallback, paginação, logo e ranking Mais Lidas).
+
+### O que falta fazer na retomada:
+1. **Backend Reels & REST API (`inc/reels-api.php`):** rewrite `/reels/`, `template_include` para `page-reels.php` e namespace `teoriageek/v1` (`GET /reels`, `POST /posts/{id}/like`, `POST /posts/{id}/view`, `POST /posts/{id}/comment`).
+2. **Templates Públicos & Template Parts:**
+   - `template-parts/{cover-media,breaking-ticker,card-article,card-compact}.php`
+   - `header.php`, `footer.php`, `front-page.php` (1ª dobra sem repetição via `$used_post_ids`), `single.php`, `page.php`, `archive.php`, `search.php`, `index.php`, `404.php` e `comments.php`.
+3. **Reels 2.0 Nativo:** `page-reels.php` + Vanilla JS (`assets/js/main.js` e `assets/js/reels.js`) com 3 zonas desktop, 3 lâminas Micro-Stories, atalhos `↑↓←→LC`, double-tap Pop-Art e mobile tela cheia + drawer escuro.
+4. **Build Tailwind CSS & Empacotamento `.zip`:** `src/css/input.css` (incluindo estilização do HTML legado `.ficha`/`.div-selo`/`.youtube-embed`), `tailwind.config.cjs`, `package.json`, compilação de `assets/css/main.css` e `scripts/package-theme.mjs` gerando `/dist/teoriageek-theme.zip` (`teoriageek/style.css` na raiz).
+5. **Auditoria final:** validação sintática PHP/JS/CSS, integridade do `.zip` e entrega do checklist de 5 passos para instalação no LocalWP.
