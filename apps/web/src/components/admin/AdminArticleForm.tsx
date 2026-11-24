@@ -9,10 +9,12 @@ import {
   Image as ImageIcon,
   RotateCcw,
   Save,
+  Smartphone,
   Star,
   Trash2,
   Upload,
 } from 'lucide-react';
+import { CategoryBadge } from '@/components/CategoryBadge';
 import { EditorialCoverArt } from '@/components/EditorialCoverArt';
 import { CATEGORIES, CATEGORY_LIST } from '@/lib/categories';
 import { ArticleValidationErrors, validateAdminArticleForm } from '@/lib/format';
@@ -27,7 +29,7 @@ import type {
 
 export interface AdminArticleFormProps {
   article: AdminArticleDetail;
-  mode: 'review' | 'edit';
+  mode: 'review' | 'edit' | 'create';
   busy?: boolean;
   onSaveEdits: (payload: AdminArticleUpsertRequest) => Promise<void> | void;
   onApprove?: (payload: AdminArticleUpsertRequest, setAsMainHeadline: boolean) => Promise<void> | void;
@@ -70,6 +72,10 @@ export function AdminArticleForm({
   const [sourceName, setSourceName] = useState(article.attribution.sourceName);
   const [sourceUrl, setSourceUrl] = useState(article.attribution.sourceUrl);
 
+  // Preview Reels ao vivo
+  const [showReelsPreview, setShowReelsPreview] = useState(false);
+  const [previewBlade, setPreviewBlade] = useState<0 | 1 | 2>(0);
+
   // Agendamento & Confirmação em 2 passos para Descartar
   const [scheduledAtLocal, setScheduledAtLocal] = useState('');
   const [scheduleError, setScheduleError] = useState('');
@@ -111,6 +117,7 @@ export function AdminArticleForm({
     setConfirmDiscardOpen(false);
     setDiscardReason('');
     setUploadError('');
+    setPreviewBlade(0);
   }, [article]);
 
   const handleLocalCoverUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -152,6 +159,12 @@ export function AdminArticleForm({
       cancelDiscardRef.current?.focus();
     }
   }, [confirmDiscardOpen]);
+
+  const previewBullets = bulletsText
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 3);
 
   const buildPayload = (): AdminArticleUpsertRequest => {
     const parsedScore = reviewScore.trim() === '' ? null : Number(reviewScore.replace(',', '.'));
@@ -231,6 +244,24 @@ export function AdminArticleForm({
     await onSchedule(payload, parsed.toISOString());
   };
 
+  const handleContentTypeChange = (nextType: ContentType) => {
+    setContentType(nextType);
+    if (nextType === 'AUTORAL') {
+      if (!sourceName.trim()) {
+        setSourceName('CritHit! Redação');
+      }
+      if (!sourceUrl.trim()) {
+        setSourceUrl(
+          typeof window !== 'undefined'
+            ? `${window.location.origin}/redacao`
+            : 'https://crithit.com.br/redacao',
+        );
+      }
+    }
+  };
+
+  const canPublishOrSchedule = mode === 'review' || mode === 'create';
+
   return (
     <form onSubmit={handleSaveSubmit} noValidate className="space-y-5">
       {/* Manchete */}
@@ -294,9 +325,9 @@ export function AdminArticleForm({
             onChange={(e) => setEditorialFormat(e.target.value as EditorialFormat)}
             className="w-full rounded border-2 border-border-input bg-surface px-3 py-2 font-sans text-sm text-ink-primary"
           >
-            <option value="NEWS">Notícia (NEWS)</option>
-            <option value="COLUMN">Coluna (COLUMN)</option>
-            <option value="REVIEW">Review (REVIEW)</option>
+            <option value="NEWS">Notícia</option>
+            <option value="COLUMN">Coluna</option>
+            <option value="REVIEW">Review</option>
           </select>
         </div>
 
@@ -369,7 +400,7 @@ export function AdminArticleForm({
           htmlFor={`${formId}-bullets`}
           className="mb-1 block font-mono text-xs font-bold uppercase text-ink-secondary"
         >
-          Sub-bullets de resumo (um por linha, até 5)
+          Pontos-chave da matéria (um por linha, até 5)
         </label>
         <textarea
           id={`${formId}-bullets`}
@@ -404,16 +435,31 @@ export function AdminArticleForm({
         )}
       </div>
 
-      {/* Resumo Reels 9:16 */}
+      {/* Resumo para Reels */}
       <div>
-        <div className="mb-1 flex items-center justify-between">
+        <div className="mb-1 flex items-center justify-between gap-2">
           <label
             htmlFor={`${formId}-reels`}
             className="font-mono text-xs font-bold uppercase text-ink-secondary"
           >
-            Resumo para Reels 9:16
+            Resumo para Reels
           </label>
-          <span className="font-mono text-[11px] text-ink-muted">{reelsSummary.length}/320</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] text-ink-muted">{reelsSummary.length}/320</span>
+            <button
+              type="button"
+              aria-pressed={showReelsPreview}
+              onClick={() => setShowReelsPreview((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 rounded border-2 px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-colors ${
+                showReelsPreview
+                  ? 'border-border-strong bg-highlight text-ink-highlight'
+                  : 'border-border-subtle bg-surface-alt text-ink-secondary hover:border-border-strong hover:text-ink-primary'
+              }`}
+            >
+              <Smartphone className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {showReelsPreview ? 'Ocultar Preview Reels' : 'Preview Reels'}
+            </button>
+          </div>
         </div>
         <textarea
           id={`${formId}-reels`}
@@ -429,6 +475,142 @@ export function AdminArticleForm({
           <p id={`${formId}-reels-err`} role="alert" className="mt-1 font-sans text-xs text-status-error">
             {errors.reelsSummary}
           </p>
+        )}
+
+        {/* Simulador ao vivo do Reels */}
+        {showReelsPreview && (
+          <div
+            aria-label="Pré-visualização ao vivo do Reel"
+            className="mt-3 rounded-lg border-2 border-border-strong bg-[#090B10] p-4 text-white"
+          >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-highlight">
+                Simulador CritHit Reels
+              </span>
+              <div className="flex items-center gap-1.5">
+                {(
+                  [
+                    { idx: 0, label: '1. Capa' },
+                    { idx: 1, label: '2. Em 10s' },
+                    { idx: 2, label: '3. Fontes' },
+                  ] as const
+                ).map((b) => (
+                  <button
+                    key={b.idx}
+                    type="button"
+                    aria-pressed={previewBlade === b.idx}
+                    onClick={() => setPreviewBlade(b.idx)}
+                    className={`rounded-full px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase transition-colors ${
+                      previewBlade === b.idx
+                        ? 'bg-highlight text-ink-highlight'
+                        : 'bg-white/10 text-white/80 hover:bg-white/20'
+                    }`}
+                  >
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mx-auto relative aspect-[9/16] w-full max-w-[270px] overflow-hidden rounded-2xl border border-white/15 bg-[#121622]">
+              <div className="pointer-events-none absolute inset-0 z-0">
+                <EditorialCoverArt
+                  coverImageUrl={coverImageUrl}
+                  coverArtKey={article.coverArtKey}
+                  category={category}
+                  alt={headline || 'Pré-visualização no Reels'}
+                  aspectClass="h-full w-full"
+                  fullBleed
+                  decorative
+                />
+              </div>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    'linear-gradient(180deg, rgba(11,13,18,0.65) 0%, rgba(11,13,18,0.12) 28%, rgba(11,13,18,0.72) 60%, rgba(11,13,18,0.96) 100%)',
+                }}
+              />
+
+              {/* Barrinhas de lâminas */}
+              <div className="absolute inset-x-3 top-3 grid grid-cols-3 gap-1">
+                {[0, 1, 2].map((seg) => (
+                  <span
+                    key={seg}
+                    className={`h-1 rounded-full ${
+                      seg <= previewBlade ? 'bg-highlight' : 'bg-white/25'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 p-3.5 text-left">
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <CategoryBadge category={category} />
+                  {isUrgent && (
+                    <span className="rounded bg-[#E51B24] px-1.5 py-0.5 font-mono text-[11px] font-bold uppercase text-white">
+                      Plantão
+                    </span>
+                  )}
+                </div>
+
+                {previewBlade === 0 && (
+                  <>
+                    <p className="font-headline text-xl font-extrabold uppercase leading-tight text-white">
+                      {headline || 'Sua manchete aparecerá aqui'}
+                    </p>
+                    <p className="mt-1.5 line-clamp-3 font-reading text-xs text-white/90">
+                      {reelsSummary || 'Digite o resumo para Reels para visualizar aqui.'}
+                    </p>
+                  </>
+                )}
+
+                {previewBlade === 1 && (
+                  <div className="rounded-lg border border-white/15 bg-black/55 p-2.5 backdrop-blur-sm">
+                    <p className="mb-1.5 font-mono text-[11px] font-bold uppercase text-highlight">
+                      Em 10 segundos
+                    </p>
+                    {previewBullets.length > 0 ? (
+                      <ul className="space-y-1.5 font-reading text-xs text-white/95">
+                        {previewBullets.map((b, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="font-mono font-bold text-highlight">0{i + 1}</span>
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="font-reading text-xs text-white/80">
+                        Adicione pontos-chave acima para preencher esta lâmina.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {previewBlade === 2 && (
+                  <div className="rounded-lg border border-white/15 bg-black/55 p-2.5 backdrop-blur-sm space-y-1.5">
+                    <p className="font-mono text-[11px] font-bold uppercase text-highlight">
+                      Contexto e fontes
+                    </p>
+                    {reviewScore.trim() !== '' && (
+                      <p className="font-headline text-xl font-extrabold text-highlight">
+                        Nota CritHit!: {reviewScore}/10
+                      </p>
+                    )}
+                    <p className="font-mono text-[11px] text-white/90">
+                      Por {authorName || 'Redação CritHit!'}
+                    </p>
+                    <p className="font-mono text-[11px] text-white/75">
+                      {contentType === 'AUTORAL'
+                        ? 'Produção Original CritHit!'
+                        : `Fonte principal: ${sourceName || 'Informe a fonte'}`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -517,8 +699,8 @@ export function AdminArticleForm({
                 {getSafeHttpUrl(coverImageUrl)
                   ? coverImageUrl.includes('/api/media/')
                     ? 'Upload local'
-                    : 'Foto externa (RSS / URL)'
-                  : 'Arte vetorial da editoria'}
+                    : 'Foto externa'
+                  : 'Arte editorial'}
               </span>
             </div>
             <EditorialCoverArt
@@ -546,9 +728,8 @@ export function AdminArticleForm({
             className="w-full rounded border-2 border-border-input bg-surface px-3 py-2 font-sans text-sm text-ink-primary"
           />
           <p className="mt-2 font-reading text-xs leading-relaxed text-ink-muted">
-            Quando a URL da capa estiver preenchida (extraída automaticamente via RSS ou enviada
-            localmente), o portal exibe a foto em <code>object-cover</code> com fallback automático
-            para a ilustração HQ da editoria caso o servidor da imagem falhe.
+            Quando houver imagem de capa (enviada localmente ou obtida da fonte), ela será exibida
+            automaticamente nos cards e nos Reels com ajuste responsivo e fallback ilustrado.
           </p>
         </div>
       </div>
@@ -565,7 +746,7 @@ export function AdminArticleForm({
               htmlFor={`${formId}-author`}
               className="mb-1 block font-mono text-xs font-bold uppercase text-ink-secondary"
             >
-              Autor / Revisor (author_name)
+              Autor / Revisor
             </label>
             <input
               id={`${formId}-author`}
@@ -588,16 +769,16 @@ export function AdminArticleForm({
               htmlFor={`${formId}-contentType`}
               className="mb-1 block font-mono text-xs font-bold uppercase text-ink-secondary"
             >
-              Tipo de Conteúdo (content_type)
+              Tipo de Conteúdo
             </label>
             <select
               id={`${formId}-contentType`}
               value={contentType}
-              onChange={(e) => setContentType(e.target.value as ContentType)}
-              className="w-full rounded border-2 border-border-input bg-surface px-3 py-2 font-mono text-sm text-ink-primary"
+              onChange={(e) => handleContentTypeChange(e.target.value as ContentType)}
+              className="w-full rounded border-2 border-border-input bg-surface px-3 py-2 font-sans text-sm text-ink-primary"
             >
-              <option value="CURADORIA">CURADORIA (Adaptado de fonte externa)</option>
-              <option value="AUTORAL">AUTORAL (Produção original CritHit!)</option>
+              <option value="CURADORIA">Curadoria (Adaptado de fonte externa)</option>
+              <option value="AUTORAL">Autoral (Produção original CritHit!)</option>
             </select>
           </div>
 
@@ -606,7 +787,7 @@ export function AdminArticleForm({
               htmlFor={`${formId}-sourceName`}
               className="mb-1 block font-mono text-xs font-bold uppercase text-ink-secondary"
             >
-              Nome da Fonte (source_name)
+              Nome da Fonte
             </label>
             <input
               id={`${formId}-sourceName`}
@@ -629,7 +810,7 @@ export function AdminArticleForm({
               htmlFor={`${formId}-sourceUrl`}
               className="mb-1 block font-mono text-xs font-bold uppercase text-ink-secondary"
             >
-              URL da Fonte Original (http/https)
+              URL da Fonte Original
             </label>
             <input
               id={`${formId}-sourceUrl`}
@@ -661,7 +842,7 @@ export function AdminArticleForm({
           Exibir em Urgente na Redação
         </label>
 
-        {mode === 'review' && (
+        {canPublishOrSchedule && (
           <label className="inline-flex cursor-pointer items-center gap-2 font-sans text-sm font-medium text-ink-primary">
             <input
               type="checkbox"
@@ -670,16 +851,16 @@ export function AdminArticleForm({
               className="h-4 w-4 accent-[var(--fill-brand)]"
             />
             <Star className="h-4 w-4 text-brand" strokeWidth={2} aria-hidden="true" />
-            Promover a Manchete Principal ao aprovar
+            Promover a Manchete Principal ao publicar
           </label>
         )}
       </div>
 
-      {/* Agendamento (somente na fila de revisão) */}
-      {mode === 'review' && onSchedule && (
+      {/* Agendamento (fila de revisão ou criação manual) */}
+      {canPublishOrSchedule && onSchedule && (
         <div className="rounded border border-border-subtle bg-surface-alt p-3.5">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[200px]">
+            <div className="min-w-[200px] flex-1">
               <label
                 htmlFor={`${formId}-scheduledAt`}
                 className="mb-1 block font-mono text-xs font-bold uppercase text-ink-secondary"
@@ -723,7 +904,7 @@ export function AdminArticleForm({
       {/* Barra de Ações Principais */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-border-strong pt-4">
         <div className="flex flex-wrap items-center gap-2.5">
-          {mode === 'review' && onApprove && (
+          {canPublishOrSchedule && onApprove && (
             <button
               type="button"
               disabled={busy}
@@ -735,7 +916,7 @@ export function AdminArticleForm({
               }}
             >
               <Check className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              Aprovar e Publicar
+              {mode === 'create' ? 'Publicar matéria' : 'Aprovar e Publicar'}
             </button>
           )}
 
@@ -745,7 +926,7 @@ export function AdminArticleForm({
             className="inline-flex items-center gap-2 rounded border-2 border-border-strong bg-surface px-4 py-2.5 font-sans text-sm font-bold text-ink-primary shadow-hard-sm hover:bg-surface-alt disabled:opacity-60"
           >
             <Save className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            {mode === 'review' ? 'Salvar rascunho' : 'Salvar alterações'}
+            {mode === 'edit' ? 'Salvar alterações' : 'Salvar rascunho'}
           </button>
         </div>
 
@@ -782,7 +963,7 @@ export function AdminArticleForm({
                 </h3>
                 <p className="mt-1 font-reading text-xs">
                   O item sairá da fila de revisão e nunca aparecerá nas rotas públicas, mantendo
-                  registro apenas para auditoria e deduplicação.
+                  registro apenas para auditoria editorial.
                 </p>
               </div>
               <input

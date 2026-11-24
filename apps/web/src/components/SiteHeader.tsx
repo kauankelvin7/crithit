@@ -34,6 +34,11 @@ export function SiteHeader() {
     }
   };
 
+  // Isolamento total: o Painel Admin possui seu próprio cabeçalho dedicado
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <header
       data-chrome="dark"
@@ -73,7 +78,7 @@ export function SiteHeader() {
               }`}
             >
               <Film className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              Reels 9:16
+              Reels
             </Link>
             <Link
               href="/#editorias"
@@ -101,8 +106,8 @@ export function SiteHeader() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Buscar notícias"
-              placeholder="Buscar por título, editoria ou fonte..."
-              className="w-64 rounded border-2 border-[var(--border-input)] bg-chrome-surface py-1.5 pl-9 pr-8 font-sans text-sm text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
+              placeholder="Buscar notícias, jogos, fontes..."
+              className="w-72 rounded border-2 border-[var(--border-input)] bg-chrome-surface py-1.5 pl-9 pr-8 font-sans text-sm text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
             />
             {query && (
               <button
@@ -142,7 +147,7 @@ export function SiteHeader() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Buscar notícias no celular"
-              placeholder="Buscar por título, editoria ou fonte..."
+              placeholder="Buscar notícias, jogos, fontes..."
               className="w-full rounded border border-[var(--border-input)] bg-chrome py-1.5 pl-9 pr-9 font-sans text-sm text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
             />
             {query && (

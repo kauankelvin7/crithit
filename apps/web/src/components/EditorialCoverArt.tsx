@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { resolveAuthorAvatar, type AvatarVariantKey } from '@/lib/authors';
 import type { Category } from '@/lib/types';
 import { getSafeHttpUrl } from '@/lib/url';
 
@@ -30,6 +31,7 @@ interface EditorialCoverArtProps {
   decorative?: boolean;
   priority?: boolean;
   fit?: 'cover' | 'contain';
+  fullBleed?: boolean;
 }
 
 interface ArtTheme {
@@ -737,6 +739,7 @@ export function EditorialCoverArt({
   compact = false,
   decorative = false,
   fit = 'cover',
+  fullBleed = false,
 }: EditorialCoverArtProps) {
   const [imageError, setImageError] = useState(false);
   const rawUid = useId();
@@ -747,6 +750,34 @@ export function EditorialCoverArt({
   const theme = ART_THEMES[variant];
 
   if (safeUrl && !imageError) {
+    if (fullBleed) {
+      return (
+        <div
+          className={`relative overflow-hidden bg-[var(--chrome-bg)] ${aspectClass} ${className}`}
+        >
+          {/* Fundo ambiente desfocado preenchendo 100% da altura vertical sem faixas pretas */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={safeUrl}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-45 blur-2xl"
+          />
+          <div className="relative z-10 flex h-[56%] w-full items-center justify-center px-3 pt-12">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={safeUrl}
+              alt={decorative ? '' : alt}
+              aria-hidden={decorative ? 'true' : undefined}
+              onError={() => setImageError(true)}
+              className={`editorial-cover-media max-h-full w-full rounded-xl object-cover object-center shadow-2xl ${mediaClassName}`}
+              loading="lazy"
+            />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={`relative overflow-hidden bg-[var(--chrome-bg)] ${aspectClass} ${className}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -758,6 +789,37 @@ export function EditorialCoverArt({
           className={`editorial-cover-media h-full w-full object-cover object-center ${mediaClassName}`}
           loading="lazy"
         />
+      </div>
+    );
+  }
+
+  if (fullBleed) {
+    return (
+      <div
+        className={`relative overflow-hidden ${aspectClass} ${className}`}
+        style={{
+          background: `radial-gradient(circle at 50% 34%, ${theme.bg2} 0%, ${theme.bg1} 52%, ${theme.bg3} 100%)`,
+        }}
+        role={decorative ? undefined : 'img'}
+        aria-label={decorative ? undefined : alt}
+        aria-hidden={decorative ? 'true' : undefined}
+      >
+        {/* Fundo contínuo HQ em 100% da altura do card (sunburst + halftone) */}
+        <div aria-hidden="true" className="comic-sunburst pointer-events-none absolute inset-0 opacity-75" />
+        <div aria-hidden="true" className="bg-halftone-overlay pointer-events-none absolute inset-0 opacity-65" />
+
+        {/* Elemento gráfico principal enquadrado na metade superior sem corte */}
+        <div className="relative z-10 flex h-[56%] w-full items-center justify-center pt-11">
+          <svg
+            viewBox="0 0 640 360"
+            preserveAspectRatio="xMidYMid meet"
+            className={`editorial-cover-media block h-full w-full ${mediaClassName}`}
+            aria-hidden="true"
+            focusable="false"
+          >
+            {renderArtworkScene(variant, theme, compact)}
+          </svg>
+        </div>
       </div>
     );
   }
@@ -813,11 +875,7 @@ export function EditorialCoverArt({
   );
 }
 
-export type AvatarVariantKey =
-  | 'avatar-byte'
-  | 'avatar-tinta'
-  | 'avatar-sakuga'
-  | 'avatar-frame';
+export type { AvatarVariantKey };
 
 interface EditorialAvatarProps {
   authorName: string;
@@ -825,27 +883,12 @@ interface EditorialAvatarProps {
   sizeClass?: string;
 }
 
-const AVATAR_VARIANTS: readonly AvatarVariantKey[] = [
-  'avatar-byte',
-  'avatar-tinta',
-  'avatar-sakuga',
-  'avatar-frame',
-] as const;
-
-function pickAvatarVariant(authorName: string): AvatarVariantKey {
-  let hash = 0;
-  for (let i = 0; i < authorName.length; i++) {
-    hash = (hash * 31 + authorName.charCodeAt(i)) >>> 0;
-  }
-  return AVATAR_VARIANTS[hash % AVATAR_VARIANTS.length];
-}
-
 export function EditorialAvatar({
   authorName,
   variant,
   sizeClass = 'h-10 w-10',
 }: EditorialAvatarProps) {
-  const resolved = variant ?? pickAvatarVariant(authorName);
+  const resolved = variant ?? resolveAuthorAvatar(authorName);
   const rawUid = useId();
   const uid = rawUid.replace(/[^a-zA-Z0-9_-]/g, '');
 

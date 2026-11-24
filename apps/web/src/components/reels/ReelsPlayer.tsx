@@ -14,21 +14,28 @@ import {
 } from 'react';
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   Bookmark,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
+  Clock,
   Compass,
   ExternalLink,
   Flame,
   GitFork,
   Heart,
   Layers,
+  ListChecks,
   MessageSquare,
   PenTool,
+  Radio,
   Send,
   Share2,
+  Star,
 } from 'lucide-react';
 import { CategoryBadge } from '@/components/CategoryBadge';
 import { EditorialCoverArt } from '@/components/EditorialCoverArt';
@@ -46,6 +53,7 @@ import { getSafeHttpUrl } from '@/lib/url';
 
 type FilterOption = 'TODOS' | Category;
 type FeedMode = 'for-you' | 'trending' | 'saved';
+type StoryBlade = 0 | 1 | 2;
 
 interface ReelsPlayerProps {
   initialItems: PublicArticleSummary[];
@@ -57,6 +65,12 @@ const FILTER_OPTIONS: Array<{ value: FilterOption; label: string }> = [
   { value: 'TODOS', label: 'Todas' },
   ...CATEGORY_LIST.map((cat) => ({ value: cat as FilterOption, label: CATEGORIES[cat].shortLabel })),
 ];
+
+const BLADE_LABELS: readonly string[] = [
+  'Capa e gancho',
+  'Em 10 segundos',
+  'Contexto e fontes',
+] as const;
 
 const AMBIENT_GLOW_BY_CATEGORY: Record<Category, string> = {
   GAMES: 'rgba(37, 99, 235, 0.36)',
@@ -85,6 +99,7 @@ export function ReelsPlayer({
   const [feedMode, setFeedMode] = useState<FeedMode>('for-you');
   const [selectedCategory, setSelectedCategory] = useState<FilterOption>('TODOS');
   const [activeIndex, setActiveIndex] = useState(0);
+  const [bladeByArticle, setBladeByArticle] = useState<Record<string, StoryBlade>>({});
   const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>(() => {
     const map: Record<string, number> = {};
@@ -102,6 +117,7 @@ export function ReelsPlayer({
   const [drawerArticle, setDrawerArticle] = useState<PublicArticleSummary | null>(null);
   const [sfxFeedback, setSfxFeedback] = useState<SfxFeedbackState | null>(null);
   const [poppingButton, setPoppingButton] = useState<{ key: string; seq: number } | null>(null);
+  const [panelHighlight, setPanelHighlight] = useState(false);
   const [showMissingNotice, setShowMissingNotice] = useState(
     Boolean(initialFocusSlug && !initialFocusFound),
   );
@@ -124,9 +140,11 @@ export function ReelsPlayer({
   const feedRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const commentTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelBodyInputRef = useRef<HTMLTextAreaElement>(null);
   const didInitialScrollRef = useRef(false);
   const sfxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const panelHighlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTapRef = useRef<{ time: number; articleId: string } | null>(null);
 
   const triggerSfxFeedback = useCallback(
@@ -159,6 +177,7 @@ export function ReelsPlayer({
     return () => {
       if (sfxTimerRef.current) clearTimeout(sfxTimerRef.current);
       if (shareToastTimerRef.current) clearTimeout(shareToastTimerRef.current);
+      if (panelHighlightTimerRef.current) clearTimeout(panelHighlightTimerRef.current);
     };
   }, []);
 
@@ -199,6 +218,23 @@ export function ReelsPlayer({
   const ambientGlowColor = activeArticle
     ? AMBIENT_GLOW_BY_CATEGORY[activeArticle.category]
     : AMBIENT_GLOW_BY_CATEGORY.GAMES;
+
+  const setArticleBlade = useCallback((articleId: string, nextBlade: StoryBlade) => {
+    setBladeByArticle((prev) => ({
+      ...prev,
+      [articleId]: nextBlade,
+    }));
+  }, []);
+
+  const stepActiveBlade = useCallback(
+    (delta: -1 | 1) => {
+      if (!activeArticle) return;
+      const current = bladeByArticle[activeArticle.id] ?? 0;
+      const next = Math.max(0, Math.min(2, current + delta)) as StoryBlade;
+      setArticleBlade(activeArticle.id, next);
+    },
+    [activeArticle, bladeByArticle, setArticleBlade],
+  );
 
   // Restaura itens salvos do localStorage
   useEffect(() => {
@@ -272,9 +308,8 @@ export function ReelsPlayer({
       if (targetIndex >= 0) {
         setActiveIndex(targetIndex);
         const container = feedRef.current;
-        const node = cardRefs.current[targetIndex];
-        if (container && node) {
-          const top = node.offsetTop || targetIndex * container.clientHeight;
+        if (container) {
+          const top = targetIndex * container.clientHeight;
           if (typeof container.scrollTo === 'function') {
             container.scrollTo({ top, behavior: 'auto' });
           } else {
@@ -329,15 +364,14 @@ export function ReelsPlayer({
     (index: number) => {
       const bounded = Math.max(0, Math.min(index, filteredItems.length - 1));
       const container = feedRef.current;
-      const target = cardRefs.current[bounded];
-      if (!container || !target) return;
+      if (!container) return;
 
       const prefersReduced =
         typeof window !== 'undefined' &&
         window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
       setActiveIndex(bounded);
-      const top = target.offsetTop || bounded * container.clientHeight;
+      const top = bounded * container.clientHeight;
       if (typeof container.scrollTo === 'function') {
         container.scrollTo({
           top,
@@ -466,7 +500,35 @@ export function ReelsPlayer({
     [triggerIconPop],
   );
 
-  // Navegação e ações por teclado (ArrowUp/ArrowDown/PageUp/PageDown + L curtir + C comentar)
+  // Em desktop largo (>= 1280px), foca direto na coluna inline da direita (sem modal duplicado).
+  // Em viewports < 1280px, abre o CommentsDrawer com tema escuro.
+  const handleCommentTrigger = useCallback(
+    (article: PublicArticleSummary, triggerEl?: HTMLButtonElement | null) => {
+      triggerIconPop(`comment-${article.id}`);
+      if (triggerEl) {
+        commentTriggerRef.current = triggerEl;
+      }
+
+      const isWideDesktop =
+        typeof window !== 'undefined' &&
+        window.innerWidth >= 1280 &&
+        panelBodyInputRef.current !== null;
+
+      if (isWideDesktop && panelBodyInputRef.current) {
+        panelBodyInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        panelBodyInputRef.current.focus();
+        setPanelHighlight(true);
+        if (panelHighlightTimerRef.current) clearTimeout(panelHighlightTimerRef.current);
+        panelHighlightTimerRef.current = setTimeout(() => setPanelHighlight(false), 1200);
+        return;
+      }
+
+      setDrawerArticle(article);
+    },
+    [triggerIconPop],
+  );
+
+  // Navegação e ações por teclado (↑/↓ Reels, ←/→ Lâminas, L curtir, C comentar)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (drawerArticle) return;
@@ -483,18 +545,24 @@ export function ReelsPlayer({
       } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
         event.preventDefault();
         scrollToCard(activeIndex - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        stepActiveBlade(1);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        stepActiveBlade(-1);
       } else if ((event.key === 'l' || event.key === 'L') && activeArticle) {
         event.preventDefault();
         void handleToggleLike(activeArticle);
       } else if ((event.key === 'c' || event.key === 'C') && activeArticle) {
         event.preventDefault();
-        setDrawerArticle(activeArticle);
+        handleCommentTrigger(activeArticle);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeArticle, activeIndex, drawerArticle, handleToggleLike, scrollToCard]);
+  }, [activeArticle, activeIndex, drawerArticle, handleCommentTrigger, handleToggleLike, scrollToCard, stepActiveBlade]);
 
   const handleCategoryChange = (nextCategory: FilterOption) => {
     setSelectedCategory(nextCategory);
@@ -592,31 +660,38 @@ export function ReelsPlayer({
     }
   };
 
+  const getArticleSources = useCallback(
+    (article: PublicArticleSummary): MatchedSourceDto[] => {
+      if (article.matchedSources && article.matchedSources.length > 0) {
+        return article.matchedSources;
+      }
+      const fetched = matchedSourcesByArticle[article.id];
+      if (fetched && fetched.length > 0) {
+        return fetched;
+      }
+      return [
+        {
+          id: `fallback-${article.id}`,
+          sourceName: article.attribution.sourceName,
+          sourceUrl: article.attribution.sourceUrl,
+          originalTitle: article.headline,
+          originalExcerpt: null,
+          similarityScore: 1,
+          isPrimary: true,
+          fetchedAt: article.publishedAt,
+        },
+      ];
+    },
+    [matchedSourcesByArticle],
+  );
+
   const paddedCurrent = String(Math.min(activeIndex + 1, filteredItems.length)).padStart(2, '0');
   const paddedTotal = String(filteredItems.length).padStart(2, '0');
 
-  const activeMatchedSources = useMemo(() => {
-    if (!activeArticle) return [];
-    if (activeArticle.matchedSources && activeArticle.matchedSources.length > 0) {
-      return activeArticle.matchedSources;
-    }
-    const fetched = matchedSourcesByArticle[activeArticle.id];
-    if (fetched && fetched.length > 0) {
-      return fetched;
-    }
-    return [
-      {
-        id: `fallback-${activeArticle.id}`,
-        sourceName: activeArticle.attribution.sourceName,
-        sourceUrl: activeArticle.attribution.sourceUrl,
-        originalTitle: activeArticle.headline,
-        originalExcerpt: null,
-        similarityScore: 1,
-        isPrimary: true,
-        fetchedAt: activeArticle.publishedAt,
-      },
-    ];
-  }, [activeArticle, matchedSourcesByArticle]);
+  const activeMatchedSources = useMemo(
+    () => (activeArticle ? getArticleSources(activeArticle) : []),
+    [activeArticle, getArticleSources],
+  );
 
   const activePanelComments = activeArticle
     ? (panelCommentsByArticle[activeArticle.id] ?? [])
@@ -628,7 +703,7 @@ export function ReelsPlayer({
       data-reels-stage="true"
       className="relative flex h-[calc(100dvh-67px)] w-full flex-1 overflow-hidden bg-[#0B0D12] text-white"
     >
-      {/* ZONA ESQUERDA: Sidebar de Navegação estilo TikTok Desktop */}
+      {/* ZONA ESQUERDA: Sidebar de Navegação Desktop */}
       <aside
         aria-label="Navegação e editorias do Reels"
         className="hidden w-64 shrink-0 flex-col justify-between overflow-y-auto border-r border-white/10 bg-[#0D1017] p-4 lg:flex"
@@ -743,17 +818,24 @@ export function ReelsPlayer({
           </div>
         </div>
 
-        {/* Atalhos discretos de teclado na base da sidebar esquerda */}
+        {/* Atalhos discretos de teclado */}
         <div className="mt-4 rounded-xl border border-white/10 bg-[#141822] p-3 font-mono text-[11px] text-zinc-300">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#FFD600]">
             Atalhos do Player
           </p>
           <ul className="space-y-1">
             <li className="flex items-center justify-between">
-              <span>Navegar</span>
+              <span>Trocar Reel</span>
               <span className="inline-flex gap-1 text-white">
                 <kbd className="rounded border border-white/20 bg-[#0B0D12] px-1.5 py-0.5 font-bold">↑</kbd>
                 <kbd className="rounded border border-white/20 bg-[#0B0D12] px-1.5 py-0.5 font-bold">↓</kbd>
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Lâminas</span>
+              <span className="inline-flex gap-1 text-white">
+                <kbd className="rounded border border-white/20 bg-[#0B0D12] px-1.5 py-0.5 font-bold">←</kbd>
+                <kbd className="rounded border border-white/20 bg-[#0B0D12] px-1.5 py-0.5 font-bold">→</kbd>
               </span>
             </li>
             <li className="flex items-center justify-between">
@@ -767,7 +849,7 @@ export function ReelsPlayer({
         </div>
       </aside>
 
-      {/* ZONA CENTRAL: Palco Imersivo 9:16 + Coluna de Ações Acoplada */}
+      {/* ZONA CENTRAL: Palco Imersivo Full-Bleed + Coluna de Ações Acoplada */}
       <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-2 py-2 lg:px-4">
         {/* Ambient Glow Reativo suave ao fundo do palco (desktop) */}
         <div
@@ -778,8 +860,40 @@ export function ReelsPlayer({
           }}
         />
 
-        {/* Pílulas Flutuantes de Editoria exclusivas Mobile/Tablet (< lg) */}
-        <div className="relative z-20 mb-2 flex w-full max-w-[430px] items-center justify-center lg:hidden">
+        {/* Controles Compactos Mobile/Tablet (< lg): Modos (Para Você | Em Alta | Salvos) + Editorias */}
+        <div className="relative z-20 mb-2 flex w-full max-w-[430px] flex-col gap-1.5 lg:hidden">
+          <div
+            role="group"
+            aria-label="Modos do feed no celular"
+            className="grid grid-cols-3 gap-1 rounded-xl border border-white/15 bg-[#12151E] p-1"
+          >
+            {(
+              [
+                { mode: 'for-you', label: 'Para Você', aria: 'Para Você no celular' },
+                { mode: 'trending', label: 'Em Alta', aria: 'Em Alta no celular' },
+                { mode: 'saved', label: `Salvos (${savedCount})`, aria: `Salvos (${savedCount}) no celular` },
+              ] as const
+            ).map((tab) => {
+              const active = feedMode === tab.mode;
+              return (
+                <button
+                  key={tab.mode}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={tab.aria}
+                  onClick={() => handleFeedModeChange(tab.mode)}
+                  className={`rounded-lg px-2 py-1 font-mono text-[11px] font-bold transition-colors ${
+                    active
+                      ? 'bg-[#FFD600] text-[#111111]'
+                      : 'text-zinc-200 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div
             aria-label="Editorias rápidas no celular"
             className="reels-scroller flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-white/15 bg-white/10 px-2 py-1 backdrop-blur-md"
@@ -841,7 +955,7 @@ export function ReelsPlayer({
             <p className="mt-2 font-reading text-sm text-chrome-muted">
               {feedMode === 'saved'
                 ? 'Toque no ícone de marcador em qualquer Reel para salvar pautas e ler depois.'
-                : 'Ainda não há notícias publicadas no formato 9:16 para o filtro selecionado.'}
+                : 'Ainda não há notícias publicadas nos Reels para o filtro selecionado.'}
             </p>
             <button
               type="button"
@@ -858,11 +972,12 @@ export function ReelsPlayer({
           <div
             ref={feedRef}
             aria-label="Feed vertical CritHit Reels"
-            className="reels-scroller relative z-10 h-[calc(100dvh-130px)] w-full max-w-[430px] snap-y snap-mandatory overflow-y-scroll md:h-[calc(100dvh-132px)] md:w-[530px] md:max-w-none lg:h-[calc(100dvh-96px)] lg:max-h-[860px] lg:w-[540px] xl:w-[570px]"
+            className="reels-scroller relative z-10 h-[calc(100dvh-166px)] w-full max-w-[430px] snap-y snap-mandatory overflow-y-scroll md:h-[calc(100dvh-170px)] md:w-[530px] md:max-w-none lg:h-[calc(100dvh-96px)] lg:max-h-[860px] lg:w-[540px] xl:w-[570px]"
             style={{ scrollSnapType: 'y mandatory' }}
           >
             {filteredItems.map((article, index) => {
               const isActive = index === activeIndex;
+              const blade: StoryBlade = bladeByArticle[article.id] ?? 0;
               const isLiked = Boolean(likedIds[article.id]);
               const isSaved = Boolean(savedIds[article.id]);
               const likes = likeCounts[article.id] ?? article.likesCount;
@@ -875,6 +990,11 @@ export function ReelsPlayer({
                   ? 'reel-art-kenburns'
                   : 'reel-art-float'
                 : '';
+              const bullets =
+                article.subheadlineBullets.length > 0
+                  ? article.subheadlineBullets.slice(0, 3)
+                  : [article.lead];
+              const slideSources = getArticleSources(article);
 
               return (
                 <article
@@ -885,34 +1005,17 @@ export function ReelsPlayer({
                   data-reel-index={index}
                   data-reel-slug={article.slug}
                   data-reel-active={isActive ? 'true' : 'false'}
-                  className="relative flex h-full w-full snap-start snap-always items-end justify-center md:gap-4"
+                  data-reel-blade={blade}
+                  className="relative flex h-full min-h-full w-full shrink-0 snap-start snap-always items-end justify-center overflow-hidden md:gap-4"
                   style={{ scrollSnapAlign: 'start' }}
                 >
-                  {/* FRAME 9:16 PRINCIPAL DO CARD (460px-490px no desktop) */}
+                  {/* FRAME VERTICAL PRINCIPAL DO CARD (FULL-BLEED 100% DA ALTURA) */}
                   <div
                     data-reel-card-frame="true"
                     className="relative flex h-full w-full flex-col overflow-hidden rounded-[26px] border border-white/15 bg-[#06080C] shadow-[0_24px_60px_rgba(0,0,0,0.82)] md:w-[450px] md:shrink-0 md:rounded-[28px] lg:w-[460px] xl:w-[490px]"
                   >
-                    {/* Indicador discreto de posição no topo (01 / 12) + AO VIVO */}
-                    <div className="pointer-events-none absolute inset-x-4 top-3 z-30 flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/60 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase text-white backdrop-blur-sm">
-                        <span className="relative flex h-2 w-2" aria-hidden="true">
-                          <span className="live-dot-ping absolute inline-flex h-full w-full rounded-full bg-brand-fill" />
-                          <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-fill" />
-                        </span>
-                        AO VIVO
-                      </span>
-                      <span className="rounded-full border border-white/20 bg-black/65 px-2.5 py-0.5 font-mono text-[11px] font-bold text-white backdrop-blur-sm">
-                        <span className="text-[#FFD600]">{paddedCurrent}</span> / {paddedTotal}
-                      </span>
-                    </div>
-
-                    {/* 48% SUPERIOR: Arte / Capa enquadrada sem cortes */}
-                    <div
-                      onDoubleClick={(e) => handleStageDoubleClick(e, article)}
-                      onTouchEnd={(e) => handleStageTouchEnd(e, article)}
-                      className="relative h-[48%] w-full shrink-0 cursor-pointer select-none overflow-hidden pt-9"
-                    >
+                    {/* CANVAS VISUAL FULL-BLEED (preenche 100% do card sem faixa preta morta) */}
+                    <div className="pointer-events-none absolute inset-0 z-0">
                       <EditorialCoverArt
                         coverImageUrl={article.coverImageUrl}
                         coverArtKey={article.coverArtKey}
@@ -920,190 +1023,472 @@ export function ReelsPlayer({
                         alt={article.headline}
                         aspectClass="h-full w-full"
                         mediaClassName={artAnimationClass}
-                        fit="contain"
+                        fullBleed
                       />
-
-                      {/* Transição suave para o scrim de leitura inferior */}
-                      <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-0 bottom-0 h-14"
-                        style={{
-                          background:
-                            'linear-gradient(to top, #06080C 0%, rgba(6,8,12,0.55) 55%, rgba(6,8,12,0) 100%)',
-                        }}
-                      />
-
-                      {/* Explosão gráfica vetorial no double-click / double-tap / curtir / salvar (zero emojis) */}
-                      {sfxFeedback && sfxFeedback.articleId === article.id && (
-                        <div
-                          key={sfxFeedback.seq}
-                          aria-hidden="true"
-                          className="pointer-events-none absolute inset-0 z-30"
-                        >
-                          {sfxFeedback.withImpactRing && (
-                            <span
-                              className="reel-impact-ring absolute h-20 w-20 rounded-full border-4 border-[#FFD600]"
-                              style={{
-                                left: `${sfxFeedback.xPercent}%`,
-                                top: `${sfxFeedback.yPercent}%`,
-                              }}
-                            />
-                          )}
-                          <div
-                            className="sfx-burst absolute flex flex-col items-center justify-center"
-                            style={{
-                              left: `${sfxFeedback.xPercent}%`,
-                              top: `${sfxFeedback.yPercent}%`,
-                            }}
-                          >
-                            {sfxFeedback.type === 'like' && sfxFeedback.withImpactRing && (
-                              <span className="mb-1 inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#111111] bg-brand-fill text-white shadow-hard-sm">
-                                <Heart className="h-6 w-6 fill-current" strokeWidth={2} />
-                              </span>
-                            )}
-                            <svg
-                              viewBox="0 0 180 112"
-                              className="h-24 w-40 drop-shadow-[4px_4px_0_#111111]"
-                              focusable="false"
-                            >
-                              <polygon
-                                points="90,4 108,32 148,14 138,48 176,58 138,74 152,104 108,88 90,110 72,88 28,104 42,74 4,58 42,48 32,14 72,32"
-                                fill={sfxFeedback.type === 'like' ? '#E11D48' : '#FFD600'}
-                                stroke="#111111"
-                                strokeWidth="5"
-                                strokeLinejoin="round"
-                              />
-                              <text
-                                x="90"
-                                y="66"
-                                textAnchor="middle"
-                                fontFamily="var(--font-display), Impact, sans-serif"
-                                fontSize="28"
-                                letterSpacing="1.5"
-                                fill={sfxFeedback.type === 'like' ? '#FFFFFF' : '#111111'}
-                              >
-                                {sfxFeedback.type === 'like' ? 'CRIT HIT!' : 'SALVO!'}
-                              </text>
-                            </svg>
-                          </div>
-                        </div>
-                      )}
                     </div>
 
-                    {/* 52% INFERIOR: Hierarquia Editorial Limpa Estilo TikTok Web */}
-                    <div
-                      className="relative z-10 flex h-[52%] flex-1 flex-col justify-end px-4 pb-4 pt-2 sm:px-6 sm:pb-5"
-                      style={{
-                        background:
-                          'linear-gradient(to top, rgba(6,8,12,0.98) 0%, rgba(6,8,12,0.92) 48%, rgba(6,8,12,0.38) 82%, transparent 100%)',
-                      }}
-                    >
+                    {/* TOPO: Barra de Progresso de 3 Lâminas + Selo Real (PLANTÃO ou Tempo Relativo) + Contador */}
+                    <div className="relative z-30 flex flex-col gap-2 px-4 pt-3">
                       <div
-                        data-reel-text-block="true"
-                        className="flex flex-col gap-2 pr-16 md:pr-0"
+                        role="group"
+                        aria-label="Lâminas deste Reel"
+                        className="grid grid-cols-3 gap-1.5"
                       >
-                        <div
-                          className={`flex flex-wrap items-center gap-2 ${
-                            isActive ? 'reel-stagger-1' : ''
-                          }`}
-                        >
-                          <CategoryBadge category={article.category} size="sm" skewed />
-                          <span className="rounded-md border border-white/15 bg-white/10 px-2 py-0.5 font-mono text-[11px] font-bold text-white">
-                            {article.readingTimeMinutes} min
-                          </span>
-                          <span
-                            className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider"
-                            style={{
-                              backgroundColor: isAutoral ? '#065F46' : '#5B21B6',
-                              color: '#FFFFFF',
-                            }}
-                          >
-                            {isAutoral ? (
-                              <PenTool className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
-                            ) : (
-                              <GitFork className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
-                            )}
-                            {article.attribution.contentType}
-                          </span>
-                        </div>
+                        {([0, 1, 2] as const).map((step) => {
+                          const isCurrent = blade === step;
+                          const isPassed = blade >= step;
+                          return (
+                            <button
+                              key={step}
+                              type="button"
+                              aria-pressed={isCurrent}
+                              aria-label={`Lâmina ${step + 1} de 3: ${BLADE_LABELS[step]}`}
+                              onClick={() => setArticleBlade(article.id, step)}
+                              className="group/bar py-1 focus:outline-none"
+                            >
+                              <span
+                                className={`block h-1.5 w-full rounded-full transition-all ${
+                                  isPassed
+                                    ? 'bg-[#FFD600]'
+                                    : 'bg-white/30 group-hover/bar:bg-white/60'
+                                }`}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
 
-                        {isActive ? (
-                          <h1
-                            key={`h1-${article.id}`}
-                            data-reel-headline="true"
-                            className="reel-stagger-2 mb-1 line-clamp-3 font-headline text-[24px] font-extrabold leading-[1.08] tracking-tight text-white sm:text-[27px]"
-                          >
-                            {article.headline}
-                          </h1>
+                      <div className="flex items-center justify-between gap-2">
+                        {article.isUrgent ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FFD600]/50 bg-[#BE123C] px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase text-white shadow-sm">
+                            <Radio className="h-3 w-3 shrink-0" strokeWidth={2.2} aria-hidden="true" />
+                            PLANTÃO
+                          </span>
                         ) : (
-                          <h2
-                            data-reel-headline="true"
-                            className="mb-1 line-clamp-3 font-headline text-[24px] font-extrabold leading-[1.08] tracking-tight text-white sm:text-[27px]"
-                          >
-                            {article.headline}
-                          </h2>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/65 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase text-white backdrop-blur-sm">
+                            <Clock className="h-3 w-3 shrink-0 text-[#FFD600]" strokeWidth={2} aria-hidden="true" />
+                            {formatRelativeDate(article.publishedAt)}
+                          </span>
                         )}
 
-                        <p
-                          data-reel-summary="true"
-                          className={`line-clamp-3 font-reading text-[13.5px] leading-relaxed text-zinc-200 sm:text-[14px] ${
-                            isActive ? 'reel-stagger-3' : ''
-                          }`}
-                        >
-                          {article.reelsSummary}
-                        </p>
-
-                        {/* Crédito + Link explícito da fonte + link para fontes cruzadas */}
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11.5px] text-zinc-200">
-                          <span>Por {article.attribution.authorName}</span>
-                          <span aria-hidden="true">•</span>
-                          {safeSourceUrl ? (
-                            <a
-                              href={safeSourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 font-bold text-[#FFD600] underline decoration-[#FFD600] decoration-2 underline-offset-2 transition-colors hover:text-white"
-                            >
-                              <span>Fonte: {article.attribution.sourceName}</span>
-                              <ExternalLink
-                                className="h-3.5 w-3.5 shrink-0"
-                                strokeWidth={2}
-                                aria-hidden="true"
-                              />
-                              <span className="sr-only">(abre em nova aba)</span>
-                            </a>
-                          ) : (
-                            <span>Fonte: {article.attribution.sourceName}</span>
-                          )}
-                          {article.matchedSources && article.matchedSources.length > 1 && (
-                            <Link
-                              href={`/noticia/${article.slug}#fontes-cruzadas-heading`}
-                              className="inline-flex items-center gap-1 rounded border border-white/20 bg-white/10 px-1.5 py-0.5 text-[11px] font-semibold text-white hover:border-[#FFD600] hover:text-[#FFD600]"
-                            >
-                              <Layers className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                              +{article.matchedSources.length - 1} fonte
-                            </Link>
-                          )}
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded-full border border-white/20 bg-black/65 px-2.5 py-0.5 font-mono text-[11px] font-bold text-white backdrop-blur-sm">
+                            <span className="text-[#FFD600]">{paddedCurrent}</span> / {paddedTotal}
+                          </span>
                         </div>
                       </div>
-
-                      {/* CTA Principal */}
-                      <div className="mt-3 pt-1">
-                        <Link
-                          href={`/noticia/${article.slug}`}
-                          className="tactile-btn inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#FFD600] bg-[#FFD600] px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-[#111111] shadow-[0_4px_14px_rgba(0,0,0,0.45)] hover:bg-white"
-                        >
-                          <span>Ler matéria completa</span>
-                          <ArrowRight className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
-                        </Link>
-                      </div>
                     </div>
+
+                    {/* LÂMINA 1: CAPA & GANCHO */}
+                    {blade === 0 && (
+                      <>
+                        {/* Área interativa superior: double-click/tap curtir + navegação lateral discreta */}
+                        <div
+                          onDoubleClick={(e) => handleStageDoubleClick(e, article)}
+                          onTouchEnd={(e) => handleStageTouchEnd(e, article)}
+                          className="relative z-20 flex-1 cursor-pointer select-none"
+                        >
+                          {/* Botão lateral discreto para avançar para Lâmina 2 */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setArticleBlade(article.id, 1);
+                            }}
+                            aria-label="Próxima lâmina: Em 10 segundos"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white backdrop-blur-sm transition-colors hover:border-[#FFD600] hover:text-[#FFD600]"
+                          >
+                            <ChevronRight className="h-5 w-5" strokeWidth={2.2} aria-hidden="true" />
+                          </button>
+
+                          {/* Explosão gráfica vetorial CRIT HIT! / SALVO! */}
+                          {sfxFeedback && sfxFeedback.articleId === article.id && (
+                            <div
+                              key={sfxFeedback.seq}
+                              aria-hidden="true"
+                              className="pointer-events-none absolute inset-0 z-30"
+                            >
+                              {sfxFeedback.withImpactRing && (
+                                <span
+                                  className="reel-impact-ring absolute h-20 w-20 rounded-full border-4 border-[#FFD600]"
+                                  style={{
+                                    left: `${sfxFeedback.xPercent}%`,
+                                    top: `${sfxFeedback.yPercent}%`,
+                                  }}
+                                />
+                              )}
+                              <div
+                                className="sfx-burst absolute flex flex-col items-center justify-center"
+                                style={{
+                                  left: `${sfxFeedback.xPercent}%`,
+                                  top: `${sfxFeedback.yPercent}%`,
+                                }}
+                              >
+                                {sfxFeedback.type === 'like' && sfxFeedback.withImpactRing && (
+                                  <span className="mb-1 inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#111111] bg-brand-fill text-white shadow-hard-sm">
+                                    <Heart className="h-6 w-6 fill-current" strokeWidth={2} />
+                                  </span>
+                                )}
+                                <svg
+                                  viewBox="0 0 180 112"
+                                  className="h-24 w-40 drop-shadow-[4px_4px_0_#111111]"
+                                  focusable="false"
+                                >
+                                  <polygon
+                                    points="90,4 108,32 148,14 138,48 176,58 138,74 152,104 108,88 90,110 72,88 28,104 42,74 4,58 42,48 32,14 72,32"
+                                    fill={sfxFeedback.type === 'like' ? '#E11D48' : '#FFD600'}
+                                    stroke="#111111"
+                                    strokeWidth="5"
+                                    strokeLinejoin="round"
+                                  />
+                                  <text
+                                    x="90"
+                                    y="66"
+                                    textAnchor="middle"
+                                    fontFamily="var(--font-display), Impact, sans-serif"
+                                    fontSize="28"
+                                    letterSpacing="1.5"
+                                    fill={sfxFeedback.type === 'like' ? '#FFFFFF' : '#111111'}
+                                  >
+                                    {sfxFeedback.type === 'like' ? 'CRIT HIT!' : 'SALVO!'}
+                                  </text>
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Scrim suave contínuo na base para leitura impecável */}
+                        <div
+                          className="relative z-20 flex flex-col justify-end px-4 pb-4 pt-14 sm:px-6 sm:pb-5"
+                          style={{
+                            background:
+                              'linear-gradient(to top, rgba(6,8,12,0.98) 0%, rgba(6,8,12,0.92) 58%, rgba(6,8,12,0.52) 82%, rgba(6,8,12,0) 100%)',
+                          }}
+                        >
+                          <div
+                            data-reel-text-block="true"
+                            className="flex flex-col gap-2 pr-16 md:pr-0"
+                          >
+                            <div
+                              className={`flex flex-wrap items-center gap-2 ${
+                                isActive ? 'reel-stagger-1' : ''
+                              }`}
+                            >
+                              <CategoryBadge category={article.category} size="sm" skewed />
+                              <span className="rounded-md border border-white/20 bg-black/55 px-2 py-0.5 font-mono text-[11px] font-bold text-white">
+                                {article.readingTimeMinutes} min
+                              </span>
+                              <span
+                                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider"
+                                style={{
+                                  backgroundColor: isAutoral ? '#065F46' : '#5B21B6',
+                                  color: '#FFFFFF',
+                                }}
+                              >
+                                {isAutoral ? (
+                                  <PenTool className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                ) : (
+                                  <GitFork className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                )}
+                                {article.attribution.contentType}
+                              </span>
+                            </div>
+
+                            {isActive ? (
+                              <h1
+                                key={`h1-${article.id}`}
+                                data-reel-headline="true"
+                                className="reel-stagger-2 mb-0.5 line-clamp-3 font-headline text-[24px] font-extrabold leading-[1.08] tracking-tight text-white sm:text-[27px]"
+                              >
+                                {article.headline}
+                              </h1>
+                            ) : (
+                              <h2
+                                data-reel-headline="true"
+                                className="mb-0.5 line-clamp-3 font-headline text-[24px] font-extrabold leading-[1.08] tracking-tight text-white sm:text-[27px]"
+                              >
+                                {article.headline}
+                              </h2>
+                            )}
+
+                            <p
+                              data-reel-summary="true"
+                              className={`line-clamp-3 font-reading text-[13.5px] leading-relaxed text-zinc-100 sm:text-[14px] ${
+                                isActive ? 'reel-stagger-3' : ''
+                              }`}
+                            >
+                              {article.reelsSummary}
+                            </p>
+
+                            {/* Crédito + Fonte verificada (omitida quando AUTORAL) */}
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11.5px] text-zinc-200">
+                              <span>Por {article.attribution.authorName}</span>
+                              {!isAutoral && (
+                                <>
+                                  <span aria-hidden="true">•</span>
+                                  {safeSourceUrl ? (
+                                    <a
+                                      href={safeSourceUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 font-bold text-[#FFD600] underline decoration-[#FFD600] decoration-2 underline-offset-2 transition-colors hover:text-white"
+                                    >
+                                      <span>Fonte: {article.attribution.sourceName}</span>
+                                      <ExternalLink
+                                        className="h-3.5 w-3.5 shrink-0"
+                                        strokeWidth={2}
+                                        aria-hidden="true"
+                                      />
+                                      <span className="sr-only">(abre em nova aba)</span>
+                                    </a>
+                                  ) : (
+                                    <span>Fonte: {article.attribution.sourceName}</span>
+                                  )}
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setArticleBlade(article.id, 1)}
+                                className="inline-flex items-center gap-1 rounded border border-white/25 bg-white/10 px-2 py-0.5 text-[11px] font-bold text-white hover:border-[#FFD600] hover:text-[#FFD600]"
+                              >
+                                <ListChecks className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
+                                Em 10s
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* CTA Principal */}
+                          <div className="mt-3 pt-1">
+                            <Link
+                              href={`/noticia/${article.slug}`}
+                              className="tactile-btn inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#FFD600] bg-[#FFD600] px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-[#111111] shadow-[0_4px_14px_rgba(0,0,0,0.45)] hover:bg-white"
+                            >
+                              <span>Ler matéria completa</span>
+                              <ArrowRight className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                            </Link>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* LÂMINA 2: EM 10 SEGUNDOS (PONTOS-CHAVE) */}
+                    {blade === 1 && (
+                      <div className="relative z-20 flex flex-1 flex-col justify-between bg-[#090B11]/86 px-5 pb-5 pt-4 backdrop-blur-md">
+                        <div className="space-y-4 pr-14 md:pr-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#FFD600] px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-[#111111]">
+                              <ListChecks className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden="true" />
+                              Em 10 segundos
+                            </span>
+                            <CategoryBadge category={article.category} size="sm" />
+                          </div>
+
+                          {isActive ? (
+                            <h1
+                              data-reel-headline="true"
+                              className="font-headline text-2xl font-extrabold leading-tight text-white"
+                            >
+                              {article.headline}
+                            </h1>
+                          ) : (
+                            <h2
+                              data-reel-headline="true"
+                              className="font-headline text-2xl font-extrabold leading-tight text-white"
+                            >
+                              {article.headline}
+                            </h2>
+                          )}
+
+                          <ol className="space-y-2.5" data-reel-summary="true">
+                            {bullets.map((bullet, idx) => (
+                              <li
+                                key={idx}
+                                className="flex items-start gap-3 rounded-xl border border-white/15 bg-white/10 p-3.5"
+                              >
+                                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#FFD600] font-mono text-xs font-bold text-[#111111]">
+                                  0{idx + 1}
+                                </span>
+                                <p className="font-reading text-sm leading-relaxed text-zinc-100">
+                                  {bullet}
+                                </p>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setArticleBlade(article.id, 0)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-3.5 py-2.5 font-mono text-xs font-bold uppercase text-white hover:border-[#FFD600] hover:text-[#FFD600]"
+                          >
+                            <ChevronLeft className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                            Capa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setArticleBlade(article.id, 2)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#FFD600] bg-[#FFD600] px-4 py-2.5 font-mono text-xs font-bold uppercase text-[#111111] hover:bg-white"
+                          >
+                            Contexto e fontes
+                            <ChevronRight className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* LÂMINA 3: CONTEXTO, NOTA DE REVIEW & FONTES CRUZADAS */}
+                    {blade === 2 && (
+                      <div className="relative z-20 flex flex-1 flex-col justify-between bg-[#090B11]/88 px-5 pb-5 pt-4 backdrop-blur-md">
+                        <div className="space-y-4 overflow-y-auto pr-14 md:pr-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-md bg-[#FFD600] px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-[#111111]">
+                              <Layers className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden="true" />
+                              Contexto e fontes
+                            </span>
+                            <span
+                              className="rounded-md px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-white"
+                              style={{ backgroundColor: isAutoral ? '#065F46' : '#5B21B6' }}
+                            >
+                              {article.attribution.contentType}
+                            </span>
+                          </div>
+
+                          {isActive ? (
+                            <h1
+                              data-reel-headline="true"
+                              className="font-headline text-2xl font-extrabold leading-tight text-white"
+                            >
+                              {article.headline}
+                            </h1>
+                          ) : (
+                            <h2
+                              data-reel-headline="true"
+                              className="font-headline text-2xl font-extrabold leading-tight text-white"
+                            >
+                              {article.headline}
+                            </h2>
+                          )}
+
+                          {article.editorialFormat === 'REVIEW' && article.reviewScore !== null ? (
+                            <div
+                              data-reel-summary="true"
+                              className="rounded-2xl border-2 border-[#FFD600] bg-[#141822] p-4"
+                            >
+                              <div className="mb-2 flex items-center justify-between">
+                                <span className="font-mono text-xs font-bold uppercase text-[#FFD600]">
+                                  Veredito da Redação
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-lg bg-[#FFD600] px-2.5 py-1 font-display text-xl leading-none text-[#111111]">
+                                  <Star className="h-4 w-4 fill-current" strokeWidth={2} aria-hidden="true" />
+                                  {article.reviewScore.toFixed(1)} / 10
+                                </span>
+                              </div>
+                              <p className="font-reading text-sm leading-relaxed text-zinc-200">
+                                {article.lead}
+                              </p>
+                              <p className="mt-2 font-mono text-xs text-zinc-300">
+                                Análise assinada por {article.attribution.authorName}
+                              </p>
+                            </div>
+                          ) : isAutoral ? (
+                            <div
+                              data-reel-summary="true"
+                              className="rounded-2xl border border-white/15 bg-[#141822] p-4"
+                            >
+                              <p className="font-mono text-xs font-bold uppercase text-[#FFD600]">
+                                Produção original CritHit!
+                              </p>
+                              <p className="mt-2 font-reading text-sm leading-relaxed text-zinc-200">
+                                {article.lead}
+                              </p>
+                              <p className="mt-2 font-mono text-xs text-zinc-300">
+                                Texto assinado por {article.attribution.authorName}
+                              </p>
+                            </div>
+                          ) : (
+                            <ul className="space-y-2.5" data-reel-summary="true">
+                              {slideSources.map((src, srcIdx) => {
+                                const safeSrcUrl = getSafeHttpUrl(src.sourceUrl);
+                                const roleLabel =
+                                  src.isPrimary || srcIdx === 0
+                                    ? 'Fonte principal'
+                                    : 'Fonte corroborada';
+                                return (
+                                  <li
+                                    key={src.id}
+                                    className="rounded-xl border border-white/15 bg-[#141822] p-3"
+                                  >
+                                    <div className="mb-1 flex items-center justify-between gap-2">
+                                      <span className="font-mono text-xs font-bold text-[#FFD600]">
+                                        {src.sourceName}
+                                      </span>
+                                      <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-zinc-200">
+                                        {roleLabel}
+                                      </span>
+                                    </div>
+                                    {safeSrcUrl ? (
+                                      <a
+                                        href={safeSrcUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-start gap-1.5 font-sans text-xs leading-snug text-zinc-100 underline decoration-white/35 underline-offset-2 hover:text-[#FFD600]"
+                                      >
+                                        <span className="line-clamp-2">{src.originalTitle}</span>
+                                        <ExternalLink
+                                          className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                                          strokeWidth={2}
+                                          aria-hidden="true"
+                                        />
+                                        <span className="sr-only">(abre em nova aba)</span>
+                                      </a>
+                                    ) : (
+                                      <p className="line-clamp-2 font-sans text-xs text-zinc-200">
+                                        {src.originalTitle}
+                                      </p>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </div>
+
+                        <div className="mt-4 space-y-2.5">
+                          <Link
+                            href={`/noticia/${article.slug}`}
+                            className="tactile-btn inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#FFD600] bg-[#FFD600] px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-[#111111] shadow-[0_4px_14px_rgba(0,0,0,0.45)] hover:bg-white"
+                          >
+                            <span>Ler matéria completa</span>
+                            <ArrowRight className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                          </Link>
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => setArticleBlade(article.id, 1)}
+                              className="inline-flex items-center gap-1 font-mono text-xs font-bold uppercase text-zinc-300 hover:text-[#FFD600]"
+                            >
+                              <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                              Voltar para pontos-chave
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setArticleBlade(article.id, 0)}
+                              className="font-mono text-xs font-bold uppercase text-zinc-300 hover:text-[#FFD600]"
+                            >
+                              Início da pauta
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* COLUNA DE AÇÕES ACOPLADA À DIREITA DO CARD (Curtir, Comentar, Salvar, Compartilhar + Setas ↑ ↓) */}
+                  {/* COLUNA DE AÇÕES ACOPLADA À DIREITA DO CARD */}
                   <div
                     data-reel-actions="true"
-                    className="absolute bottom-[74px] right-3 z-20 flex flex-col items-center gap-2.5 md:static md:bottom-auto md:right-auto md:w-[60px] md:shrink-0 md:justify-end md:gap-3 md:pb-2"
+                    className="absolute bottom-[78px] right-3 z-30 flex flex-col items-center gap-2.5 md:static md:bottom-auto md:right-auto md:w-[60px] md:shrink-0 md:justify-end md:gap-3 md:pb-2"
                   >
                     <button
                       type="button"
@@ -1157,11 +1542,7 @@ export function ReelsPlayer({
 
                     <button
                       type="button"
-                      onClick={(e) => {
-                        triggerIconPop(`comment-${article.id}`);
-                        commentTriggerRef.current = e.currentTarget;
-                        setDrawerArticle(article);
-                      }}
+                      onClick={(e) => handleCommentTrigger(article, e.currentTarget)}
                       className="tactile-btn flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-2xl border-2 border-white/20 bg-[#151926] text-white shadow-[3px_3px_0_#000000] hover:border-[#FFD600] hover:text-[#FFD600] active:translate-y-0.5"
                     >
                       <MessageSquare
@@ -1231,7 +1612,7 @@ export function ReelsPlayer({
         )}
       </div>
 
-      {/* ZONA DIREITA (xl+): Painel Vivo de Fontes Cruzadas & Comentários da Comunidade estilo TikTok Web */}
+      {/* ZONA DIREITA (xl+): Painel Vivo de Fontes Cruzadas & Comentários da Comunidade */}
       <aside
         aria-label="Fontes cruzadas e comentários do Reel ativo"
         className="hidden w-80 shrink-0 flex-col border-l border-white/10 bg-[#0D1017] xl:flex"
@@ -1256,46 +1637,59 @@ export function ReelsPlayer({
                 </span>
               </div>
 
-              <ul className="space-y-2">
-                {activeMatchedSources.map((src) => {
-                  const safeSrcUrl = getSafeHttpUrl(src.sourceUrl);
-                  return (
-                    <li
-                      key={src.id}
-                      className="rounded-xl border border-white/15 bg-[#141822] p-2.5"
-                    >
-                      <div className="mb-1 flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs font-bold text-[#FFD600]">
-                          {src.sourceName}
-                        </span>
-                        <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-zinc-200">
-                          {Math.round(src.similarityScore * 100)}%
-                        </span>
-                      </div>
-                      {safeSrcUrl ? (
-                        <a
-                          href={safeSrcUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group inline-flex items-start gap-1.5 font-sans text-xs leading-snug text-zinc-200 underline decoration-white/30 underline-offset-2 hover:text-[#FFD600] hover:decoration-[#FFD600]"
-                        >
-                          <span className="line-clamp-2">{src.originalTitle}</span>
-                          <ExternalLink
-                            className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                            strokeWidth={2}
-                            aria-hidden="true"
-                          />
-                          <span className="sr-only">(abre em nova aba)</span>
-                        </a>
-                      ) : (
-                        <p className="line-clamp-2 font-sans text-xs leading-snug text-zinc-200">
-                          {src.originalTitle}
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+              {activeArticle.attribution.contentType === 'AUTORAL' ? (
+                <div className="rounded-xl border border-white/15 bg-[#141822] p-3">
+                  <p className="font-mono text-xs font-bold text-[#FFD600]">
+                    Produção original CritHit!
+                  </p>
+                  <p className="mt-1 font-reading text-xs leading-relaxed text-zinc-200">
+                    Conteúdo autoral assinado por {activeArticle.attribution.authorName}.
+                  </p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {activeMatchedSources.map((src, srcIdx) => {
+                    const safeSrcUrl = getSafeHttpUrl(src.sourceUrl);
+                    const sourceBadgeLabel =
+                      src.isPrimary || srcIdx === 0 ? 'Fonte principal' : 'Fonte corroborada';
+                    return (
+                      <li
+                        key={src.id}
+                        className="rounded-xl border border-white/15 bg-[#141822] p-2.5"
+                      >
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs font-bold text-[#FFD600]">
+                            {src.sourceName}
+                          </span>
+                          <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-zinc-200">
+                            {sourceBadgeLabel}
+                          </span>
+                        </div>
+                        {safeSrcUrl ? (
+                          <a
+                            href={safeSrcUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group inline-flex items-start gap-1.5 font-sans text-xs leading-snug text-zinc-200 underline decoration-white/30 underline-offset-2 hover:text-[#FFD600] hover:decoration-[#FFD600]"
+                          >
+                            <span className="line-clamp-2">{src.originalTitle}</span>
+                            <ExternalLink
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                              strokeWidth={2}
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">(abre em nova aba)</span>
+                          </a>
+                        ) : (
+                          <p className="line-clamp-2 font-sans text-xs leading-snug text-zinc-200">
+                            {src.originalTitle}
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
 
             {/* Comentários da Comunidade ao Vivo */}
@@ -1339,11 +1733,13 @@ export function ReelsPlayer({
                 )}
               </div>
 
-              {/* Formulário direto sem abrir modal */}
+              {/* Formulário direto sem abrir modal no desktop >= 1280px */}
               <form
                 onSubmit={handlePanelCommentSubmit}
                 noValidate
-                className="space-y-2.5 border-t border-white/10 bg-[#12151E] p-3.5"
+                className={`space-y-2.5 border-t border-white/10 bg-[#12151E] p-3.5 transition-shadow ${
+                  panelHighlight ? 'ring-2 ring-inset ring-[#FFD600]' : ''
+                }`}
               >
                 <div>
                   <label
@@ -1376,6 +1772,7 @@ export function ReelsPlayer({
                     </span>
                   </div>
                   <textarea
+                    ref={panelBodyInputRef}
                     id={panelBodyInputId}
                     rows={2}
                     maxLength={MAX_COMMENT_BODY_LENGTH}
@@ -1417,11 +1814,13 @@ export function ReelsPlayer({
         )}
       </aside>
 
+      {/* Modal 100% Dark usado exclusivamente em viewports < 1280px */}
       <CommentsDrawer
         open={Boolean(drawerArticle)}
         articleId={drawerArticle?.id ?? ''}
         articleHeadline={drawerArticle?.headline ?? ''}
         triggerRef={commentTriggerRef}
+        tone="dark"
         onClose={() => setDrawerArticle(null)}
         onCommentAdded={(created) => {
           if (!drawerArticle) return;

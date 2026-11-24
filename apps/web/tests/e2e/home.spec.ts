@@ -34,6 +34,17 @@ test.describe('Fluxo 1 — Home Editorial (/), Busca & Tema', () => {
     expect(await giroCards.count()).toBeGreaterThanOrEqual(4);
     expect(await giroCards.count()).toBeLessThanOrEqual(8);
 
+    // Sem termo técnico 9:16 na interface pública
+    await expect(page.locator('body')).not.toContainText('9:16');
+
+    // Todas as 5 editorias visíveis em #editorias
+    const editorias = page.locator('#editorias');
+    await expect(editorias).toContainText('Games');
+    await expect(editorias).toContainText('Quadrinhos');
+    await expect(editorias).toContainText('Cinema');
+    await expect(editorias).toContainText('Animes');
+    await expect(editorias).toContainText('Tech');
+
     // Newsletter Loot Diário — validação de erro e sucesso
     const newsletter = page.locator('#newsletter');
     await expect(newsletter.getByRole('heading', { name: /Loot Diário/i })).toBeVisible();
@@ -73,6 +84,8 @@ test.describe('Fluxo 1 — Home Editorial (/), Busca & Tema', () => {
     await expect(resultsSection).toBeVisible();
     await expect(resultsSection).toContainText('Resultados para "Capcom"');
     await expect(resultsSection.locator('article').first()).toContainText('Dino Crisis');
+    // Hero padrão não se repete abaixo da busca ativa
+    await expect(page.getByRole('region', { name: 'Destaques principais da capa' })).toHaveCount(0);
 
     // Limpar busca
     await resultsSection.getByRole('link', { name: /Limpar filtro/i }).click();

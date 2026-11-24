@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { setupApiMocks } from './helpers/mock-api';
 
-test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () => {
-  test('deep-link /reels?id=<slug> abre diretamente no card correspondente', async ({ page }) => {
+test.describe('Fluxo 2 — CritHit Reels 2.0 (/reels e /reels?id=<slug>)', () => {
+  test('deep-link /reels?id=<slug> abre diretamente no card correspondente e navega nas 3 lâminas Micro-Stories', async ({
+    page,
+  }) => {
     await setupApiMocks(page);
     const targetSlug = 'frieren-segunda-temporada-madhouse-data-estreia';
 
@@ -11,6 +13,10 @@ test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () =
     const targetCard = page.locator(`article[data-reel-slug="${targetSlug}"]`);
     await expect(targetCard).toBeVisible();
     await expect(targetCard.locator('h1')).toContainText(/Frieren/i);
+
+    // Sem 9:16 e sem rótulo enganoso AO VIVO
+    await expect(page.locator('body')).not.toContainText('9:16');
+    await expect(page.locator('body')).not.toContainText('AO VIVO');
 
     // Verifica que o card alvo está posicionado no viewport do container de feed
     const isNearTop = await targetCard.evaluate((el) => {
@@ -21,9 +27,23 @@ test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () =
       return Math.abs(cardRect.top - containerRect.top) < 80;
     });
     expect(isNearTop).toBe(true);
+
+    // Lâmina 1 -> Lâmina 2 (Em 10 segundos) -> Lâmina 3 (Contexto e fontes) via teclado
+    await page.keyboard.press('ArrowRight');
+    await expect(targetCard.getByText('Em 10 segundos')).toBeVisible();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(targetCard.getByText('Contexto e fontes')).toBeVisible();
+    await expect(targetCard.getByText('Fonte principal')).toBeVisible();
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(targetCard.getByText('Em 10 segundos')).toBeVisible();
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(targetCard.locator('[data-reel-summary="true"]')).toBeVisible();
   });
 
-  test('filtra por editoria e restaura para Todos', async ({ page }) => {
+  test('filtra por editoria e restaura para Todas', async ({ page }) => {
     await setupApiMocks(page);
     await page.goto('/reels');
 
@@ -54,17 +74,18 @@ test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () =
     await expect(page.locator('article[data-reel-slug]')).toHaveCount(totalBefore);
   });
 
-  test('curtir, salvar e comentar com escape XSS e preservação da posição de scroll + focus trap/Escape no drawer', async ({
+  test('desktop (>= 1280px): curtir, salvar e comentar inline no painel direito com escape XSS e preservação do scroll', async ({
     page,
   }) => {
     await setupApiMocks(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/reels');
     await page.waitForLoadState('networkidle');
 
     const feed = page.locator('div[aria-label="Feed vertical CritHit Reels"]');
     await expect(page.locator('article[data-reel-index="0"] h1')).toBeVisible();
 
-    // Avança para o 2º Reel via teclado (ArrowDown) e aguarda o scroll-snap assentar no 2º card
+    // Avança para o 2º Reel via teclado (ArrowDown)
     await page.keyboard.press('ArrowDown');
     const secondCard = page.locator('article[data-reel-index="1"]');
     await expect(secondCard.locator('h1')).toBeVisible();
@@ -94,7 +115,7 @@ test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () =
     const scrollAfterInteractions = await feed.evaluate((el) => el.scrollTop);
     expect(Math.abs(scrollAfterInteractions - scrollBefore)).toBeLessThan(20);
 
-    // Abrir CommentsDrawer e testar XSS + Focus Trap + Escape
+    // No desktop (>= 1280px), clicar em comentários foca diretamente o painel direito sem abrir modal duplicado
     let alertTriggered = false;
     page.on('dialog', async (dialog) => {
       alertTriggered = true;
@@ -102,6 +123,49 @@ test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () =
     });
 
     const commentBtn = secondCard.getByRole('button', { name: /Abrir comentários/i });
+    await commentBtn.click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    const rightPanel = page.getByRole('complementary', {
+      name: 'Fontes cruzadas e comentários do Reel ativo',
+    });
+    const inlineInput = rightPanel.getByLabel('Comentar neste Reel');
+    await expect(inlineInput).toBeFocused();
+
+    const xssPayload = `<script>alert('xss')</script> Comentário seguro de QA`;
+    await rightPanel.getByLabel('Seu nome').fill('QA Auditor');
+    await inlineInput.fill(xssPayload);
+    await rightPanel.getByRole('button', { name: 'Publicar' }).click();
+
+    await expect(rightPanel.getByText(xssPayload)).toBeVisible();
+    expect(alertTriggered).toBe(false);
+    expect(await rightPanel.locator('script').count()).toBe(0);
+
+    // Preservação do scroll e retorno via ArrowUp
+    const scrollAfterComment = await feed.evaluate((el) => el.scrollTop);
+    expect(Math.abs(scrollAfterComment - scrollBefore)).toBeLessThan(20);
+
+    await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(450);
+    await expect(page.locator('article[data-reel-index="0"] h1')).toBeVisible();
+  });
+
+  test('mobile (< 1280px): abre CommentsDrawer escuro com focus trap, escape XSS, Escape e seletor Para Você/Em Alta/Salvos', async ({
+    page,
+  }) => {
+    await setupApiMocks(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/reels');
+    await page.waitForLoadState('networkidle');
+
+    // Seletor de modo mobile presente
+    const mobileModes = page.getByRole('group', { name: 'Modos do feed no celular' });
+    await expect(mobileModes).toBeVisible();
+    await expect(mobileModes.getByRole('button', { name: /Em Alta/i })).toBeVisible();
+    await expect(mobileModes.getByRole('button', { name: /Salvos/i })).toBeVisible();
+
+    const firstCard = page.locator('article[data-reel-index="0"]');
+    const commentBtn = firstCard.getByRole('button', { name: /Abrir comentários/i });
     await commentBtn.click();
 
     const dialog = page.getByRole('dialog');
@@ -112,18 +176,23 @@ test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () =
     const closeBtn = dialog.getByRole('button', { name: 'Fechar comentários' });
     await expect(closeBtn).toBeFocused();
 
-    // Verifica Focus Trap: Shift+Tab no primeiro elemento foca o último elemento dentro do dialog
+    // Verifica Focus Trap: Shift+Tab no primeiro elemento permanece dentro do dialog
     await page.keyboard.press('Shift+Tab');
     const focusedInsideDialog = await dialog.evaluate((el) => el.contains(document.activeElement));
     expect(focusedInsideDialog).toBe(true);
 
     // Envia comentário com payload XSS
-    const xssPayload = `<script>alert('xss')</script> Comentário seguro de QA`;
-    await dialog.getByLabel('Seu nome').fill('QA Auditor');
+    let alertTriggered = false;
+    page.on('dialog', async (d) => {
+      alertTriggered = true;
+      await d.dismiss();
+    });
+
+    const xssPayload = `<script>alert('xss')</script> Comentário mobile seguro`;
+    await dialog.getByLabel('Seu nome').fill('QA Mobile');
     await dialog.getByLabel('Comentário', { exact: true }).fill(xssPayload);
     await dialog.getByRole('button', { name: 'Publicar comentário' }).click();
 
-    // Payload deve ser renderizado como texto literal (escaped), sem executar script nem criar nó <script>
     await expect(dialog.getByText(xssPayload)).toBeVisible();
     expect(alertTriggered).toBe(false);
     expect(await dialog.locator('script').count()).toBe(0);
@@ -132,14 +201,5 @@ test.describe('Fluxo 2 — CritHit Reels 9:16 (/reels e /reels?id=<slug>)', () =
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(commentBtn).toBeFocused();
-
-    // Preservação do scroll após fechar drawer
-    const scrollAfterDrawer = await feed.evaluate((el) => el.scrollTop);
-    expect(Math.abs(scrollAfterDrawer - scrollBefore)).toBeLessThan(20);
-
-    // ArrowUp retorna ao 1º Reel
-    await page.keyboard.press('ArrowUp');
-    await page.waitForTimeout(450);
-    await expect(page.locator('article[data-reel-index="0"] h1')).toBeVisible();
   });
 });

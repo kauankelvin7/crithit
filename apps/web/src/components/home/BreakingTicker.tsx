@@ -13,10 +13,10 @@ export function BreakingTicker({ items }: BreakingTickerProps) {
   return (
     <section
       aria-label="Plantão Geek — Últimas notícias"
-      className="ticker-marquee relative z-10 border-b-[3px] border-border-strong bg-surface-alt"
+      className="ticker-marquee relative z-10 w-full border-b-[3px] border-border-strong bg-surface-alt"
     >
-      <div className="mx-auto flex max-w-7xl items-stretch">
-        <div className="z-10 flex shrink-0 items-center gap-2 border-r-[3px] border-border-strong bg-brand-fill px-3 py-2 text-white sm:px-4">
+      <div className="flex w-full items-stretch">
+        <div className="z-10 flex shrink-0 items-center gap-2 border-r-[3px] border-border-strong bg-brand-fill px-3.5 py-2 text-white sm:px-5">
           <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
             <span className="live-dot-ping absolute inline-flex h-full w-full rounded-full bg-highlight" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-highlight" />

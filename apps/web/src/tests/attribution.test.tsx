@@ -59,4 +59,20 @@ describe('AttributionBadge e TransparencyNotice', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.getByText(/fonte: fonte maliciosa/i)).toBeInTheDocument();
   });
+
+  it('omite link externo de fonte em AttributionBadge quando contentType for AUTORAL', () => {
+    render(
+      <AttributionBadge
+        authorName="Rafael Mendes"
+        contentType="AUTORAL"
+        sourceName="CritHit! Redação"
+        sourceUrl="https://crithit.com.br/noticia/review-exemplo"
+      />,
+    );
+
+    expect(screen.getByText('AUTORAL')).toBeInTheDocument();
+    expect(screen.getByText(/por rafael mendes/i)).toBeInTheDocument();
+    expect(screen.queryByText(/fonte:/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
 });

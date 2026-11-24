@@ -62,7 +62,7 @@ export function SiteFooter() {
                 href="/reels"
                 className="text-chrome-muted transition-colors hover:text-highlight"
               >
-                CritHit Reels 9:16
+                CritHit Reels
               </Link>
             </li>
             <li>

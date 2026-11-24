@@ -265,6 +265,13 @@
   [class*="text-[10px]"] {
     font-size: 0.6875rem !important;
   }
+
+  /* Evita duplo botão "× ×" nos campos de busca (mantém apenas o botão customizado acessível) */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }
 
 /* Plantão Geek deslizando continuamente para a direita */
@@ -394,6 +401,23 @@
 
 .reels-scroller::-webkit-scrollbar {
   display: none;
+}
+
+.ticker-viewport {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000000 28px,
+    #000000 calc(100% - 28px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000000 28px,
+    #000000 calc(100% - 28px),
+    transparent 100%
+  );
 }
 
 .ticker-track {

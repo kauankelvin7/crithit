@@ -676,9 +676,28 @@ export const MOCK_COMMENTS: Record<string, CommentDto[]> = {
       createdAt: hoursAgo(0.2),
     },
   ],
+  '10000000-0000-4000-8000-000000000002': [
+    {
+      id: '30000000-0000-4000-8000-000000000003',
+      articleId: '10000000-0000-4000-8000-000000000002',
+      authorDisplayName: 'Diego P.',
+      body: 'Faz total sentido a Larian partir para universos próprios agora que atingiu esse nível de liberdade criativa.',
+      createdAt: hoursAgo(1.1),
+    },
+  ],
+  '10000000-0000-4000-8000-000000000004': [
+    {
+      id: '30000000-0000-4000-8000-000000000004',
+      articleId: '10000000-0000-4000-8000-000000000004',
+      authorDisplayName: 'Helena V.',
+      body: 'Ver Greig Fraser e Hans Zimmer de volta garante o fechamento perfeito da trilogia em IMAX.',
+      createdAt: hoursAgo(1.6),
+    },
+  ],
 };
 
 function toSummary(article: PublicArticleDetail): PublicArticleSummary {
+  const syncedCommentsCount = (MOCK_COMMENTS[article.id] ?? []).length;
   return {
     id: article.id,
     slug: article.slug,
@@ -698,7 +717,7 @@ function toSummary(article: PublicArticleDetail): PublicArticleSummary {
     viewsCount: article.viewsCount,
     likesCount: article.likesCount,
     savesCount: article.savesCount,
-    commentsCount: article.commentsCount,
+    commentsCount: syncedCommentsCount,
     publishedAt: article.publishedAt,
     attribution: article.attribution,
     matchedSources: article.matchedSources,
@@ -710,6 +729,21 @@ export function buildMockHomeResponse(): HomeResponse {
   const mainHeadline = summaries.find((a) => a.isMainHeadline) ?? summaries[0] ?? null;
   const nonMain = summaries.filter((a) => a.id !== mainHeadline?.id);
 
+  const secondaryHeadlines = nonMain.slice(0, 3);
+  const usedInHeroAndSecondary = new Set<string>([
+    ...(mainHeadline ? [mainHeadline.id] : []),
+    ...secondaryHeadlines.map((a) => a.id),
+  ]);
+
+  // Urgente na Redação prioriza matérias isUrgent que não estejam já no Hero/Secundárias
+  const urgentCandidates = summaries.filter(
+    (a) => a.isUrgent && !usedInHeroAndSecondary.has(a.id),
+  );
+  const urgentFallback = nonMain.filter(
+    (a) => !usedInHeroAndSecondary.has(a.id) && !urgentCandidates.some((u) => u.id === a.id),
+  );
+  const urgentNews = [...urgentCandidates, ...urgentFallback].slice(0, 2);
+
   return {
     breakingTicker: summaries.slice(0, 8).map((a) => ({
       slug: a.slug,
@@ -718,13 +752,13 @@ export function buildMockHomeResponse(): HomeResponse {
       publishedAt: a.publishedAt,
     })),
     mainHeadline,
-    secondaryHeadlines: nonMain.slice(0, 3),
-    urgentNews: summaries.filter((a) => a.isUrgent).slice(0, 2),
+    secondaryHeadlines,
+    urgentNews,
     giroGeek: nonMain.slice(3, 11).length >= 8 ? nonMain.slice(3, 11) : summaries.slice(0, 8),
     columnsAndReviews: summaries
       .filter((a) => a.editorialFormat === 'COLUMN' || a.editorialFormat === 'REVIEW')
       .slice(0, 4),
-    featuredReels: summaries.slice(0, 6),
+    featuredReels: summaries.slice(0, 8),
     categoryBlocks: {
       GAMES: summaries.filter((a) => a.category === 'GAMES').slice(0, 4),
       COMICS: summaries.filter((a) => a.category === 'COMICS').slice(0, 4),
@@ -746,6 +780,7 @@ export function buildMockArticleDetail(slug: string): PublicArticleDetail | null
     .map(toSummary);
   return {
     ...found,
+    commentsCount: (MOCK_COMMENTS[found.id] ?? []).length,
     relatedArticles: related,
   };
 }

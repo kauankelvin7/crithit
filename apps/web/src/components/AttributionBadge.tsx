@@ -38,20 +38,24 @@ export function AttributionBadge({
           {contentType}
         </span>
         <span>Por {authorName}</span>
-        <span aria-hidden="true">/</span>
-        {safeUrl ? (
-          <a
-            href={safeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 underline decoration-[var(--highlight-comic)] underline-offset-2 hover:text-[var(--highlight-comic)]"
-          >
-            <span>Fonte: {sourceName}</span>
-            <ExternalLink className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-            <span className="sr-only">(abre em nova aba)</span>
-          </a>
-        ) : (
-          <span>Fonte: {sourceName}</span>
+        {!isAutoral && (
+          <>
+            <span aria-hidden="true">/</span>
+            {safeUrl ? (
+              <a
+                href={safeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 underline decoration-[var(--highlight-comic)] underline-offset-2 hover:text-[var(--highlight-comic)]"
+              >
+                <span>Fonte: {sourceName}</span>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <span className="sr-only">(abre em nova aba)</span>
+              </a>
+            ) : (
+              <span>Fonte: {sourceName}</span>
+            )}
+          </>
         )}
       </div>
     );
@@ -59,7 +63,7 @@ export function AttributionBadge({
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 font-mono ${
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 font-mono ${
         variant === 'detailed' ? 'text-xs' : 'text-[11px]'
       } text-ink-muted`}
     >
@@ -80,23 +84,27 @@ export function AttributionBadge({
 
       <span className="font-medium text-ink-secondary">Por {authorName}</span>
 
-      <span aria-hidden="true" className="text-ink-muted">
-        /
-      </span>
+      {!isAutoral && (
+        <>
+          <span aria-hidden="true" className="text-ink-muted">
+            /
+          </span>
 
-      {safeUrl ? (
-        <a
-          href={safeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative z-10 inline-flex items-center gap-1 font-semibold text-ink-primary underline decoration-brand decoration-2 underline-offset-2 transition-colors hover:bg-highlight/25 hover:text-brand"
-        >
-          <span>Fonte: {sourceName}</span>
-          <ExternalLink className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />
-          <span className="sr-only">(abre em nova aba)</span>
-        </a>
-      ) : (
-        <span>Fonte: {sourceName}</span>
+          {safeUrl ? (
+            <a
+              href={safeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative z-10 inline-flex items-center gap-1 font-semibold text-ink-primary underline decoration-brand decoration-2 underline-offset-2 transition-colors hover:bg-highlight/25 hover:text-brand"
+            >
+              <span>Fonte: {sourceName}</span>
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />
+              <span className="sr-only">(abre em nova aba)</span>
+            </a>
+          ) : (
+            <span>Fonte: {sourceName}</span>
+          )}
+        </>
       )}
     </div>
   );

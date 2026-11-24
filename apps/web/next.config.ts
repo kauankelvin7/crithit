@@ -14,7 +14,8 @@ const CONTENT_SECURITY_POLICY = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  // Vercel usa empacotamento serverless nativo; Docker/host local usa standalone
+  ...(process.env.VERCEL ? {} : { output: 'standalone' as const }),
   images: {
     unoptimized: true,
   },

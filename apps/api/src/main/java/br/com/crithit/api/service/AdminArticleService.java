@@ -254,6 +254,27 @@ public class AdminArticleService {
     }
 
     @Transactional
+    public AdminArticleDetail cancelSchedule(UUID id, UUID actorUserId) {
+        Article article = requireArticle(id);
+        if (article.getStatus() != ArticleStatus.SCHEDULED) {
+            throw new InvalidStateTransitionException(
+                    "Somente artigos SCHEDULED podem ter o agendamento cancelado (atual: " + article.getStatus() + ")");
+        }
+
+        User actor = resolveUser(actorUserId);
+        article.setStatus(ArticleStatus.PENDING_REVIEW);
+        article.setScheduledAt(null);
+        article.setUpdatedBy(actor);
+
+        Article saved = articleRepository.save(article);
+        recordAudit(saved, actor, AuditAction.EDITED,
+                ArticleStatus.SCHEDULED.name(), ArticleStatus.PENDING_REVIEW.name(),
+                Map.of("action", "cancel_schedule"));
+
+        return mapper.toAdminDetail(saved, articleSourceRepository.findByArticleIdOrderByFetchedAtDesc(id));
+    }
+
+    @Transactional
     public AdminArticleDetail discardArticle(UUID id, ReasonRequest request, UUID actorUserId) {
         Article article = requireArticle(id);
         ArticleStatus fromStatus = article.getStatus();

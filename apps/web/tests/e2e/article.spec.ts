@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { setupApiMocks } from './helpers/mock-api';
 
 test.describe('Fluxo 3 — Leitor de Matéria (/noticia/[slug])', () => {
-  test('matéria CURADORIA exibe atribuição completa, link externo seguro, TransparencyNotice e CTA para Reels', async ({
+  test('matéria CURADORIA exibe atribuição completa, link externo seguro, TransparencyNotice, rótulos editoriais limpos e CTA para Reels', async ({
     page,
   }) => {
     await setupApiMocks(page);
@@ -37,8 +37,14 @@ test.describe('Fluxo 3 — Leitor de Matéria (/noticia/[slug])', () => {
     await expect(notice).toContainText('Gematsu');
     await expect(notice).toContainText('revisão humana');
 
-    // Fontes & Transparência + Sidebar Mais Lidas + Comentários integrados
+    // Fontes & Transparência com linguagem editorial limpa (sem Similaridade % nem 9:16)
     await expect(article.getByRole('heading', { name: /Fontes & Transparência Editorial/i })).toBeVisible();
+    await expect(article).toContainText('Fonte principal');
+    await expect(article).toContainText('Fonte corroborada');
+    await expect(article).not.toContainText('Similaridade');
+    await expect(page.locator('body')).not.toContainText('9:16');
+
+    // Sidebar Mais Lidas + Comentários integrados
     await expect(article.getByRole('heading', { name: /Mais Lidas Agora/i })).toBeVisible();
     await expect(article.getByRole('heading', { name: /Comentários da Comunidade/i })).toBeVisible();
 
@@ -48,7 +54,7 @@ test.describe('Fluxo 3 — Leitor de Matéria (/noticia/[slug])', () => {
     await expect(reelsLinks.first()).toBeVisible();
   });
 
-  test('matéria AUTORAL exibe atribuição completa e NÃO exibe TransparencyNotice', async ({
+  test('matéria AUTORAL exibe selo AUTORAL + Produção Original CritHit!, omite link de fonte externa e NÃO exibe TransparencyNotice', async ({
     page,
   }) => {
     await setupApiMocks(page);
@@ -60,11 +66,9 @@ test.describe('Fluxo 3 — Leitor de Matéria (/noticia/[slug])', () => {
     const article = page.locator('main > article');
     await expect(article.locator('h1')).toContainText(/Metaphor/i);
     await expect(article).toContainText('AUTORAL');
-
-    const externalSourceLink = article.locator('a[target="_blank"]').first();
-    await expect(externalSourceLink).toHaveAttribute('href', /^https?:\/\//);
-    await expect(externalSourceLink).toHaveAttribute('rel', /noopener/);
-    await expect(externalSourceLink).toHaveAttribute('rel', /noreferrer/);
+    await expect(article).toContainText('Por Rafael Mendes');
+    await expect(article).toContainText('Produção Original CritHit!');
+    await expect(article).not.toContainText('Fonte: CritHit! Redação');
 
     // TransparencyNotice ausente em AUTORAL
     await expect(page.locator('aside[aria-label="Transparência editorial"]')).toHaveCount(0);

@@ -71,7 +71,7 @@ function createInitialAdminArticles(): AdminArticleDetail[] {
         'A new filing published by the Japanese Patent Office reveals an unannounced action RPG project.',
       editorialNotes: [
         'Confirmar nome oficial em português após anúncio da publisher.',
-        'Fontes cruzadas via pgvector (score 0.91) corroboram a janela de anúncio.',
+        'Fontes cruzadas corroboram a janela de anúncio.',
       ],
       matchedSources: [
         {
@@ -217,7 +217,7 @@ function createInitialAdminArticles(): AdminArticleDetail[] {
         'Capcom confirma remake de Dino Crisis para 2027 na RE Engine com foco em survival horror tático.',
       tags: ['Capcom', 'Dino Crisis'],
       coverImageUrl: null,
-      coverArtKey: 'editorial-games-default',
+      coverArtKey: 'dino-survival',
       readingTimeMinutes: 4,
       reviewScore: null,
       isMainHeadline: true,
@@ -262,7 +262,7 @@ function createInitialAdminArticles(): AdminArticleDetail[] {
       reelsSummary: "Larian confirma dois novos RPGs originais e reforça foco em suporte a mods de BG3.",
       tags: ['Larian Studios', 'RPG'],
       coverImageUrl: null,
-      coverArtKey: 'editorial-games-default',
+      coverArtKey: 'gamepad',
       readingTimeMinutes: 3,
       reviewScore: null,
       isMainHeadline: false,
@@ -287,6 +287,52 @@ function createInitialAdminArticles(): AdminArticleDetail[] {
       updatedAt: hoursAgo(10),
       rawTitle: 'Larian Studios confirms two new original RPGs in development',
       rawExcerpt: 'No paid DLC for BG3.',
+      editorialNotes: [],
+      matchedSources: [],
+    },
+    {
+      id: 'sched-001',
+      slug: 'duna-messias-filmagens-imax-estreia-agendada',
+      status: 'SCHEDULED',
+      category: 'CINEMA',
+      editorialFormat: 'NEWS',
+      headline: 'Duna: Messias encerra filmagens em IMAX e ganha cronograma especial de trailers',
+      subheadlineBullets: [
+        'Denis Villeneuve confirmou trilha inédita gravada em Londres',
+        'Primeiras prévias serão exibidas em salas selecionadas',
+      ],
+      lead: 'A produção de Duna: Messias concluiu as gravações principais com câmeras IMAX de nova geração.',
+      bodyParagraphs: [
+        'O longa-metragem dirigido por Denis Villeneuve entra agora na fase final de pós-produção.',
+      ],
+      reelsSummary: 'Duna: Messias conclui filmagens em IMAX e inicia etapa de pós-produção.',
+      tags: ['Duna', 'Cinema', 'IMAX'],
+      coverImageUrl: null,
+      coverArtKey: 'cinema',
+      readingTimeMinutes: 3,
+      reviewScore: null,
+      isMainHeadline: false,
+      isUrgent: false,
+      viewsCount: 0,
+      likesCount: 0,
+      savesCount: 0,
+      commentsCount: 0,
+      publishedAt: '',
+      scheduledAt: new Date(now + 24 * 3_600_000).toISOString(),
+      unpublishedAt: null,
+      discardedAt: null,
+      aiStatus: 'MANUAL',
+      attribution: {
+        authorName: 'Camila Rocha',
+        contentType: 'AUTORAL',
+        sourceName: 'CritHit! Redação',
+        sourceUrl: 'https://crithit.com.br/redacao',
+      },
+      matchedSourcesCount: 0,
+      createdAt: hoursAgo(2),
+      updatedAt: hoursAgo(1),
+      rawTitle: null,
+      rawExcerpt: null,
       editorialNotes: [],
       matchedSources: [],
     },
@@ -325,6 +371,31 @@ export async function setupApiMocks(page: Page, options: MockApiOptions = {}) {
         authorDisplayName: 'Lucas F.',
         body: 'Dino Crisis na RE Engine era o remake que faltava na Capcom.',
         createdAt: new Date(Date.now() - 1_800_000).toISOString(),
+      },
+      {
+        id: 'c-init-2',
+        articleId: '10000000-0000-4000-8000-000000000001',
+        authorDisplayName: 'Mariana T.',
+        body: 'Se mantiver a tensão do original com o controle moderno de RE2 Remake, já é candidato a jogo do ano.',
+        createdAt: new Date(Date.now() - 900_000).toISOString(),
+      },
+    ],
+    '10000000-0000-4000-8000-000000000002': [
+      {
+        id: 'c-init-3',
+        articleId: '10000000-0000-4000-8000-000000000002',
+        authorDisplayName: 'Diego R.',
+        body: 'A fase Ultimate tem sido a melhor porta de entrada da Marvel em mais de uma década.',
+        createdAt: new Date(Date.now() - 3_200_000).toISOString(),
+      },
+    ],
+    '10000000-0000-4000-8000-000000000004': [
+      {
+        id: 'c-init-4',
+        articleId: '10000000-0000-4000-8000-000000000004',
+        authorDisplayName: 'Renata S.',
+        body: 'Evan Call e a equipe original da Madhouse juntos de novo garantem o mesmo nível da primeira temporada.',
+        createdAt: new Date(Date.now() - 2_600_000).toISOString(),
       },
     ],
   };
@@ -509,6 +580,67 @@ export async function setupApiMocks(page: Page, options: MockApiOptions = {}) {
       });
     }
 
+    // Criação manual de matéria autoral
+    if (path === '/articles' && method === 'POST') {
+      const payload = (route.request().postDataJSON() ?? {}) as Record<string, unknown>;
+      const headline = String(payload.headline ?? 'Nova matéria autoral');
+      const slug = headline
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      const nowIso = new Date().toISOString();
+      const cat = (payload.category as AdminArticleDetail['category']) ?? 'GAMES';
+      const created: AdminArticleDetail = {
+        id: `manual-${Date.now()}`,
+        slug: slug || `materia-${Date.now()}`,
+        status: 'PENDING_REVIEW',
+        aiStatus: 'MANUAL',
+        category: cat,
+        editorialFormat: (payload.editorialFormat as AdminArticleDetail['editorialFormat']) ?? 'COLUMN',
+        headline,
+        subheadlineBullets: (payload.subheadlineBullets as string[]) ?? [],
+        lead: String(payload.lead ?? ''),
+        bodyParagraphs: (payload.bodyParagraphs as string[]) ?? [],
+        reelsSummary: String(payload.reelsSummary ?? ''),
+        tags: (payload.tags as string[]) ?? [],
+        coverImageUrl: (payload.coverImageUrl as string | null) ?? null,
+        coverArtKey: `editorial-${cat.toLowerCase()}-default`,
+        readingTimeMinutes: Number(payload.readingTimeMinutes ?? 3),
+        reviewScore: (payload.reviewScore as number | null) ?? null,
+        isMainHeadline: false,
+        isUrgent: Boolean(payload.isUrgent),
+        viewsCount: 0,
+        likesCount: 0,
+        savesCount: 0,
+        commentsCount: 0,
+        publishedAt: '',
+        scheduledAt: null,
+        unpublishedAt: null,
+        discardedAt: null,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        matchedSourcesCount: 0,
+        rawTitle: null,
+        rawExcerpt: null,
+        editorialNotes: [],
+        matchedSources: [],
+        attribution: {
+          authorName: String(payload.authorName ?? DEFAULT_ADMIN_USER.displayName),
+          contentType: (payload.contentType as 'AUTORAL' | 'CURADORIA') ?? 'AUTORAL',
+          sourceName: String(payload.sourceName ?? 'CritHit! Redação'),
+          sourceUrl: String(payload.sourceUrl ?? 'https://crithit.com.br/redacao'),
+        },
+      };
+      articles.unshift(created);
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(created),
+      });
+    }
+
     // Detalhe / Edição de artigo
     const detailMatch = path.match(/^\/articles\/([^/]+)$/);
     if (detailMatch) {
@@ -552,7 +684,7 @@ export async function setupApiMocks(page: Page, options: MockApiOptions = {}) {
 
     // Ações editoriais
     const actionMatch = path.match(
-      /^\/articles\/([^/]+)\/(approve|schedule|discard|main-headline|unpublish|republish)$/,
+      /^\/articles\/([^/]+)\/(approve|schedule|cancel-schedule|discard|main-headline|unpublish|republish)$/,
     );
     if (actionMatch && (method === 'POST' || (method === 'PATCH' && actionMatch[2] === 'main-headline'))) {
       const id = decodeURIComponent(actionMatch[1]);
@@ -595,6 +727,16 @@ export async function setupApiMocks(page: Page, options: MockApiOptions = {}) {
         const body = (route.request().postDataJSON() ?? {}) as { scheduledAt?: string };
         item.status = 'SCHEDULED';
         item.scheduledAt = body.scheduledAt ?? new Date(Date.now() + 86_400_000).toISOString();
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(item),
+        });
+      }
+
+      if (action === 'cancel-schedule') {
+        item.status = 'PENDING_REVIEW';
+        item.scheduledAt = null;
         return route.fulfill({
           status: 200,
           contentType: 'application/json',

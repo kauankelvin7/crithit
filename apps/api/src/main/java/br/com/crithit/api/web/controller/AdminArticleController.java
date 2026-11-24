@@ -94,6 +94,15 @@ public class AdminArticleController {
         return ResponseEntity.ok(adminArticleService.scheduleArticle(id, body, actorId));
     }
 
+    @PostMapping("/{id}/cancel-schedule")
+    public ResponseEntity<AdminArticleDetail> cancelSchedule(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthenticatedEditor editor
+    ) {
+        UUID actorId = editor != null ? editor.userId() : null;
+        return ResponseEntity.ok(adminArticleService.cancelSchedule(id, actorId));
+    }
+
     @PostMapping("/{id}/discard")
     public ResponseEntity<AdminArticleDetail> discardArticle(
             @PathVariable UUID id,

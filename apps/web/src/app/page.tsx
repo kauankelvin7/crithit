@@ -58,18 +58,57 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       'Portal independente de jornalismo geek com curadoria de fontes nacionais e internacionais e revisão humana obrigatória.',
   };
 
-  const urgentArticles = (
-    homeData.urgentNews.length > 0 ? homeData.urgentNews : homeData.secondaryHeadlines
-  ).slice(0, 2);
-  const urgentIds = new Set(urgentArticles.map((u) => u.id));
+  // Deduplicação estrita da Dobra 1 (Hero + 3 Secundárias + Reels em Destaque + 2 Urgente na Redação)
+  const foldUsedIds = new Set<string>();
+  if (homeData.mainHeadline) {
+    foldUsedIds.add(homeData.mainHeadline.id);
+  }
+
+  const allPool = [
+    ...homeData.secondaryHeadlines,
+    ...homeData.urgentNews,
+    ...homeData.featuredReels,
+    ...homeData.giroGeek,
+    ...homeData.columnsAndReviews,
+    ...homeData.mostRead,
+  ];
+  const uniqueById = <T extends { id: string }>(list: T[]): T[] => {
+    const seen = new Set<string>();
+    return list.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  };
+  const dedupPool = uniqueById(allPool);
+
+  const secondaryFold = uniqueById([
+    ...homeData.secondaryHeadlines,
+    ...dedupPool,
+  ])
+    .filter((item) => !foldUsedIds.has(item.id))
+    .slice(0, 3);
+  secondaryFold.forEach((item) => foldUsedIds.add(item.id));
+
   const featuredReel =
-    homeData.featuredReels.find(
-      (r) => r.id !== homeData.mainHeadline?.id && !urgentIds.has(r.id),
-    ) ??
-    homeData.featuredReels.find((r) => r.id !== homeData.mainHeadline?.id) ??
+    homeData.featuredReels.find((r) => !foldUsedIds.has(r.id)) ??
+    dedupPool.find((r) => !foldUsedIds.has(r.id)) ??
     homeData.featuredReels[0] ??
     homeData.mainHeadline;
-  const editorialColumns: Category[] = ['GAMES', 'COMICS', 'CINEMA'];
+  if (featuredReel) {
+    foldUsedIds.add(featuredReel.id);
+  }
+
+  const urgentArticles = uniqueById([
+    ...homeData.urgentNews,
+    ...dedupPool,
+  ])
+    .filter((item) => !foldUsedIds.has(item.id))
+    .slice(0, 2);
+  urgentArticles.forEach((item) => foldUsedIds.add(item.id));
+
+  const primaryEditorialColumns: Category[] = ['GAMES', 'COMICS', 'CINEMA'];
+  const secondaryEditorialColumns: Category[] = ['ANIMES', 'TECH'];
 
   return (
     <>
@@ -81,16 +120,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <BreakingTicker items={homeData.breakingTicker} />
 
       <main id="conteudo-principal" className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-        {/* Resultados de Busca / Filtro de Editoria */}
-        {isFiltered && searchResults && (
+        {/* Resultados de Busca / Filtro de Editoria (substitui a capa enquanto ativo) */}
+        {isFiltered && searchResults ? (
           <section
             aria-label="Resultados da busca editorial"
-            className="mb-10 rounded border-2 border-border-strong bg-surface p-5 shadow-hard"
+            className="mb-10 rounded border-2 border-border-strong bg-surface p-5 shadow-hard sm:p-6"
           >
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-4">
               <div className="flex items-center gap-2">
                 <Search className="h-5 w-5 text-brand" strokeWidth={2} aria-hidden="true" />
-                <h1 className="font-headline text-2xl font-extrabold uppercase tracking-tight text-ink-primary">
+                <h1 className="font-headline text-2xl font-extrabold uppercase tracking-tight text-ink-primary sm:text-3xl">
                   {queryText
                     ? `Resultados para "${queryText}"`
                     : `Editoria: ${CATEGORIES[activeCategory!].label}`}
@@ -109,10 +148,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
 
             {searchResults.content.length === 0 ? (
-              <div className="py-8 text-center">
+              <div className="py-12 text-center">
                 <p className="font-reading text-base text-ink-secondary">
                   Nenhuma matéria publicada foi encontrada com os critérios informados.
                 </p>
+                <Link
+                  href="/"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded border-2 border-border-strong bg-highlight px-4 py-2 font-mono text-xs font-bold uppercase text-ink-highlight"
+                >
+                  Voltar para a capa
+                </Link>
               </div>
             ) : (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -121,7 +166,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     key={article.id}
                     className="editorial-card group flex flex-col overflow-hidden rounded border-2 border-border-strong bg-surface shadow-hard-sm"
                   >
-                    <Link href={`/noticia/${article.slug}`} className="block">
+                    <Link href={`/noticia/${article.slug}`} className="block overflow-hidden">
                       <EditorialCoverArt
                         coverImageUrl={article.coverImageUrl}
                         coverArtKey={article.coverArtKey}
@@ -156,7 +201,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
             )}
           </section>
-        )}
+        ) : (
+          <>
 
         {/* DOBRA PRINCIPAL: HERO (8 cols) + COLUNA LATERAL REELS & URGENTE (4 cols) */}
         <section aria-label="Destaques principais da capa" className="grid gap-6 lg:grid-cols-12">
@@ -241,7 +287,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
             {/* 3 Destaques Secundários */}
             <div className="grid gap-4 sm:grid-cols-3">
-              {homeData.secondaryHeadlines.slice(0, 3).map((article) => (
+              {secondaryFold.map((article) => (
                 <article
                   key={article.id}
                   className="editorial-card group flex flex-col overflow-hidden rounded border-2 border-border-strong bg-surface shadow-hard-sm"
@@ -291,7 +337,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   href="/reels"
                   className="font-mono text-[11px] font-bold uppercase tracking-wider text-chrome-ink hover:text-highlight"
                 >
-                  Abrir 9:16
+                  Abrir Reels
                 </Link>
               </div>
 
@@ -482,15 +528,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {homeData.columnsAndReviews.slice(0, 4).map((article, index) => {
-              const avatarOrder = [
-                'avatar-byte',
-                'avatar-tinta',
-                'avatar-sakuga',
-                'avatar-frame',
-              ] as const;
-              const avatarVariant = avatarOrder[index % avatarOrder.length];
-              return (
+            {homeData.columnsAndReviews.slice(0, 4).map((article) => (
               <article
                 key={article.id}
                 className="editorial-card group flex flex-col overflow-hidden rounded border-2 border-border-strong bg-surface shadow-hard-sm"
@@ -531,8 +569,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   <div className="mt-auto flex items-center gap-3 border-t border-border-subtle pt-3">
                     <EditorialAvatar
                       authorName={article.attribution.authorName}
-                      variant={avatarVariant}
-                      sizeClass="h-12 w-12"
+                      sizeClass="h-11 w-11"
                     />
                     <div className="min-w-0 flex-1">
                       <AttributionBadge
@@ -545,8 +582,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   </div>
                 </div>
               </article>
-              );
-            })}
+            ))}
           </div>
         </section>
 
@@ -565,7 +601,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 id="reels-carousel-heading"
                 className="font-headline text-2xl font-extrabold uppercase tracking-tight text-white sm:text-3xl"
               >
-                CritHit Reels — Consumo Rápido 9:16
+                CritHit Reels — Resumo Rápido
               </h2>
             </div>
             <Link
@@ -613,7 +649,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
         </section>
 
-        {/* 3 BLOCOS DE EDITORIAS (GAMES / COMICS / CINEMA) */}
+        {/* 5 BLOCOS DE EDITORIAS (GAMES / COMICS / CINEMA + ANIMES / TECH) */}
         <section id="editorias" aria-labelledby="editorias-heading" className="mt-12">
           <div className="mb-5 border-b-[3px] border-border-strong pb-2">
             <p className="font-mono text-xs font-bold uppercase tracking-widest text-brand">
@@ -628,7 +664,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {editorialColumns.map((categoryKey) => {
+            {primaryEditorialColumns.map((categoryKey) => {
               const meta = CATEGORIES[categoryKey];
               const list = homeData.categoryBlocks[categoryKey] ?? [];
               const leadArticle = list[0];
@@ -672,8 +708,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                           <Link href={`/noticia/${leadArticle.slug}`}>{leadArticle.headline}</Link>
                         </h4>
                         <p className="font-mono text-[11px] text-ink-muted">
-                          {leadArticle.attribution.sourceName} /{' '}
-                          {formatRelativeDate(leadArticle.publishedAt)}
+                          {leadArticle.attribution.contentType === 'AUTORAL'
+                            ? `Por ${leadArticle.attribution.authorName}`
+                            : leadArticle.attribution.sourceName}{' '}
+                          / {formatRelativeDate(leadArticle.publishedAt)}
                         </p>
                       </article>
                     )}
@@ -706,13 +744,124 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                                 {item.headline}
                               </Link>
                               <span className="mt-1 block font-mono text-[11px] text-ink-muted">
-                                {item.attribution.sourceName}
+                                {item.attribution.contentType === 'AUTORAL'
+                                  ? `Por ${item.attribution.authorName}`
+                                  : item.attribution.sourceName}
                               </span>
                             </div>
                           </li>
                         ))}
                       </ul>
                     )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            {secondaryEditorialColumns.map((categoryKey) => {
+              const meta = CATEGORIES[categoryKey];
+              const list = homeData.categoryBlocks[categoryKey] ?? [];
+              const leadArticle = list[0];
+              const rest = list.slice(1, 4);
+
+              return (
+                <div
+                  key={categoryKey}
+                  className="flex flex-col overflow-hidden rounded border-2 border-border-strong bg-surface shadow-hard-sm"
+                >
+                  <div
+                    className="flex items-center justify-between px-4 py-3"
+                    style={{
+                      backgroundColor: meta.fillVar,
+                      color: meta.inkOnFillVar,
+                    }}
+                  >
+                    <h3 className="font-headline text-xl font-extrabold uppercase tracking-wide">
+                      {meta.label}
+                    </h3>
+                    <Link
+                      href={`/?category=${categoryKey}`}
+                      className="font-mono text-[11px] font-bold uppercase underline underline-offset-2"
+                    >
+                      Ver tudo
+                    </Link>
+                  </div>
+
+                  <div className="grid flex-1 gap-4 p-4 sm:grid-cols-2">
+                    {leadArticle && (
+                      <article className="group space-y-2.5">
+                        <Link href={`/noticia/${leadArticle.slug}`} className="block overflow-hidden rounded border border-border-subtle">
+                          <EditorialCoverArt
+                            coverImageUrl={leadArticle.coverImageUrl}
+                            coverArtKey={leadArticle.coverArtKey}
+                            category={leadArticle.category}
+                            alt={leadArticle.headline}
+                          />
+                        </Link>
+                        <h4 className="font-sans text-base font-bold leading-snug text-ink-primary group-hover:text-brand">
+                          <Link href={`/noticia/${leadArticle.slug}`}>{leadArticle.headline}</Link>
+                        </h4>
+                        <p className="font-mono text-[11px] text-ink-muted">
+                          {leadArticle.attribution.contentType === 'AUTORAL'
+                            ? `Por ${leadArticle.attribution.authorName}`
+                            : leadArticle.attribution.sourceName}{' '}
+                          / {formatRelativeDate(leadArticle.publishedAt)}
+                        </p>
+                      </article>
+                    )}
+
+                    <div className="flex flex-col justify-between gap-2">
+                      {rest.length > 0 ? (
+                        <ul className="divide-y divide-border-subtle">
+                          {rest.map((item) => (
+                            <li key={item.id} className="group/item flex items-center gap-3 py-2.5 first:pt-0">
+                              <Link
+                                href={`/noticia/${item.slug}`}
+                                tabIndex={-1}
+                                aria-hidden="true"
+                                className="h-16 w-16 shrink-0 overflow-hidden rounded border-2 border-border-strong"
+                              >
+                                <EditorialCoverArt
+                                  coverImageUrl={item.coverImageUrl}
+                                  coverArtKey={item.coverArtKey}
+                                  category={item.category}
+                                  alt={item.headline}
+                                  aspectClass="h-full w-full"
+                                  compact
+                                  decorative
+                                />
+                              </Link>
+                              <div className="min-w-0 flex-1">
+                                <Link
+                                  href={`/noticia/${item.slug}`}
+                                  className="line-clamp-2 block font-sans text-sm font-semibold leading-snug text-ink-primary hover:text-brand"
+                                >
+                                  {item.headline}
+                                </Link>
+                                <span className="mt-1 block font-mono text-[11px] text-ink-muted">
+                                  {item.attribution.contentType === 'AUTORAL'
+                                    ? `Por ${item.attribution.authorName}`
+                                    : item.attribution.sourceName}
+                                </span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="rounded border border-dashed border-border-subtle bg-surface-alt p-4 font-reading text-xs text-ink-secondary">
+                          Novas pautas de {meta.label} em curadoria pela redação.
+                        </p>
+                      )}
+                      <Link
+                        href={`/?category=${categoryKey}`}
+                        className="inline-flex items-center gap-1 self-start font-mono text-xs font-bold uppercase text-brand hover:underline"
+                      >
+                        Explorar {meta.shortLabel}
+                        <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );
@@ -760,6 +909,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             ))}
           </ol>
         </section>
+          </>
+        )}
       </main>
 
       <SiteFooter />

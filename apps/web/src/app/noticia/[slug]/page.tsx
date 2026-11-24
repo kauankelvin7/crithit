@@ -219,7 +219,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   className="tactile-btn inline-flex items-center gap-2 rounded border-2 border-border-strong bg-highlight px-3.5 py-2 font-mono text-xs font-bold uppercase text-ink-highlight shadow-hard-sm hover:bg-white"
                 >
                   <Film className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                  Ver em Reels 9:16
+                  Ver em Reels
                 </Link>
                 <ArticleEngagementBar
                   articleId={article.id}
@@ -255,7 +255,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                         : `Ilustração editorial CritHit! • Editoria ${categoryMeta.label}`}
                     </span>
                     <span className="font-bold text-ink-primary">
-                      Crédito: {article.attribution.sourceName}
+                      {article.attribution.contentType === 'AUTORAL'
+                        ? 'Produção original CritHit!'
+                        : `Crédito: ${article.attribution.sourceName}`}
                     </span>
                   </figcaption>
                 </figure>
@@ -332,66 +334,95 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 )}
 
                 {/* Bloco Fontes & Transparência Editorial */}
-                <section
-                  aria-labelledby="fontes-cruzadas-heading"
-                  className="mt-8 rounded-lg border-2 border-border-strong bg-surface-alt p-5"
-                >
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-3">
-                    <h2
-                      id="fontes-cruzadas-heading"
-                      className="inline-flex items-center gap-2 font-headline text-xl font-extrabold uppercase tracking-wide text-ink-primary"
-                    >
-                      <Layers className="h-5 w-5 text-brand" strokeWidth={2} aria-hidden="true" />
-                      Fontes &amp; Transparência Editorial
-                    </h2>
-                    <span className="font-mono text-xs font-bold uppercase text-ink-secondary">
-                      {article.attribution.contentType}
-                    </span>
-                  </div>
+                {article.attribution.contentType === 'CURADORIA' ? (
+                  <section
+                    aria-labelledby="fontes-cruzadas-heading"
+                    className="mt-8 rounded-lg border-2 border-border-strong bg-surface-alt p-5"
+                  >
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-3">
+                      <h2
+                        id="fontes-cruzadas-heading"
+                        className="inline-flex items-center gap-2 font-headline text-xl font-extrabold uppercase tracking-wide text-ink-primary"
+                      >
+                        <Layers className="h-5 w-5 text-brand" strokeWidth={2} aria-hidden="true" />
+                        Fontes &amp; Transparência Editorial
+                      </h2>
+                      <span className="font-mono text-xs font-bold uppercase text-ink-secondary">
+                        {article.attribution.contentType}
+                      </span>
+                    </div>
 
-                  <ul className="space-y-3">
-                    {matchedSources.map((src) => {
-                      const safeSrcUrl = getSafeHttpUrl(src.sourceUrl);
-                      return (
-                        <li
-                          key={src.id}
-                          className="flex flex-col gap-1 rounded border border-border-subtle bg-surface p-3 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <div className="min-w-0 space-y-0.5">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-mono text-xs font-bold text-ink-primary">
-                                {src.sourceName}
-                              </span>
-                              <span className="rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[11px] font-semibold text-ink-secondary">
-                                Similaridade {Math.round(src.similarityScore * 100)}%
-                              </span>
+                    <ul className="space-y-3">
+                      {matchedSources.map((src, index) => {
+                        const safeSrcUrl = getSafeHttpUrl(src.sourceUrl);
+                        const sourceLabel =
+                          src.isPrimary || index === 0 ? 'Fonte principal' : 'Fonte corroborada';
+                        return (
+                          <li
+                            key={src.id}
+                            className="flex flex-col gap-1 rounded border border-border-subtle bg-surface p-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0 space-y-0.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-ink-primary">
+                                  {src.sourceName}
+                                </span>
+                                <span className="rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[11px] font-semibold text-ink-secondary">
+                                  {sourceLabel}
+                                </span>
+                              </div>
+                              <p className="font-reading text-sm text-ink-secondary">
+                                {src.originalTitle}
+                              </p>
                             </div>
-                            <p className="font-reading text-sm text-ink-secondary">
-                              {src.originalTitle}
-                            </p>
-                          </div>
 
-                          {safeSrcUrl && (
-                            <a
-                              href={safeSrcUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex shrink-0 items-center gap-1.5 rounded border border-border-strong bg-surface-alt px-3 py-1.5 font-mono text-xs font-bold text-ink-primary underline decoration-brand underline-offset-2 hover:bg-highlight hover:text-ink-highlight"
-                            >
-                              <span>Visitar fonte</span>
-                              <ExternalLink
-                                className="h-3.5 w-3.5 shrink-0"
-                                strokeWidth={2}
-                                aria-hidden="true"
-                              />
-                              <span className="sr-only">(abre em nova aba)</span>
-                            </a>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
+                            {safeSrcUrl && (
+                              <a
+                                href={safeSrcUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex shrink-0 items-center gap-1.5 rounded border border-border-strong bg-surface-alt px-3 py-1.5 font-mono text-xs font-bold text-ink-primary underline decoration-brand underline-offset-2 hover:bg-highlight hover:text-ink-highlight"
+                              >
+                                <span>Visitar fonte</span>
+                                <ExternalLink
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  strokeWidth={2}
+                                  aria-hidden="true"
+                                />
+                                <span className="sr-only">(abre em nova aba)</span>
+                              </a>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ) : (
+                  <section
+                    aria-labelledby="fontes-cruzadas-heading"
+                    className="mt-8 rounded-lg border-2 border-border-strong bg-surface-alt p-5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2
+                        id="fontes-cruzadas-heading"
+                        className="inline-flex items-center gap-2 font-headline text-xl font-extrabold uppercase tracking-wide text-ink-primary"
+                      >
+                        <Layers className="h-5 w-5 text-brand" strokeWidth={2} aria-hidden="true" />
+                        Produção Original CritHit!
+                      </h2>
+                      <span className="font-mono text-xs font-bold uppercase text-ink-secondary">
+                        AUTORAL
+                      </span>
+                    </div>
+                    <p className="mt-2 font-reading text-sm leading-relaxed text-ink-secondary">
+                      Texto original assinado por{' '}
+                      <strong className="font-semibold text-ink-primary">
+                        {article.attribution.authorName}
+                      </strong>{' '}
+                      com apuração e revisão da redação do CritHit!.
+                    </p>
+                  </section>
+                )}
 
                 {/* Seção de Comentários Integrada */}
                 <ArticleCommentsSection
@@ -401,61 +432,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               </div>
             </div>
 
-            {/* SIDEBAR EDITORIAL STICKY (4 cols — padrão CNN Brasil / IGN) */}
+            {/* SIDEBAR EDITORIAL STICKY (4 cols — Mais Lidas no topo, Leia Também e card compacto de Reels abaixo) */}
             <aside
               aria-label="Conteúdo complementar e ranking"
               className="space-y-6 lg:sticky lg:top-20 lg:col-span-4 lg:self-start"
             >
-              {/* Card "Assista em Reels 9:16" */}
-              <div
-                data-chrome="dark"
-                className="overflow-hidden rounded-lg border-2 border-border-strong bg-chrome text-chrome-ink shadow-hard"
-              >
-                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                  <span className="inline-flex items-center gap-2 font-display text-lg tracking-wider text-highlight">
-                    <Film className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                    ASSISTA EM REELS 9:16
-                  </span>
-                  <span className="font-mono text-[11px] font-bold uppercase text-chrome-muted">
-                    Resumo rápido
-                  </span>
-                </div>
-                <Link
-                  href={`/reels?id=${article.slug}`}
-                  className="group relative block aspect-[4/5] w-full overflow-hidden"
-                >
-                  <EditorialCoverArt
-                    coverImageUrl={article.coverImageUrl}
-                    coverArtKey={article.coverArtKey}
-                    category={article.category}
-                    alt={article.headline}
-                    aspectClass="h-full w-full"
-                    fit="contain"
-                  />
-                  <div
-                    className="absolute inset-0 flex flex-col justify-end p-4"
-                    style={{
-                      background:
-                        'linear-gradient(to top, rgba(9,10,15,0.96) 0%, rgba(9,10,15,0.80) 48%, rgba(9,10,15,0.12) 100%)',
-                    }}
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <CategoryBadge category={article.category} />
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-highlight bg-brand-fill text-white transition-transform group-hover:scale-105">
-                        <Play className="h-4 w-4 fill-current" strokeWidth={2} aria-hidden="true" />
-                      </span>
-                    </div>
-                    <p className="font-headline text-xl font-bold leading-tight text-white group-hover:text-highlight">
-                      {article.headline}
-                    </p>
-                    <p className="mt-1.5 line-clamp-2 font-reading text-xs text-zinc-200">
-                      {article.reelsSummary}
-                    </p>
-                  </div>
-                </Link>
-              </div>
-
-              {/* Ranking "Mais Lidas Agora" (#1 a #5) */}
+              {/* Ranking "Mais Lidas Agora" (#1 a #5) no topo para evitar capa duplicada lado a lado */}
               {mostReadList.length > 0 && (
                 <section
                   aria-labelledby="sidebar-mais-lidas"
@@ -549,6 +531,51 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                   </ul>
                 </section>
               )}
+
+              {/* Card compacto "Assista em Reels" na base da sidebar */}
+              <div
+                data-chrome="dark"
+                className="overflow-hidden rounded-lg border-2 border-border-strong bg-chrome text-chrome-ink shadow-hard"
+              >
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                  <span className="inline-flex items-center gap-2 font-display text-lg tracking-wider text-highlight">
+                    <Film className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                    ASSISTA EM REELS
+                  </span>
+                  <span className="font-mono text-[11px] font-bold uppercase text-chrome-muted">
+                    Resumo rápido
+                  </span>
+                </div>
+                <Link
+                  href={`/reels?id=${article.slug}`}
+                  className="group relative block aspect-[16/10] w-full overflow-hidden"
+                >
+                  <EditorialCoverArt
+                    coverImageUrl={article.coverImageUrl}
+                    coverArtKey={article.coverArtKey}
+                    category={article.category}
+                    alt={article.headline}
+                    aspectClass="h-full w-full"
+                  />
+                  <div
+                    className="absolute inset-0 flex flex-col justify-end p-4"
+                    style={{
+                      background:
+                        'linear-gradient(to top, rgba(9,10,15,0.96) 0%, rgba(9,10,15,0.78) 52%, rgba(9,10,15,0.18) 100%)',
+                    }}
+                  >
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <CategoryBadge category={article.category} />
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-highlight bg-brand-fill text-white transition-transform group-hover:scale-105">
+                        <Play className="h-3.5 w-3.5 fill-current" strokeWidth={2} aria-hidden="true" />
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 font-headline text-lg font-bold leading-tight text-white group-hover:text-highlight">
+                      {article.headline}
+                    </p>
+                  </div>
+                </Link>
+              </div>
             </aside>
           </div>
         </article>

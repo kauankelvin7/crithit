@@ -20,7 +20,7 @@ CritHit/
 │   └── 08-qa-report.md
 ├── apps/
 │   ├── api/                    # Backend REST & Worker Editorial (Java 21 + Spring Boot 3.4 + Flyway + pgvector)
-│   └── web/                    # Portal Web, Reels 9:16, Leitor & Admin BFF (Next.js 15 + TypeScript + Tailwind)
+│   └── web/                    # Portal Web, Reels, Leitor & Admin BFF (Next.js 15 + TypeScript + Tailwind)
 └── infra/                      # Docker Compose (PostgreSQL 16 + pgvector, Redis 7, API e Web)
     ├── docker-compose.yml
     ├── .env.example
@@ -76,6 +76,16 @@ npm install
 npm run build
 npx next start -p 3000
 ```
+
+### Opção C — Preview Rápido na Vercel (Sem Back-end)
+
+Para publicar uma demonstração pública do portal completo (Home, Reels 2.0 e Leitor com dados editoriais de demonstração) diretamente na Vercel sem precisar subir PostgreSQL/Spring Boot:
+
+1. Importe este repositório na Vercel e defina **Root Directory** como `apps/web`.
+2. Em **Environment Variables**, adicione:
+   - `ENABLE_MOCK_FALLBACK=true`
+   - `REVALIDATE_SECRET` *(qualquer segredo aleatório, ex.: gerado com `openssl rand -hex 24`)*
+3. Clique em **Deploy**.
 
 ---
 

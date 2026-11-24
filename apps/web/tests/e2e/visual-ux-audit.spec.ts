@@ -4,10 +4,15 @@ import { expect, test } from '@playwright/test';
 import { setupApiMocks } from './helpers/mock-api';
 
 const SCREENSHOT_DIR = path.resolve(process.cwd(), '../../docs/qa-screenshots');
+const AUDIT_COMPONENTS_DIR = path.resolve(
+  process.cwd(),
+  '../../docs/qa-screenshots/audit-components',
+);
 
 test.describe('Auditoria Visual & Geométrica em Tempo Real (Desktop 1440x900 & Mobile 390x844)', () => {
   test.beforeAll(() => {
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+    fs.mkdirSync(AUDIT_COMPONENTS_DIR, { recursive: true });
   });
 
   test('Home (/): header em y===0, Plantão Geek sem sobrepor Hero, todas as seções sem overflow ou colisão + screenshots', async ({
@@ -71,6 +76,10 @@ test.describe('Auditoria Visual & Geométrica em Tempo Real (Desktop 1440x900 & 
 
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, 'home-desktop.png'),
+      fullPage: false,
+    });
+    await page.screenshot({
+      path: path.join(AUDIT_COMPONENTS_DIR, 'home-desktop.png'),
       fullPage: false,
     });
 
@@ -173,6 +182,10 @@ test.describe('Auditoria Visual & Geométrica em Tempo Real (Desktop 1440x900 & 
       path: path.join(SCREENSHOT_DIR, 'reels-desktop.png'),
       fullPage: false,
     });
+    await page.screenshot({
+      path: path.join(AUDIT_COMPONENTS_DIR, 'reels-desktop.png'),
+      fullPage: false,
+    });
 
     // Navega 3 slides e verifica que o header permanece em y === 0 (window.scrollY === 0)
     await page.keyboard.press('ArrowDown');
@@ -237,6 +250,10 @@ test.describe('Auditoria Visual & Geométrica em Tempo Real (Desktop 1440x900 & 
       path: path.join(SCREENSHOT_DIR, 'reels-mobile.png'),
       fullPage: false,
     });
+    await page.screenshot({
+      path: path.join(AUDIT_COMPONENTS_DIR, 'reels-mobile.png'),
+      fullPage: false,
+    });
   });
 
   test('Leitor (/noticia/[slug]): layout editorial limpo, atribuição e screenshot de evidência', async ({
@@ -255,6 +272,39 @@ test.describe('Auditoria Visual & Geométrica em Tempo Real (Desktop 1440x900 & 
 
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, 'article-desktop.png'),
+      fullPage: false,
+    });
+    await page.screenshot({
+      path: path.join(AUDIT_COMPONENTS_DIR, 'article-desktop.png'),
+      fullPage: false,
+    });
+  });
+
+  test('Admin (/admin): cabeçalho isolado sem nav pública, sem jargões e screenshots de login e mesa editorial', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    // 1) Tela de Login isolada
+    await setupApiMocks(page, { authenticated: false });
+    await page.goto('/admin');
+    await expect(page.getByRole('heading', { name: 'Painel da Redação' })).toBeVisible();
+    await expect(page.locator('header[data-admin-header="true"]')).toBeVisible();
+    await expect(page.locator('footer')).toHaveCount(0);
+
+    await page.screenshot({
+      path: path.join(AUDIT_COMPONENTS_DIR, 'admin-login.png'),
+      fullPage: false,
+    });
+
+    // 2) Mesa Editorial autenticada
+    await page.getByLabel('E-mail editorial').fill('editor@crithit.com.br');
+    await page.getByLabel('Senha').fill('CritHit#2026');
+    await page.getByRole('button', { name: 'Entrar na Redação' }).click();
+    await expect(page.getByRole('heading', { name: 'Mesa Editorial CritHit!' })).toBeVisible();
+
+    await page.screenshot({
+      path: path.join(AUDIT_COMPONENTS_DIR, 'admin-mesa.png'),
       fullPage: false,
     });
   });

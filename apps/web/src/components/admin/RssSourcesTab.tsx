@@ -72,7 +72,7 @@ export function RssSourcesTab({
               Catálogo de Fontes RSS
             </h2>
             <p className="font-mono text-xs text-ink-muted">
-              Pipeline Virtual Threads com circuit breaker e deduplicação pgvector.
+              Monitoramento automático de portais parceiros com detecção de pautas repetidas.
             </p>
           </div>
         </div>

@@ -2,12 +2,18 @@ import { expect, test } from '@playwright/test';
 import { setupApiMocks } from './helpers/mock-api';
 
 test.describe('Fluxo 4 — Painel Admin (/admin)', () => {
-  test('bloqueia acesso sem sessão, autentica via BFF com cookie HttpOnly e sem JWT em localStorage', async ({
+  test('isola completamente o /admin sem header/footer públicos, autentica via BFF com cookie HttpOnly e sem JWT em localStorage', async ({
     page,
     context,
   }) => {
     await setupApiMocks(page, { authenticated: false });
     await page.goto('/admin');
+
+    // Isolamento total: cabeçalho dedicado da Redação, sem barra de busca pública, sem Reels, sem footer público
+    await expect(page.locator('header[data-admin-header="true"]')).toBeVisible();
+    await expect(page.locator('header')).toContainText('REDAÇÃO');
+    await expect(page.getByLabel('Buscar notícias')).toHaveCount(0);
+    await expect(page.locator('footer')).toHaveCount(0);
 
     // Sem sessão: exibe tela de login e não expõe dados da fila
     await expect(page.getByRole('heading', { name: 'Painel da Redação' })).toBeVisible();
@@ -19,6 +25,9 @@ test.describe('Fluxo 4 — Painel Admin (/admin)', () => {
     await page.getByRole('button', { name: 'Entrar na Redação' }).click();
 
     await expect(page.getByRole('heading', { name: 'Mesa Editorial CritHit!' })).toBeVisible();
+    await expect(page.locator('body')).not.toContainText('Human-in-the-Loop');
+    await expect(page.locator('body')).not.toContainText('raw_title');
+    await expect(page.locator('body')).not.toContainText('pgvector');
 
     // Verifica cookie HttpOnly no contexto do navegador
     const cookies = await context.cookies();
@@ -45,7 +54,7 @@ test.describe('Fluxo 4 — Painel Admin (/admin)', () => {
     }
   });
 
-  test('Fila de Revisão split-screen: bloqueia javascript:, aprova/publica, agenda e descarta em 2 passos', async ({
+  test('Fila de Revisão split-screen: Preview Reels, bloqueia javascript:, aprova/publica, agenda e descarta em 2 passos', async ({
     page,
   }) => {
     await setupApiMocks(page, { authenticated: true });
@@ -54,9 +63,21 @@ test.describe('Fluxo 4 — Painel Admin (/admin)', () => {
     await expect(page.getByRole('heading', { name: 'Mesa Editorial CritHit!' })).toBeVisible();
     await expect(page.getByRole('tab', { name: /Fila de Revisão \(3\)/i })).toBeVisible();
 
-    // Split-screen: Origem RSS / IA (esquerda) + Formulário (direita)
-    await expect(page.getByRole('region', { name: 'Fonte original e fontes cruzadas' })).toBeVisible();
+    // Split-screen: Origem da Pauta (esquerda) + Formulário (direita) sem jargões
+    const leftPane = page.getByRole('region', { name: 'Fonte original e fontes cruzadas' });
+    await expect(leftPane).toBeVisible();
+    await expect(leftPane).toContainText('Título original');
+    await expect(leftPane).toContainText('Resumo original');
+    await expect(leftPane).toContainText('IA: Adaptado');
+    await expect(leftPane).toContainText('Fontes cruzadas (2)');
     await expect(page.getByRole('region', { name: 'Formulário de revisão editorial' })).toBeVisible();
+
+    // Preview Reels ao vivo
+    await page.getByRole('button', { name: /Preview Reels/i }).click();
+    await expect(page.getByLabel('Pré-visualização ao vivo do Reel')).toBeVisible();
+    await page.getByRole('button', { name: '2. Em 10s' }).click();
+    await expect(page.getByLabel('Pré-visualização ao vivo do Reel')).toContainText('Em 10 segundos');
+    await page.getByRole('button', { name: /Ocultar Preview Reels/i }).click();
 
     // Preview ao vivo da capa + upload de imagem local
     await expect(page.getByLabel('Pré-visualização da capa editorial')).toBeVisible();
@@ -71,7 +92,7 @@ test.describe('Fluxo 4 — Painel Admin (/admin)', () => {
     await expect(page.getByLabel(/URL da Imagem de Capa/i)).toHaveValue(/\/api\/media\/mock-upload\.png$/);
 
     // 1) Bloqueio de URL javascript:
-    const sourceUrlInput = page.getByLabel('URL da Fonte Original (http/https)');
+    const sourceUrlInput = page.getByLabel('URL da Fonte Original');
     await sourceUrlInput.fill('javascript:alert(1)');
     await page.getByRole('button', { name: 'Aprovar e Publicar' }).click();
 
@@ -111,20 +132,47 @@ test.describe('Fluxo 4 — Painel Admin (/admin)', () => {
     await expect(page.getByRole('tab', { name: /Fila de Revisão \(0\)/i })).toBeVisible();
   });
 
-  test('Matérias Publicadas: editar autor/fonte, promover para Manchete Principal, Tirar do ar em 2 passos e Republicar', async ({
+  test('Nova Matéria Autoral + Aba Matérias Publicadas (Agendadas, editar, promover, Tirar do ar e Republicar)', async ({
     page,
   }) => {
     await setupApiMocks(page, { authenticated: true });
     await page.goto('/admin');
 
-    await page.getByRole('tab', { name: /Matérias Publicadas/i }).click();
+    // 0) Criar Nova Matéria Autoral e publicar imediatamente
+    await page.getByRole('button', { name: /Nova Matéria Autoral/i }).click();
+    await expect(page.getByRole('heading', { name: 'Nova Matéria Autoral' })).toBeVisible();
+    await page
+      .getByLabel('Manchete Editorial')
+      .fill('Especial CritHit!: os 5 RPGs independentes mais criativos de 2026');
+    await page
+      .getByLabel('Lead (Abertura)')
+      .fill('Selecionamos cinco projetos autorais que redefinem sistemas de combate por turnos.');
+    await page
+      .getByLabel(/Corpo da Matéria/i)
+      .fill('A cena independente entregou algumas das experiências mais memoráveis do ano.');
+    await page
+      .getByLabel('Resumo para Reels')
+      .fill('Cinco RPGs independentes que estão elevando o gênero tático em 2026.');
+    await page.getByRole('button', { name: 'Publicar matéria' }).click();
+
+    await expect(page.getByRole('status')).toContainText(/Matéria autoral criada e publicada/i);
+
+    // Já estamos na aba Matérias Publicadas — testar filtro Agendadas + cancelar agendamento
+    await page.getByRole('button', { name: /Agendadas \(1\)/i }).click();
+    await expect(page.getByText(/Duna: Messias encerra filmagens/i)).toBeVisible();
+    await page.getByRole('button', { name: 'Cancelar agendamento' }).click();
+    await expect(page.getByRole('status')).toContainText(/Agendamento cancelado/i);
+
+    // Voltar para Publicadas
+    await page.getByRole('button', { name: /^Publicadas/i }).click();
 
     // 1) Editar autor e fonte da primeira matéria
     await page.getByRole('button', { name: 'Editar' }).first().click();
-    await expect(page.getByText(/Editando: PUBLISHED/i)).toBeVisible();
+    await expect(page.getByText(/Editando: Publicada/i)).toBeVisible();
 
-    await page.getByLabel('Autor / Revisor (author_name)').fill('Kauan QA Editor');
-    await page.getByLabel('Nome da Fonte (source_name)').fill('Gematsu Verified');
+    await page.getByLabel('Autor / Revisor').fill('Kauan QA Editor');
+    await page.getByLabel('Tipo de Conteúdo').selectOption('CURADORIA');
+    await page.getByLabel('Nome da Fonte').fill('Gematsu Verified');
     await page.getByRole('button', { name: 'Salvar alterações' }).click();
 
     await expect(page.getByRole('status')).toContainText(/Alterações salvas com sucesso/i);
@@ -150,11 +198,11 @@ test.describe('Fluxo 4 — Painel Admin (/admin)', () => {
     await unpublishDialog.getByRole('button', { name: 'Confirmar retirada do ar' }).click();
 
     await expect(page.getByRole('status')).toContainText(/Matéria retirada do ar/i);
-    await expect(page.getByText('UNPUBLISHED')).toBeVisible();
+    await expect(page.getByText('Retirada do ar', { exact: true }).first()).toBeVisible();
 
     // 4) Republicar
     await page.getByRole('button', { name: 'Republicar' }).first().click();
     await expect(page.getByRole('status')).toContainText(/Matéria republicada com sucesso/i);
-    await expect(page.getByText('UNPUBLISHED')).toHaveCount(0);
+    await expect(page.getByText('Retirada do ar', { exact: true })).toHaveCount(0);
   });
 });

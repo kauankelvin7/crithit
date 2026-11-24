@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  CalendarClock,
+  CalendarX2,
+  Check,
   EyeOff,
   FileEdit,
   RefreshCw,
@@ -12,7 +15,7 @@ import {
 import { CategoryBadge } from '@/components/CategoryBadge';
 import { EditorialCoverArt } from '@/components/EditorialCoverArt';
 import { formatCompactNumber, formatFullDate } from '@/lib/format';
-import type { AdminArticleSummary } from '@/lib/types';
+import type { AdminArticleSummary, ArticleStatus } from '@/lib/types';
 
 export interface PublishedArticlesTabProps {
   articles: AdminArticleSummary[];
@@ -21,6 +24,36 @@ export interface PublishedArticlesTabProps {
   onPromoteMainHeadline: (articleId: string) => Promise<void> | void;
   onUnpublish: (articleId: string, reason?: string) => Promise<void> | void;
   onRepublish: (articleId: string) => Promise<void> | void;
+  onCancelSchedule?: (articleId: string) => Promise<void> | void;
+  onPublishScheduledNow?: (articleId: string) => Promise<void> | void;
+}
+
+type StatusFilter = 'ALL' | 'PUBLISHED' | 'SCHEDULED' | 'UNPUBLISHED';
+
+function getStatusBadge(status: ArticleStatus): {
+  label: string;
+  backgroundColor: string;
+  color: string;
+} {
+  if (status === 'PUBLISHED') {
+    return {
+      label: 'Publicada',
+      backgroundColor: 'var(--status-success-soft)',
+      color: 'var(--ink-on-success-soft)',
+    };
+  }
+  if (status === 'SCHEDULED') {
+    return {
+      label: 'Agendada',
+      backgroundColor: 'var(--fill-info)',
+      color: 'var(--ink-on-fill-info)',
+    };
+  }
+  return {
+    label: 'Retirada do ar',
+    backgroundColor: 'var(--status-warning-soft)',
+    color: 'var(--ink-on-warning-soft)',
+  };
 }
 
 export function PublishedArticlesTab({
@@ -30,8 +63,10 @@ export function PublishedArticlesTab({
   onPromoteMainHeadline,
   onUnpublish,
   onRepublish,
+  onCancelSchedule,
+  onPublishScheduledNow,
 }: PublishedArticlesTabProps) {
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PUBLISHED' | 'UNPUBLISHED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [search, setSearch] = useState('');
   const [confirmUnpublishId, setConfirmUnpublishId] = useState<string | null>(null);
   const [unpublishReason, setUnpublishReason] = useState('');
@@ -42,6 +77,13 @@ export function PublishedArticlesTab({
       cancelUnpublishBtnRef.current?.focus();
     }
   }, [confirmUnpublishId]);
+
+  const counts = {
+    ALL: articles.length,
+    PUBLISHED: articles.filter((a) => a.status === 'PUBLISHED').length,
+    SCHEDULED: articles.filter((a) => a.status === 'SCHEDULED').length,
+    UNPUBLISHED: articles.filter((a) => a.status === 'UNPUBLISHED').length,
+  };
 
   const filtered = articles.filter((item) => {
     const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
@@ -58,24 +100,33 @@ export function PublishedArticlesTab({
     <div className="space-y-4">
       {/* Barra de Filtros */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded border-2 border-border-strong bg-surface p-4 shadow-hard-sm">
-        <div role="group" aria-label="Filtrar por status editorial" className="flex items-center gap-2">
-          {(['ALL', 'PUBLISHED', 'UNPUBLISHED'] as const).map((st) => {
-            const active = statusFilter === st;
-            const label =
-              st === 'ALL' ? 'Todas' : st === 'PUBLISHED' ? 'Publicadas' : 'Retiradas do ar';
+        <div
+          role="group"
+          aria-label="Filtrar por status editorial"
+          className="flex flex-wrap items-center gap-2"
+        >
+          {(
+            [
+              { id: 'ALL', label: `Todas (${counts.ALL})` },
+              { id: 'PUBLISHED', label: `Publicadas (${counts.PUBLISHED})` },
+              { id: 'SCHEDULED', label: `Agendadas (${counts.SCHEDULED})` },
+              { id: 'UNPUBLISHED', label: `Retiradas do ar (${counts.UNPUBLISHED})` },
+            ] as const
+          ).map((tab) => {
+            const active = statusFilter === tab.id;
             return (
               <button
-                key={st}
+                key={tab.id}
                 type="button"
                 aria-pressed={active}
-                onClick={() => setStatusFilter(st)}
+                onClick={() => setStatusFilter(tab.id)}
                 className={`rounded border-2 px-3 py-1.5 font-mono text-xs font-bold uppercase transition-colors ${
                   active
                     ? 'border-border-strong bg-highlight text-ink-highlight'
                     : 'border-border-subtle bg-surface-alt text-ink-secondary hover:border-border-strong'
                 }`}
               >
-                {label}
+                {tab.label}
               </button>
             );
           })}
@@ -110,6 +161,8 @@ export function PublishedArticlesTab({
           {filtered.map((item) => {
             const isConfirming = confirmUnpublishId === item.id;
             const isPublished = item.status === 'PUBLISHED';
+            const isScheduled = item.status === 'SCHEDULED';
+            const statusBadge = getStatusBadge(item.status);
 
             return (
               <div
@@ -130,40 +183,49 @@ export function PublishedArticlesTab({
                       />
                     </div>
                     <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <CategoryBadge category={item.category} />
-                      <span
-                        className="rounded px-2 py-0.5 font-mono text-[11px] font-bold uppercase"
-                        style={{
-                          backgroundColor: isPublished
-                            ? 'var(--status-success-soft)'
-                            : 'var(--status-warning-soft)',
-                          color: isPublished
-                            ? 'var(--ink-on-success-soft)'
-                            : 'var(--ink-on-warning-soft)',
-                        }}
-                      >
-                        {item.status}
-                      </span>
-                      {item.isMainHeadline && (
-                        <span className="inline-flex items-center gap-1 rounded border border-border-strong bg-highlight px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-ink-highlight">
-                          <Star className="h-3.5 w-3.5 fill-current" strokeWidth={2} aria-hidden="true" />
-                          Manchete Principal
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CategoryBadge category={item.category} />
+                        <span
+                          className="inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[11px] font-bold uppercase"
+                          style={{
+                            backgroundColor: statusBadge.backgroundColor,
+                            color: statusBadge.color,
+                          }}
+                        >
+                          {isScheduled && (
+                            <CalendarClock className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
+                          )}
+                          {statusBadge.label}
                         </span>
-                      )}
-                    </div>
+                        {item.isMainHeadline && (
+                          <span className="inline-flex items-center gap-1 rounded border border-border-strong bg-highlight px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-ink-highlight">
+                            <Star className="h-3.5 w-3.5 fill-current" strokeWidth={2} aria-hidden="true" />
+                            Manchete Principal
+                          </span>
+                        )}
+                      </div>
 
-                    <h3 className="font-sans text-base font-bold text-ink-primary">
-                      {item.headline}
-                    </h3>
+                      <h3 className="font-sans text-base font-bold text-ink-primary">
+                        {item.headline}
+                      </h3>
 
-                    <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] text-ink-muted">
-                      <span>Por {item.attribution.authorName}</span>
-                      <span>Fonte: {item.attribution.sourceName}</span>
-                      {item.publishedAt && <span>Publicada: {formatFullDate(item.publishedAt)}</span>}
-                      <span>Views: {formatCompactNumber(item.viewsCount)}</span>
-                      <span>Curtidas: {formatCompactNumber(item.likesCount)}</span>
-                    </div>
+                      <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] text-ink-muted">
+                        <span>Por {item.attribution.authorName}</span>
+                        {item.attribution.contentType === 'AUTORAL' ? (
+                          <span>Produção Autoral</span>
+                        ) : (
+                          <span>Fonte: {item.attribution.sourceName}</span>
+                        )}
+                        {isScheduled && item.scheduledAt ? (
+                          <span className="font-bold text-brand">
+                            Agendada para: {formatFullDate(item.scheduledAt)}
+                          </span>
+                        ) : (
+                          item.publishedAt && <span>Publicada: {formatFullDate(item.publishedAt)}</span>
+                        )}
+                        <span>Views: {formatCompactNumber(item.viewsCount)}</span>
+                        <span>Curtidas: {formatCompactNumber(item.likesCount)}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -191,7 +253,36 @@ export function PublishedArticlesTab({
                       </button>
                     )}
 
-                    {isPublished ? (
+                    {isScheduled ? (
+                      <>
+                        {onPublishScheduledNow && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => onPublishScheduledNow(item.id)}
+                            className="inline-flex items-center gap-1.5 rounded border-2 border-border-strong px-3 py-1.5 font-sans text-xs font-bold"
+                            style={{
+                              backgroundColor: 'var(--fill-success)',
+                              color: 'var(--ink-on-fill-success)',
+                            }}
+                          >
+                            <Check className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                            Publicar agora
+                          </button>
+                        )}
+                        {onCancelSchedule && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => onCancelSchedule(item.id)}
+                            className="inline-flex items-center gap-1.5 rounded border-2 border-status-error bg-surface px-3 py-1.5 font-sans text-xs font-bold text-status-error hover:bg-surface-alt"
+                          >
+                            <CalendarX2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                            Cancelar agendamento
+                          </button>
+                        )}
+                      </>
+                    ) : isPublished ? (
                       <button
                         type="button"
                         disabled={busy}
