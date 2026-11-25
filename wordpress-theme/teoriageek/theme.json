@@ -4,63 +4,46 @@
   "settings": {
     "appearanceTools": true,
     "layout": {
-      "contentSize": "800px",
+      "contentSize": "68ch",
       "wideSize": "1280px"
     },
     "color": {
+      "custom": true,
+      "defaultPalette": false,
       "palette": [
-        { "slug": "tg-brand", "color": "#116EBF", "name": "Azul Teoria Geek" },
-        { "slug": "tg-highlight", "color": "#FFD600", "name": "Amarelo Destaque" },
-        { "slug": "tg-alert", "color": "#BE123C", "name": "Vermelho Plantão" },
-        { "slug": "tg-paper", "color": "#F6F4EE", "name": "Papel Editorial" },
-        { "slug": "tg-white", "color": "#FFFFFF", "name": "Branco Puro" },
-        { "slug": "tg-ink", "color": "#111111", "name": "Tinta Escura" },
-        { "slug": "tg-chrome", "color": "#111318", "name": "Chrome Escuro" },
-        { "slug": "tg-games", "color": "#1D4ED8", "name": "Editoria Games" },
-        { "slug": "tg-cinema", "color": "#047857", "name": "Editoria Filmes & Séries" },
-        { "slug": "tg-animes", "color": "#0E7490", "name": "Editoria Animes" },
-        { "slug": "tg-comics", "color": "#B45309", "name": "Editoria Literatura & HQs" },
-        { "slug": "tg-tech", "color": "#6D28D9", "name": "Editoria Especiais & Tech" }
+        { "slug": "tg-primary", "color": "#1D4ED8", "name": "Azul Primário Teoria Geek" },
+        { "slug": "tg-primary-bright", "color": "#2563EB", "name": "Azul Interativo" },
+        { "slug": "tg-accent", "color": "#FACC15", "name": "Amarelo Destaque Teoria Geek" },
+        { "slug": "tg-accent-strong", "color": "#EAB308", "name": "Amarelo Ouro" },
+        { "slug": "tg-text", "color": "#0B0F19", "name": "Texto Escuro Alto Contraste" },
+        { "slug": "tg-bg", "color": "#F8FAFC", "name": "Fundo Base Claro" },
+        { "slug": "tg-surface", "color": "#FFFFFF", "name": "Superfície Clara" }
       ]
     },
     "typography": {
+      "fluid": true,
       "fontFamilies": [
         {
-          "fontFamily": "'Barlow Condensed', system-ui, sans-serif",
+          "fontFamily": "'Barlow Condensed', Impact, sans-serif",
           "slug": "headline",
-          "name": "Barlow Condensed (Manchetes)"
+          "name": "Manchete (Barlow Condensed)"
         },
         {
           "fontFamily": "'Space Grotesk', system-ui, sans-serif",
           "slug": "sans",
-          "name": "Space Grotesk (Interface)"
+          "name": "Interface (Space Grotesk)"
         },
         {
           "fontFamily": "'Plus Jakarta Sans', system-ui, sans-serif",
           "slug": "reading",
-          "name": "Plus Jakarta Sans (Leitura)"
+          "name": "Leitura (Plus Jakarta Sans)"
         },
         {
-          "fontFamily": "'JetBrains Mono', ui-monospace, monospace",
+          "fontFamily": "'JetBrains Mono', monospace",
           "slug": "mono",
-          "name": "JetBrains Mono (Metadados)"
-        },
-        {
-          "fontFamily": "'Bangers', Impact, cursive",
-          "slug": "display",
-          "name": "Bangers (Selo Pop-Art)"
+          "name": "Metadados (JetBrains Mono)"
         }
       ]
-    }
-  },
-  "styles": {
-    "color": {
-      "background": "var(--bg-base)",
-      "text": "var(--ink-primary)"
-    },
-    "typography": {
-      "fontFamily": "var(--font-reading)",
-      "lineHeight": "1.7"
     }
   }
 }

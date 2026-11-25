@@ -1,8 +1,6 @@
 <?php
 /**
  * Teoria Geek — Meta Box Nativa "Ficha Editorial" (sem ACF ou plugins pagos).
- * Permite aos redatores controlar Manchete Principal, Plantão, Formato, Nota (0-10),
- * 3 Pontos-Chave para Reels/Matéria e Fonte Externa opcional direto no editor padrão do WordPress.
  *
  * @package TeoriaGeek
  */
@@ -12,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registra a Meta Box "Ficha Editorial" na tela de edição de Posts.
+ * Registra a Meta Box na tela de edição de Posts.
  */
 function teoriageek_register_editorial_meta_box() {
 	add_meta_box(
@@ -27,9 +25,9 @@ function teoriageek_register_editorial_meta_box() {
 add_action( 'add_meta_boxes', 'teoriageek_register_editorial_meta_box' );
 
 /**
- * Renderiza os campos amigáveis da Ficha Editorial.
+ * Renderiza os controles da Ficha Editorial.
  *
- * @param WP_Post $post Post em edição.
+ * @param WP_Post $post Post atual.
  */
 function teoriageek_render_editorial_meta_box( $post ) {
 	wp_nonce_field( 'teoriageek_save_editorial_meta', 'teoriageek_editorial_nonce' );
@@ -60,30 +58,25 @@ function teoriageek_render_editorial_meta_box( $post ) {
 	</style>
 
 	<p style="margin: 0 0 8px; color: #50575e;">
-		<?php esc_html_e( 'Todos os campos abaixo são opcionais. Se você apenas escrever o título, texto e imagem destacada, o tema organiza a capa e os Reels automaticamente.', 'teoriageek' ); ?>
+		<?php esc_html_e( 'Campos 100% opcionais. O tema organiza capa, notas de selo e Reels automaticamente para todo o acervo.', 'teoriageek' ); ?>
 	</p>
 
 	<div class="tg-metabox-grid">
 		<div class="tg-metabox-card">
 			<h4><?php esc_html_e( 'Posição na Capa & Formato', 'teoriageek' ); ?></h4>
-
 			<label class="tg-metabox-check" for="tg_main_headline">
 				<input type="checkbox" id="tg_main_headline" name="tg_main_headline" value="1" <?php checked( $is_main_headline ); ?> />
 				<span><?php esc_html_e( 'Fixar como Manchete Principal da Capa', 'teoriageek' ); ?></span>
 			</label>
-			<p class="tg-metabox-help" style="margin-bottom: 10px;">
-				<?php esc_html_e( 'Tem prioridade sobre a categoria DESTAQUE. Ao marcar, desmarca automaticamente a manchete principal anterior.', 'teoriageek' ); ?>
-			</p>
-
 			<label class="tg-metabox-check" for="tg_plantao">
 				<input type="checkbox" id="tg_plantao" name="tg_plantao" value="1" <?php checked( $is_plantao ); ?> />
-				<span><?php esc_html_e( 'Destacar no Plantão (faixa deslizante do topo)', 'teoriageek' ); ?></span>
+				<span><?php esc_html_e( 'Destacar no Plantão Geek (topo)', 'teoriageek' ); ?></span>
 			</label>
 
 			<div class="tg-metabox-field" style="margin-top: 10px;">
 				<label for="tg_editorial_format"><?php esc_html_e( 'Formato Editorial', 'teoriageek' ); ?></label>
 				<select id="tg_editorial_format" name="tg_editorial_format">
-					<option value="" <?php selected( $editorial_format, '' ); ?>><?php esc_html_e( 'Detectar automaticamente pela categoria', 'teoriageek' ); ?></option>
+					<option value="" <?php selected( $editorial_format, '' ); ?>><?php esc_html_e( 'Detectar pela categoria', 'teoriageek' ); ?></option>
 					<option value="noticia" <?php selected( $editorial_format, 'noticia' ); ?>><?php esc_html_e( 'Notícia', 'teoriageek' ); ?></option>
 					<option value="critica" <?php selected( $editorial_format, 'critica' ); ?>><?php esc_html_e( 'Crítica', 'teoriageek' ); ?></option>
 					<option value="review" <?php selected( $editorial_format, 'review' ); ?>><?php esc_html_e( 'Review', 'teoriageek' ); ?></option>
@@ -93,47 +86,35 @@ function teoriageek_render_editorial_meta_box( $post ) {
 
 			<div class="tg-metabox-field">
 				<label for="tg_review_score"><?php esc_html_e( 'Nota da Crítica / Review (0 a 10)', 'teoriageek' ); ?></label>
-				<input type="number" id="tg_review_score" name="tg_review_score" min="0" max="10" step="0.1" value="<?php echo esc_attr( $review_score ); ?>" placeholder="Ex.: 9.2" />
-				<p class="tg-metabox-help"><?php esc_html_e( 'Exibe selo de nota na capa, na matéria e na Lâmina 3 dos Reels.', 'teoriageek' ); ?></p>
+				<input type="number" id="tg_review_score" name="tg_review_score" min="0" max="10" step="0.1" value="<?php echo esc_attr( $review_score ); ?>" placeholder="Ex.: 9.0" />
 			</div>
 		</div>
 
 		<div class="tg-metabox-card">
-			<h4><?php esc_html_e( 'Resumo em 3 Pontos-Chave (Matéria & Reels)', 'teoriageek' ); ?></h4>
-			<p class="tg-metabox-help" style="margin: 0 0 10px;">
-				<?php esc_html_e( 'Exibidos na abertura da matéria e na Lâmina 2 ("Em 10 segundos") dos Reels. Se ficarem vazios, o tema gera trechos automaticamente.', 'teoriageek' ); ?>
-			</p>
-
+			<h4><?php esc_html_e( 'Resumo em 3 Pontos-Chave', 'teoriageek' ); ?></h4>
 			<div class="tg-metabox-field">
 				<label for="tg_bullet_1"><?php esc_html_e( 'Ponto-chave 1', 'teoriageek' ); ?></label>
-				<input type="text" id="tg_bullet_1" name="tg_bullet_1" maxlength="160" value="<?php echo esc_attr( $bullet_1 ); ?>" placeholder="Ex.: Estreia confirmada para dezembro de 2026 nos cinemas" />
+				<input type="text" id="tg_bullet_1" name="tg_bullet_1" maxlength="160" value="<?php echo esc_attr( $bullet_1 ); ?>" />
 			</div>
-
 			<div class="tg-metabox-field">
 				<label for="tg_bullet_2"><?php esc_html_e( 'Ponto-chave 2', 'teoriageek' ); ?></label>
-				<input type="text" id="tg_bullet_2" name="tg_bullet_2" maxlength="160" value="<?php echo esc_attr( $bullet_2 ); ?>" placeholder="Ex.: Novo trailer destaca o retorno de personagens clássicos" />
+				<input type="text" id="tg_bullet_2" name="tg_bullet_2" maxlength="160" value="<?php echo esc_attr( $bullet_2 ); ?>" />
 			</div>
-
 			<div class="tg-metabox-field">
 				<label for="tg_bullet_3"><?php esc_html_e( 'Ponto-chave 3', 'teoriageek' ); ?></label>
-				<input type="text" id="tg_bullet_3" name="tg_bullet_3" maxlength="160" value="<?php echo esc_attr( $bullet_3 ); ?>" placeholder="Ex.: Pré-venda nacional começa duas semanas antes da estreia" />
+				<input type="text" id="tg_bullet_3" name="tg_bullet_3" maxlength="160" value="<?php echo esc_attr( $bullet_3 ); ?>" />
 			</div>
 		</div>
 
 		<div class="tg-metabox-card">
 			<h4><?php esc_html_e( 'Crédito / Fonte Externa (Opcional)', 'teoriageek' ); ?></h4>
-			<p class="tg-metabox-help" style="margin: 0 0 10px;">
-				<?php esc_html_e( 'Preencha apenas se a notícia tiver referência externa. Em matérias 100% autorais, deixe em branco para ocultar o bloco de fonte.', 'teoriageek' ); ?>
-			</p>
-
 			<div class="tg-metabox-field">
 				<label for="tg_source_name"><?php esc_html_e( 'Nome do veículo / fonte', 'teoriageek' ); ?></label>
-				<input type="text" id="tg_source_name" name="tg_source_name" maxlength="120" value="<?php echo esc_attr( $source_name ); ?>" placeholder="Ex.: Marvel Studios, Gematsu, Variety" />
+				<input type="text" id="tg_source_name" name="tg_source_name" maxlength="120" value="<?php echo esc_attr( $source_name ); ?>" />
 			</div>
-
 			<div class="tg-metabox-field">
-				<label for="tg_source_url"><?php esc_html_e( 'Link oficial da fonte (https://...)', 'teoriageek' ); ?></label>
-				<input type="url" id="tg_source_url" name="tg_source_url" value="<?php echo esc_url( $source_url ); ?>" placeholder="https://..." />
+				<label for="tg_source_url"><?php esc_html_e( 'Link oficial (https://...)', 'teoriageek' ); ?></label>
+				<input type="url" id="tg_source_url" name="tg_source_url" value="<?php echo esc_url( $source_url ); ?>" />
 			</div>
 		</div>
 	</div>
@@ -141,9 +122,9 @@ function teoriageek_render_editorial_meta_box( $post ) {
 }
 
 /**
- * Salva os metadados da Ficha Editorial com validação rigorosa de nonce e permissões.
+ * Salva os metadados da Ficha Editorial quando um post é editado no painel.
  *
- * @param int $post_id ID do post salvo.
+ * @param int $post_id ID do post.
  */
 function teoriageek_save_editorial_meta( $post_id ) {
 	if ( ! isset( $_POST['teoriageek_editorial_nonce'] ) ) {
@@ -155,14 +136,10 @@ function teoriageek_save_editorial_meta( $post_id ) {
 	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 		return;
 	}
-	if ( wp_is_post_revision( $post_id ) ) {
-		return;
-	}
-	if ( ! current_user_can( 'edit_post', $post_id ) ) {
+	if ( wp_is_post_revision( $post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
 		return;
 	}
 
-	// 1. Manchete Principal (garante unicidade ao marcar um novo post).
 	$is_main = isset( $_POST['tg_main_headline'] ) && '1' === $_POST['tg_main_headline'];
 	if ( $is_main ) {
 		$previous = get_posts(
@@ -177,21 +154,19 @@ function teoriageek_save_editorial_meta( $post_id ) {
 			)
 		);
 		foreach ( $previous as $prev_id ) {
-			delete_post_meta( $prev_id, '_tg_main_headline' );
+			delete_post_meta( (int) $prev_id, '_tg_main_headline' );
 		}
 		update_post_meta( $post_id, '_tg_main_headline', '1' );
 	} else {
 		delete_post_meta( $post_id, '_tg_main_headline' );
 	}
 
-	// 2. Plantão.
 	if ( isset( $_POST['tg_plantao'] ) && '1' === $_POST['tg_plantao'] ) {
 		update_post_meta( $post_id, '_tg_plantao', '1' );
 	} else {
 		delete_post_meta( $post_id, '_tg_plantao' );
 	}
 
-	// 3. Formato editorial.
 	$allowed_formats = array( '', 'noticia', 'critica', 'review', 'especial' );
 	$format          = isset( $_POST['tg_editorial_format'] ) ? sanitize_key( wp_unslash( $_POST['tg_editorial_format'] ) ) : '';
 	if ( in_array( $format, $allowed_formats, true ) && '' !== $format ) {
@@ -200,16 +175,14 @@ function teoriageek_save_editorial_meta( $post_id ) {
 		delete_post_meta( $post_id, '_tg_editorial_format' );
 	}
 
-	// 4. Nota (0 a 10).
 	$raw_score = isset( $_POST['tg_review_score'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['tg_review_score'] ) ) ) : '';
 	if ( '' !== $raw_score && is_numeric( str_replace( ',', '.', $raw_score ) ) ) {
-		$score = max( 0, min( 10, (float) str_replace( ',', '.', $raw_score ) ) );
+		$score = max( 0.0, min( 10.0, (float) str_replace( ',', '.', $raw_score ) ) );
 		update_post_meta( $post_id, '_tg_review_score', number_format( $score, 1, '.', '' ) );
 	} else {
 		delete_post_meta( $post_id, '_tg_review_score' );
 	}
 
-	// 5. Três pontos-chave.
 	for ( $i = 1; $i <= 3; $i++ ) {
 		$field = 'tg_bullet_' . $i;
 		$val   = isset( $_POST[ $field ] ) ? sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) : '';
@@ -220,7 +193,6 @@ function teoriageek_save_editorial_meta( $post_id ) {
 		}
 	}
 
-	// 6. Fonte externa opcional.
 	$source_name = isset( $_POST['tg_source_name'] ) ? sanitize_text_field( wp_unslash( $_POST['tg_source_name'] ) ) : '';
 	$source_url  = isset( $_POST['tg_source_url'] ) ? teoriageek_safe_http_url( wp_unslash( $_POST['tg_source_url'] ) ) : '';
 

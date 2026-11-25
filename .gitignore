@@ -41,3 +41,8 @@ yarn-debug.log*
 
 # Infra volumes
 infra/data/
+
+# WordPress theme build & E2E temporary outputs
+wordpress-theme/build/node_modules/
+wordpress-theme/build/test-results/
+wordpress-theme/build/playwright-report/

@@ -1,7 +1,9 @@
 <?php
 /**
  * Teoria Geek — Personalizador do WordPress (Aparência > Personalizar).
- * Painel 100% sem código para logos, paleta da marca, mapeamento de categorias da capa e redes sociais.
+ * Seção "Cores e Identidade — Teoria Geek" com variáveis CSS :root (--tg-primary, --tg-accent,
+ * --tg-bg, --tg-surface, --tg-text) injetadas dinamicamente via wp_head, logo, redes sociais,
+ * categorias da Home e slots opcionais de anúncios sem CLS.
  *
  * @package TeoriaGeek
  */
@@ -11,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Monta lista de opções de categorias reais do banco de dados para os dropdowns do Personalizador.
+ * Lista dinâmica de categorias reais do banco para seleção no Customizer.
  *
  * @return array<string, string>
  */
@@ -27,7 +29,7 @@ function teoriageek_customizer_category_choices() {
 
 	if ( ! is_wp_error( $terms ) ) {
 		foreach ( $terms as $term ) {
-			$choices[ $term->slug ] = sprintf( '%s (%d)', $term->name, (int) $term->count );
+			$choices[ $term->slug ] = sprintf( '%s (%d)', html_entity_decode( $term->name, ENT_QUOTES, 'UTF-8' ), (int) $term->count );
 		}
 	}
 
@@ -35,14 +37,36 @@ function teoriageek_customizer_category_choices() {
 }
 
 /**
- * Registra seções e controles do Customizer.
+ * Sanitiza código HTML/AdSense de anúncios apenas para administradores com `unfiltered_html`.
  *
- * @param WP_Customize_Manager $wp_customize Instância do Personalizador.
+ * @param string $input Código inserido.
+ * @return string
+ */
+function teoriageek_sanitize_ad_code( $input ) {
+	if ( current_user_can( 'unfiltered_html' ) ) {
+		return (string) $input;
+	}
+	return wp_kses_post( (string) $input );
+}
+
+/**
+ * Registra seções e controles no Personalizador (`customize_register`).
+ *
+ * @param WP_Customize_Manager $wp_customize Instância do Customizer.
  */
 function teoriageek_customize_register( $wp_customize ) {
 	// =========================================================================
-	// 1. IDENTIDADE DO PORTAL (NOME & LOGO MODO ESCURO)
+	// 1. CORES E IDENTIDADE — TEORIA GEEK (--tg-primary, --tg-accent, --tg-bg, --tg-surface, --tg-text + Logo)
 	// =========================================================================
+	$wp_customize->add_section(
+		'teoriageek_colors_identity',
+		array(
+			'title'       => __( 'Cores e Identidade — Teoria Geek', 'teoriageek' ),
+			'description' => __( 'Controle a identidade Azul e Amarelo, superfícies, texto e logotipo do portal. Fundos amarelos aplicam automaticamente texto escuro (#0B0F19) de alto contraste.', 'teoriageek' ),
+			'priority'    => 30,
+		)
+	);
+
 	$wp_customize->add_setting(
 		'teoriageek_site_name',
 		array(
@@ -53,9 +77,9 @@ function teoriageek_customize_register( $wp_customize ) {
 	$wp_customize->add_control(
 		'teoriageek_site_name',
 		array(
-			'label'       => __( 'Nome do Portal (Selo textual fallback)', 'teoriageek' ),
-			'description' => __( 'Exibido no cabeçalho caso nenhuma logo seja enviada em Identidade do Site.', 'teoriageek' ),
-			'section'     => 'title_tagline',
+			'label'       => __( 'Nome do Portal (Selo da Marca)', 'teoriageek' ),
+			'description' => __( 'Exibido no cabeçalho caso nenhuma imagem de logo esteja ativa.', 'teoriageek' ),
+			'section'     => 'teoriageek_colors_identity',
 			'type'        => 'text',
 		)
 	);
@@ -72,128 +96,94 @@ function teoriageek_customize_register( $wp_customize ) {
 			$wp_customize,
 			'teoriageek_logo_dark',
 			array(
-				'label'       => __( 'Logo alternativa para cabeçalho escuro (Opcional)', 'teoriageek' ),
-				'description' => __( 'Se vazia, o tema utiliza a Logo padrão configurada acima.', 'teoriageek' ),
-				'section'     => 'title_tagline',
+				'label'       => __( 'Logo do Cabeçalho (Opcional)', 'teoriageek' ),
+				'description' => __( 'Se vazia, o tema utiliza a Logo padrão de Identidade do Site ou o selo tipográfico Teoria Geek.', 'teoriageek' ),
+				'section'     => 'teoriageek_colors_identity',
 			)
 		)
 	);
+
+	$color_controls = array(
+		'teoriageek_color_primary' => array(
+			'label'   => __( 'Cor Primária Estrutural / Azul (--tg-primary)', 'teoriageek' ),
+			'default' => '#1D4ED8',
+		),
+		'teoriageek_color_accent'  => array(
+			'label'   => __( 'Cor de Destaque Editorial / Amarelo (--tg-accent)', 'teoriageek' ),
+			'default' => '#FACC15',
+		),
+		'teoriageek_color_bg'      => array(
+			'label'   => __( 'Cor de Fundo da Página (--tg-bg)', 'teoriageek' ),
+			'default' => '#F8FAFC',
+		),
+		'teoriageek_color_surface' => array(
+			'label'   => __( 'Cor de Superfície / Cards (--tg-surface)', 'teoriageek' ),
+			'default' => '#FFFFFF',
+		),
+		'teoriageek_color_text'    => array(
+			'label'   => __( 'Cor do Texto Principal (--tg-text)', 'teoriageek' ),
+			'default' => '#0B0F19',
+		),
+	);
+
+	foreach ( $color_controls as $setting_id => $cfg ) {
+		$wp_customize->add_setting(
+			$setting_id,
+			array(
+				'default'           => $cfg['default'],
+				'sanitize_callback' => 'sanitize_hex_color',
+			)
+		);
+		$wp_customize->add_control(
+			new WP_Customize_Color_Control(
+				$wp_customize,
+				$setting_id,
+				array(
+					'label'   => $cfg['label'],
+					'section' => 'teoriageek_colors_identity',
+				)
+			)
+		);
+	}
 
 	// =========================================================================
-	// 2. CORES DA MARCA (1 CLIQUE SEM CSS)
-	// =========================================================================
-	$wp_customize->add_section(
-		'teoriageek_brand_colors',
-		array(
-			'title'       => __( 'Teoria Geek — Cores da Marca', 'teoriageek' ),
-			'description' => __( 'Ajuste as cores principais do portal com contraste automático acessível (WCAG AA).', 'teoriageek' ),
-			'priority'    => 35,
-		)
-	);
-
-	$wp_customize->add_setting(
-		'teoriageek_color_primary',
-		array(
-			'default'           => '#116EBF',
-			'sanitize_callback' => 'sanitize_hex_color',
-		)
-	);
-	$wp_customize->add_control(
-		new WP_Customize_Color_Control(
-			$wp_customize,
-			'teoriageek_color_primary',
-			array(
-				'label'       => __( 'Cor Primária da Marca (Padrão Teoria Geek: #116EBF)', 'teoriageek' ),
-				'section'     => 'teoriageek_brand_colors',
-			)
-		)
-	);
-
-	$wp_customize->add_setting(
-		'teoriageek_color_highlight',
-		array(
-			'default'           => '#FFD600',
-			'sanitize_callback' => 'sanitize_hex_color',
-		)
-	);
-	$wp_customize->add_control(
-		new WP_Customize_Color_Control(
-			$wp_customize,
-			'teoriageek_color_highlight',
-			array(
-				'label'       => __( 'Cor de Destaque / Accent (Botões, Reels, Selos)', 'teoriageek' ),
-				'section'     => 'teoriageek_brand_colors',
-			)
-		)
-	);
-
-	$wp_customize->add_setting(
-		'teoriageek_color_alert',
-		array(
-			'default'           => '#BE123C',
-			'sanitize_callback' => 'sanitize_hex_color',
-		)
-	);
-	$wp_customize->add_control(
-		new WP_Customize_Color_Control(
-			$wp_customize,
-			'teoriageek_color_alert',
-			array(
-				'label'       => __( 'Cor de Contraste / Plantão', 'teoriageek' ),
-				'section'     => 'teoriageek_brand_colors',
-			)
-		)
-	);
-
-	// =========================================================================
-	// 3. MAPEAMENTO DE CATEGORIAS DA CAPA
+	// 2. CATEGORIAS DA HOME
 	// =========================================================================
 	$wp_customize->add_section(
 		'teoriageek_home_categories',
 		array(
-			'title'       => __( 'Teoria Geek — Categorias da Capa', 'teoriageek' ),
-			'description' => __( 'Escolha quais categorias alimentam cada bloco da página inicial. Já pré-configurado para o acervo atual do Teoria Geek.', 'teoriageek' ),
-			'priority'    => 36,
+			'title'       => __( 'Categorias da Capa — Teoria Geek', 'teoriageek' ),
+			'description' => __( 'Selecione quais categorias reais alimentam cada seção da página inicial.', 'teoriageek' ),
+			'priority'    => 35,
 		)
 	);
 
-	$choices = teoriageek_customizer_category_choices();
-
+	$choices    = teoriageek_customizer_category_choices();
 	$cat_fields = array(
-		'destaque'  => array(
-			'label'   => __( 'Categoria de Destaque Principal (Hero)', 'teoriageek' ),
-			'default' => 'destaque',
-		),
-		'noticias'  => array(
-			'label'   => __( 'Categoria de Plantão e Giro de Notícias', 'teoriageek' ),
-			'default' => 'noticias',
-		),
-		'criticas'  => array(
-			'label'   => __( 'Categoria de Críticas', 'teoriageek' ),
-			'default' => 'criticas',
-		),
-		'reviews'   => array(
-			'label'   => __( 'Categoria de Reviews', 'teoriageek' ),
-			'default' => 'reviews',
-		),
-		'especiais' => array(
-			'label'   => __( 'Categoria de Especiais & Colunas', 'teoriageek' ),
-			'default' => 'especial-teoria-geek',
-		),
+		'destaque'  => array( __( 'Bloco Hero / Destaques Principais', 'teoriageek' ), 'destaque' ),
+		'noticias'  => array( __( 'Plantão Geek & Giro de Notícias', 'teoriageek' ), 'noticias' ),
+		'criticas'  => array( __( 'Seção de Críticas', 'teoriageek' ), 'criticas' ),
+		'reviews'   => array( __( 'Seção de Reviews', 'teoriageek' ), 'reviews' ),
+		'especiais' => array( __( 'Seção de Especiais & Colunas', 'teoriageek' ), 'especial-teoria-geek' ),
+		'col_1'     => array( __( 'Coluna de Editoria 1', 'teoriageek' ), 'games' ),
+		'col_2'     => array( __( 'Coluna de Editoria 2', 'teoriageek' ), 'filmes' ),
+		'col_3'     => array( __( 'Coluna de Editoria 3', 'teoriageek' ), 'series' ),
+		'col_4'     => array( __( 'Coluna de Editoria 4', 'teoriageek' ), 'animes-mangas' ),
+		'col_5'     => array( __( 'Coluna de Editoria 5', 'teoriageek' ), 'livros-hqs' ),
 	);
 
 	foreach ( $cat_fields as $key => $cfg ) {
 		$wp_customize->add_setting(
 			'teoriageek_cat_' . $key,
 			array(
-				'default'           => $cfg['default'],
+				'default'           => $cfg[1],
 				'sanitize_callback' => 'sanitize_title',
 			)
 		);
 		$wp_customize->add_control(
 			'teoriageek_cat_' . $key,
 			array(
-				'label'   => $cfg['label'],
+				'label'   => $cfg[0],
 				'section' => 'teoriageek_home_categories',
 				'type'    => 'select',
 				'choices' => $choices,
@@ -202,14 +192,14 @@ function teoriageek_customize_register( $wp_customize ) {
 	}
 
 	// =========================================================================
-	// 4. REDES SOCIAIS & REELS
+	// 3. REDES SOCIAIS & REELS
 	// =========================================================================
 	$wp_customize->add_section(
 		'teoriageek_socials_and_reels',
 		array(
-			'title'       => __( 'Teoria Geek — Redes Sociais & Reels', 'teoriageek' ),
-			'description' => __( 'Links exibidos na barra superior e rodapé, além do selo gráfico da curtida dupla nos Reels.', 'teoriageek' ),
-			'priority'    => 37,
+			'title'       => __( 'Redes Sociais & Reels — Teoria Geek', 'teoriageek' ),
+			'description' => __( 'Links oficiais exibidos no cabeçalho/rodapé e selo de curtida nos Reels.', 'teoriageek' ),
+			'priority'    => 36,
 		)
 	);
 
@@ -250,41 +240,113 @@ function teoriageek_customize_register( $wp_customize ) {
 	$wp_customize->add_control(
 		'teoriageek_reels_stamp_text',
 		array(
-			'label'       => __( 'Texto do selo de curtida dupla nos Reels', 'teoriageek' ),
-			'description' => __( 'Texto curto Pop-Art exibido ao tocar duas vezes em um Reel (ex.: CURTIU!, TEORIA!, TOP!).', 'teoriageek' ),
-			'section'     => 'teoriageek_socials_and_reels',
-			'type'        => 'text',
+			'label'   => __( 'Texto do selo nos Reels', 'teoriageek' ),
+			'section' => 'teoriageek_socials_and_reels',
+			'type'    => 'text',
 		)
 	);
+
+	// =========================================================================
+	// 4. MONETIZAÇÃO & ADSENSE (SEM CLS)
+	// =========================================================================
+	$wp_customize->add_section(
+		'teoriageek_monetization',
+		array(
+			'title'       => __( 'Monetização & Anúncios — Teoria Geek', 'teoriageek' ),
+			'description' => __( 'Slots opcionais compatíveis com Google Site Kit / AdSense com reserva de espaço sem salto de layout (CLS).', 'teoriageek' ),
+			'priority'    => 37,
+		)
+	);
+
+	$ad_slots = array(
+		'top'         => __( 'Código de Anúncio — Topo (Leaderboard 90px)', 'teoriageek' ),
+		'mid_article' => __( 'Código de Anúncio — Meio do Artigo (In-Article 250px)', 'teoriageek' ),
+		'sidebar'     => __( 'Código de Anúncio — Sidebar Lateral (Retângulo 250px)', 'teoriageek' ),
+	);
+
+	foreach ( $ad_slots as $slot_key => $label ) {
+		$wp_customize->add_setting(
+			'teoriageek_ad_' . $slot_key,
+			array(
+				'default'           => '',
+				'sanitize_callback' => 'teoriageek_sanitize_ad_code',
+			)
+		);
+		$wp_customize->add_control(
+			'teoriageek_ad_' . $slot_key,
+			array(
+				'label'       => $label,
+				'description' => __( 'Deixe vazio caso utilize Widgets ou Site Kit Auto Ads.', 'teoriageek' ),
+				'section'     => 'teoriageek_monetization',
+				'type'        => 'textarea',
+			)
+		);
+	}
 }
 add_action( 'customize_register', 'teoriageek_customize_register' );
 
 /**
- * Gera variáveis CSS dinâmicas a partir das cores escolhidas no Personalizador.
+ * Monta o CSS dinâmico das variáveis :root (--tg-primary, --tg-accent, --tg-bg, --tg-surface, --tg-text)
+ * garantindo texto escuro #0B0F19 sobre fundos amarelos e contraste WCAG 2.1 AA nos modos Claro e Escuro.
  *
  * @return string
  */
 function teoriageek_get_customizer_css() {
-	$primary   = sanitize_hex_color( get_theme_mod( 'teoriageek_color_primary', '#116EBF' ) ) ?: '#116EBF';
-	$highlight = sanitize_hex_color( get_theme_mod( 'teoriageek_color_highlight', '#FFD600' ) ) ?: '#FFD600';
-	$alert     = sanitize_hex_color( get_theme_mod( 'teoriageek_color_alert', '#BE123C' ) ) ?: '#BE123C';
+	$tg_primary = sanitize_hex_color( get_theme_mod( 'teoriageek_color_primary', '#1D4ED8' ) ) ?: '#1D4ED8';
+	$tg_accent  = sanitize_hex_color( get_theme_mod( 'teoriageek_color_accent', '#FACC15' ) ) ?: '#FACC15';
+	$tg_bg      = sanitize_hex_color( get_theme_mod( 'teoriageek_color_bg', '#F8FAFC' ) ) ?: '#F8FAFC';
+	$tg_surface = sanitize_hex_color( get_theme_mod( 'teoriageek_color_surface', '#FFFFFF' ) ) ?: '#FFFFFF';
+	$tg_text    = sanitize_hex_color( get_theme_mod( 'teoriageek_color_text', '#0B0F19' ) ) ?: '#0B0F19';
 
-	$primary_ink   = teoriageek_contrast_ink( $primary );
-	$highlight_ink = teoriageek_contrast_ink( $highlight );
-	$alert_ink     = teoriageek_contrast_ink( $alert );
-	$primary_dark  = teoriageek_adjust_hex( $primary, 38 );
-	$alert_dark    = teoriageek_adjust_hex( $alert, 36 );
+	// Regra inegociável: fundo amarelo de destaque sempre força texto escuro #0B0F19 de alto contraste.
+	$tg_on_accent     = '#0B0F19';
+	$tg_accent_strong = teoriageek_adjust_hex( $tg_accent, -10 );
+	$tg_surface_alt   = teoriageek_adjust_hex( $tg_bg, -4 );
+
+	// Calibra versão textual de --tg-primary para >= 4.5:1 sobre superfícies claras e escuras.
+	$primary_text_light = $tg_primary;
+	if ( teoriageek_hex_luminance( $primary_text_light ) > 0.125 ) {
+		$primary_text_light = teoriageek_adjust_hex( $primary_text_light, -18 );
+	}
+	$primary_ink       = teoriageek_contrast_ink( $tg_primary );
+	$primary_text_dark = teoriageek_adjust_hex( $tg_primary, 42 );
 
 	return sprintf(
-		':root,[data-theme="light"]{--accent-brand:%1$s;--fill-brand:%1$s;--ink-on-fill-brand:%2$s;--highlight-comic:%3$s;--ink-on-highlight:%4$s;--fill-alert:%5$s;--ink-on-fill-alert:%6$s;}'
-		. '[data-theme="dark"],.dark{--accent-brand:%7$s;--fill-brand:%1$s;--ink-on-fill-brand:%2$s;--highlight-comic:%3$s;--ink-on-highlight:%4$s;--fill-alert:%5$s;--ink-on-fill-alert:%6$s;--accent-alert:%8$s;}',
-		esc_attr( $primary ),
+		':root,[data-theme="light"]{'
+		. '--tg-primary:%1$s;--tg-accent:%2$s;--tg-accent-strong:%3$s;--tg-on-accent:%4$s;'
+		. '--tg-bg:%5$s;--tg-surface:%6$s;--tg-surface-alt:%7$s;--tg-text:%8$s;'
+		. '--bg-base:var(--tg-bg);--bg-surface:var(--tg-surface);--bg-surface-alt:var(--tg-surface-alt);--ink-primary:var(--tg-text);'
+		. '--accent-brand:%9$s;--fill-brand:var(--tg-primary);--ink-on-fill-brand:%10$s;'
+		. '--highlight-comic:var(--tg-accent);--ink-on-highlight:#0B0F19;'
+		. '}'
+		. '[data-theme="dark"],.dark{'
+		. '--tg-primary:%1$s;--tg-accent:%2$s;--tg-accent-strong:%3$s;--tg-on-accent:%4$s;'
+		. '--tg-bg:#0B0F19;--tg-surface:#131A2A;--tg-surface-alt:#1B2438;--tg-text:#F1F5F9;'
+		. '--bg-base:var(--tg-bg);--bg-surface:var(--tg-surface);--bg-surface-alt:var(--tg-surface-alt);--ink-primary:var(--tg-text);'
+		. '--accent-brand:%11$s;--fill-brand:var(--tg-primary);--ink-on-fill-brand:%10$s;'
+		. '--highlight-comic:var(--tg-accent);--ink-on-highlight:#0B0F19;'
+		. '}',
+		esc_attr( $tg_primary ),
+		esc_attr( $tg_accent ),
+		esc_attr( $tg_accent_strong ),
+		esc_attr( $tg_on_accent ),
+		esc_attr( $tg_bg ),
+		esc_attr( $tg_surface ),
+		esc_attr( $tg_surface_alt ),
+		esc_attr( $tg_text ),
+		esc_attr( $primary_text_light ),
 		esc_attr( $primary_ink ),
-		esc_attr( $highlight ),
-		esc_attr( $highlight_ink ),
-		esc_attr( $alert ),
-		esc_attr( $alert_ink ),
-		esc_attr( $primary_dark ),
-		esc_attr( $alert_dark )
+		esc_attr( $primary_text_dark )
 	);
 }
+
+/**
+ * Injeta dinamicamente as variáveis CSS do Customizer em `wp_head`.
+ */
+function teoriageek_output_customizer_head_css() {
+	$css = teoriageek_get_customizer_css();
+	if ( '' !== $css ) {
+		echo "\n<style id=\"teoriageek-customizer-vars\">\n" . $css . "\n</style>\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Valores sanitizados com sanitize_hex_color/esc_attr.
+	}
+}
+add_action( 'wp_head', 'teoriageek_output_customizer_head_css', 25 );

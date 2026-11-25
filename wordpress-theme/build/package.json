@@ -1,0 +1,10 @@
+{
+  "name": "teoriageek-theme-build",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.51.1",
+    "tailwindcss": "^3.4.17"
+  }
+}
