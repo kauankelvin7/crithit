@@ -808,6 +808,159 @@
   display: none;
 }
 
+/* ==========================================================================
+   REELS 2.0 (ALTURA EXATA 100dvh, 9:16 SEM VAZAMENTO & MOBILE NATIVO)
+   ========================================================================== */
+
+:root {
+  --tg-header-h: 67px;
+  --wp-admin-bar-h: 0px;
+}
+
+body.admin-bar {
+  --wp-admin-bar-h: 32px;
+}
+
+@media (max-width: 782px) {
+  body.admin-bar {
+    --wp-admin-bar-h: 46px;
+  }
+}
+
+.tg-reels-shell {
+  height: calc(100dvh - var(--tg-header-h, 67px) - var(--wp-admin-bar-h, 0px));
+}
+
+.tg-reels-mobile-bar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tg-reels-mobile-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tg-reels-stage {
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+}
+
+.tg-reel-slide {
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+@media (min-width: 640px) {
+  .tg-reels-stage {
+    width: auto;
+    max-width: 440px;
+  }
+
+  .tg-reel-card {
+    aspect-ratio: 9 / 16;
+    height: min(100%, 760px);
+    max-height: calc(100dvh - var(--tg-header-h, 67px) - var(--wp-admin-bar-h, 0px) - 20px);
+    width: auto;
+    max-width: min(430px, calc((100dvh - var(--tg-header-h, 67px) - var(--wp-admin-bar-h, 0px) - 20px) * 9 / 16));
+  }
+}
+
+/* ==========================================================================
+   YOUTUBE FACADE LEVE (ZERO IFRAME/SCRIPTS/FONTES EXTERNAS NO LOAD INICIAL)
+   ========================================================================== */
+
+.entry-content .tg-yt-facade {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 2px solid var(--border-strong);
+  background-color: #080B12;
+  cursor: pointer;
+}
+
+.entry-content .tg-yt-facade-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.88;
+  border-radius: 0;
+  transition: transform 240ms ease, opacity 200ms ease;
+}
+
+.entry-content .tg-yt-facade:hover .tg-yt-facade-thumb {
+  transform: scale(1.03);
+  opacity: 0.72;
+}
+
+.entry-content .tg-yt-facade-btn {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(8, 11, 18, 0.2) 0%, rgba(8, 11, 18, 0.65) 100%);
+  border: 0;
+  cursor: pointer;
+}
+
+.entry-content .tg-yt-facade-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  border: 2px solid #0B0F19;
+  background-color: var(--tg-accent);
+  color: #0B0F19;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  transition: transform 150ms ease;
+}
+
+.entry-content .tg-yt-facade:hover .tg-yt-facade-play {
+  transform: scale(1.08);
+}
+
+.entry-content .tg-yt-facade-badge {
+  border-radius: 0.25rem;
+  background-color: rgba(11, 15, 25, 0.85);
+  padding: 0.25rem 0.65rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #FFFFFF;
+}
+
+.entry-content .tg-yt-facade.tg-yt-loaded iframe {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+}
+
+/* Badge de categoria sempre em linha única com ellipsis */
+.tg-cat-badge {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ticker-viewport {
   -webkit-mask-image: linear-gradient(
     to right,

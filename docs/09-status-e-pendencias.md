@@ -82,7 +82,7 @@ Todas as **5 fases planejadas** do monorepo, a **evolução completa de UX/UI De
 
 ---
 
-## 4. Frente Concluída — Tema WordPress Nativo `teoriageek` (`v1.2.0`)
+## 4. Frente Concluída — Tema WordPress Nativo `teoriageek` (`v1.2.1`)
 
 Documentação completa em [wordpress-theme/teoriageek/README.md](../wordpress-theme/teoriageek/README.md), checkpoint em [wordpress-theme/teoriageek/PROGRESSO.md](../wordpress-theme/teoriageek/PROGRESSO.md) e levantamento do acervo legado em [wordpress-theme/teoriageek/MIGRATION_AUDIT.md](../wordpress-theme/teoriageek/MIGRATION_AUDIT.md).
 

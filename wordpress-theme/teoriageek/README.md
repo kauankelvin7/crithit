@@ -1,4 +1,4 @@
-# Tema WordPress Nativo — Teoria Geek (`v1.2.0`)
+# Tema WordPress Nativo — Teoria Geek (`v1.2.1`)
 
 Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vitals, desenvolvido sob medida para o portal **Teoria Geek** (`teoriageek.com.br`) em substituição ao tema legado *Newspaper v12.6.2* (`td-composer` e `td-cloud-library`).
 
@@ -24,7 +24,10 @@ Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vita
 - **Logo oficial clássica embutida:** `assets/images/logo-teoria-geek.png` (`300x190`) e `logo-teoria-geek-footer.png` (`120x120`), substituíveis sem código em **Aparência > Personalizar**.
 - **Modo Claro/Escuro sem flash (anti-FOUC):** script inline mínimo no `<head>` respeita preferência salva e `prefers-color-scheme`, com contraste WCAG 2.1 AA validado em ambos os modos (inclusive proteção contra spans legados com cores inline coladas do editor clássico).
 - **Fontes 100% auto-hospedadas:** 14 arquivos `.woff2` (`Bangers`, `Barlow Condensed`, `Plus Jakarta Sans`, `Space Grotesk`, `JetBrains Mono`) em `assets/fonts/` com `font-display: swap` e `preload` das fontes críticas — zero requisições externas ao Google Fonts.
-- **Core Web Vitals:** `fetchpriority="high"` na imagem Hero, `loading="lazy" decoding="async"` nos demais cards, `contain: layout style`, tratamento elegante para capas legadas pequenas (`< 520px`), WebP condicional no upload (`image_editor_output_format`) e `<script type="speculationrules">` nativo/fallback para prefetch.
+- **Core Web Vitals & Performance Real (`v1.2.1`):**
+  - Cache dos blocos da Home em **Transients API (`10 min`)** com deduplicação global (`$shown_ids`), hidratação em lote (`1 WP_Query` + batch priming de `wp_post_views` em `1 ms`) e invalidação automática via `save_post_post` / `deleted_post` / `trashed_post` / `customize_save_after` — reduzindo a Home de **155 queries (`1.058 ms`)** para **46 queries (`129,7 ms`)**.
+  - **YouTube Facade automático** em `.entry-content` / `.youtube-embed`: exibe thumbnail leve + botão play acessível e só injeta o `<iframe>` (`youtube-nocookie.com`) sob clique, eliminando scripts e fontes externas no carregamento inicial.
+  - `fetchpriority="high"` no Hero compacto (`max-height: 375px`) e capa de artigo controlada (`max-height: 400px`), `loading="lazy" decoding="async"` nos cards, `contain: layout style`, sidebar sticky (`top: 88px`), fallback elegante para imagens ausentes/quebradas, WebP condicional no upload e `<script type="speculationrules">` sem duplicação no WP 6.8+.
 
 ### Recursos Editoriais Sem Bloat (Zero Plugins Extras)
 - **Mais Lidas 24h / 7 dias:** consulta indexada em `wp_post_views` cacheada via Transients API (`15 min`), com alternância instantânea em abas e fallback automático.
@@ -34,7 +37,7 @@ Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vita
   ```text
   [spoiler title="Spoiler do episódio final"]Texto protegido aqui.[/spoiler]
   ```
-- **Reels Verticais (`/reels/`) e Facade na Home:** experiência editorial em 3 lâminas (Resumo, Pontos-Chave, Aprofundar) com API REST leve (`teoriageek/v1/reels` e `teoriageek/v1/search`), além de card vertical `3:4` na Home com *facade pattern* sob demanda (zero hospedagem de MP4).
+- **Reels Verticais (`/reels/`) e Facade na Home:** player em altura exata `calc(100dvh - var(--tg-header-h) - var(--wp-admin-bar-h))` com proporção `9:16` sem vazamento de borda, navegação por clique/toque nas laterais esquerda/direita, barras clicáveis no topo, roda do mouse com debounce e atalhos (`↑`/`↓`, `←`/`→`, `S`), painel direito complementar sem duplicação de título/resumo no Desktop, chips horizontais roláveis + rail compacto no Mobile (`360px`–`768px`) e filtros reais (`Para Você`, `Mais Lidas`, `Salvos`, `Editorias`) via REST `teoriageek/v1`.
 - **Card "Próxima Matéria", Compartilhamento Mobile e Canais:** `navigator.share` nativo + WhatsApp + X + Salvar + Copiar link, card leve de próxima leitura no fim do artigo e bloco configurável de convite para Canal do WhatsApp / Telegram.
 - **SEO & Dados Estruturados (`inc/seo.php`):** OpenGraph/Twitter Cards e JSON-LD dinâmico (`Review` com `reviewRating` para Críticas/Reviews e `NewsArticle` para matérias), desativados automaticamente se Yoast/RankMath/AIOSEO estiverem ativos.
 
@@ -91,5 +94,12 @@ Execute na ordem abaixo em janela de baixo tráfego:
    - Limpe o cache de página do WordPress (se usar WP Rocket / LiteSpeed / W3TC) e faça **Purge Everything** no **Cloudflare**.
    - Configure no Cloudflare cache de borda padrão para assets estáticos (`assets/fonts/*.woff2`, `assets/css/main.css`, `assets/js/*.js`) e *bypass* para `/wp-admin/*`, `/wp-login.php*` e `/?s=*`.
 8. **Validação pós-virada:**
-   - Teste Home (`/`), uma Crítica antiga (`.ficha` + selo de nota), uma Notícia recente com vídeo YouTube, `/reels/`, Busca (`/?s=marvel`), página 404 e Modo Claro/Escuro no Desktop e Mobile.
+   - Teste Home (`/`), uma Crítica antiga (`.ficha` + selo de nota), uma Notícia recente com vídeo YouTube (YouTube Facade), `/reels/` (Desktop e Mobile), Busca (`/?s=marvel`), página 404 e Modo Claro/Escuro.
    - Verifique no PageSpeed Insights / Chrome DevTools que não há requisições externas ao Google Fonts, erros 404 de assets ou deslocamento de layout (CLS).
+
+---
+
+## 5. Nota sobre Ambiente Local (LocalWP) vs. Produção (Locaweb)
+
+- **Redirecionamento de `/wp-content/uploads/` no LocalWP:** no clone local de desenvolvimento (`http://teoriageek.local`), o banco real foi importado sem copiar gigabytes de mídia, e o arquivo `.htaccess` da raiz redireciona requisições de `/wp-content/uploads/` para o domínio de produção. **Em produção na Locaweb, NÃO utilize essa regra de redirecionamento** — as mídias já residem localmente em `wp-content/uploads/` no servidor e serão servidas diretamente pelo Apache/Cloudflare com latência mínima.
+- **Conexão MySQL e TTFB local:** no Windows/LocalWP, `DB_HOST='localhost'` no `wp-config.php` adiciona latência de handshake IPv6/TCP (~6s), o que não ocorre em produção Linux/Apache na Locaweb (onde a renderização PHP/MySQL da Home com transient quente foi medida em **~130 ms**).

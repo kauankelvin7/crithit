@@ -123,18 +123,81 @@ test.describe('Auditoria Completa Teoria Geek — Usuário Real & Gestor', () =>
     await expect(page.locator('script[type="speculationrules"]')).toHaveCount(1);
 
     // Reels 3:4 Facade on-demand load
-    const reelFacadeBtn = page.locator('[data-tg-reel-facade]').first();
+    const reelFacadeBtn = page.locator('[data-tg-reel-facade-play]').first();
     if ((await reelFacadeBtn.count()) > 0) {
       await reelFacadeBtn.click();
-      await expect(page.locator('[data-tg-reel-inline]').first()).toBeVisible();
+      await expect(page.locator('.tg-reel-facade-overlay a').first()).toBeVisible({ timeout: 20_000 });
     }
 
     // Mais Lidas 24 horas tab toggle
-    const tab24h = page.locator('[data-tg-most-tab="24h"]').first();
+    const tab24h = page.locator('[data-tg-mr-tab="24h"]').first();
     if ((await tab24h.count()) > 0) {
       await tab24h.click();
       await expect(tab24h).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-tg-most-panel="24h"]')).toBeVisible();
+      await expect(page.locator('[data-tg-mr-panel="24h"]')).toBeVisible();
+    }
+
+    // Home Deduplication + Controlled Hero Height + Single-line Category Badges (v1.2.1)
+    const homeMetrics = await page.evaluate(() => {
+      const heroImg = document.querySelector('main section:first-of-type article img.tg-cover-img');
+      const heroH = heroImg ? Math.round(heroImg.getBoundingClientRect().height) : 0;
+
+      // Collect all post links across primary editorial sections (excluding ticker, Mais Lidas, and Carrossel Reels)
+      const sections = [
+        ...document.querySelectorAll('main > section[aria-label*="Destaques"] article a[href]'),
+        ...document.querySelectorAll('#tg-giro-heading ~ div article h3 a[href]'),
+        ...document.querySelectorAll('section[aria-labelledby="tg-giro-heading"] article h3 a[href]'),
+        ...document.querySelectorAll('section[aria-labelledby="tg-reviews-heading"] article h3 a[href]'),
+        ...document.querySelectorAll('section[aria-labelledby="tg-especiais-heading"] article h3 a[href]'),
+        ...document.querySelectorAll('#editorias article h4 a[href], #editorias ul li div a[href]'),
+      ];
+      // Deduplicate per card (only count heading links + hero/reel link once)
+      const cardHeadingLinks = [
+        ...document.querySelectorAll('main > section[aria-label*="Destaques"] h1 a[href]'),
+        ...document.querySelectorAll('main > section[aria-label*="Destaques"] h2 a[href]'),
+        ...document.querySelectorAll('main > section[aria-label*="Destaques"] h3 a[href]'),
+        ...document.querySelectorAll('section[aria-labelledby="tg-giro-heading"] h3 a[href]'),
+        ...document.querySelectorAll('section[aria-labelledby="tg-reviews-heading"] h3 a[href]'),
+        ...document.querySelectorAll('section[aria-labelledby="tg-especiais-heading"] h3 a[href]'),
+        ...document.querySelectorAll('#editorias h4 a[href], #editorias ul li div a[href]'),
+      ]
+        .map((a) => a.getAttribute('href'))
+        .filter((h) => h && !h.includes('/reels/') && !h.includes('/category/'));
+
+      const seen = new Set();
+      const dups = [];
+      for (const href of cardHeadingLinks) {
+        if (seen.has(href)) dups.push(href);
+        seen.add(href);
+      }
+
+      // Single-line badge check on Giro Geek & Review cards
+      const wrappedBadges = [];
+      document
+        .querySelectorAll('section[aria-labelledby="tg-giro-heading"] .tg-cat-badge, section[aria-labelledby="tg-reviews-heading"] .tg-cat-badge')
+        .forEach((b) => {
+          const h = Math.round(b.getBoundingClientRect().height);
+          if (h > 28) wrappedBadges.push(`${b.textContent?.trim()}: ${h}px`);
+        });
+
+      return { heroH, totalHomeCards: cardHeadingLinks.length, dups, wrappedBadges };
+    });
+
+    expect(homeMetrics.heroH, `Hero cover height (${homeMetrics.heroH}px) must be <= 385px`).toBeLessThanOrEqual(385);
+    expect(homeMetrics.dups, 'Home editorial blocks must not repeat posts').toEqual([]);
+    expect(homeMetrics.wrappedBadges, 'Category badges must remain single-line').toEqual([]);
+
+    // Capture multi-breakpoint visual check on desktop run (1280x720 + 768x1024)
+    if (testInfo.project.name.includes('desktop')) {
+      for (const vp of [
+        { width: 1280, height: 720 },
+        { width: 768, height: 1024 },
+      ]) {
+        await page.setViewportSize(vp);
+        const ov = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        expect(ov, `Home overflow at ${vp.width}x${vp.height}`).toBeLessThanOrEqual(1);
+      }
+      await page.setViewportSize({ width: 1440, height: 900 });
     }
 
     // Desktop dropdown submenu hover check
@@ -295,34 +358,122 @@ test.describe('Auditoria Completa Teoria Geek — Usuário Real & Gestor', () =>
     await runPageHealthCheck(page, issues, '404 Page', { runAxe: true });
   });
 
-  test('5. Reels 2.0 Interativo (Deep-link, 3 Lâminas, Filtro REST, Aba Mais Lidas) + /wp-login.php', async ({
+  test('5. Reels 2.0 Interativo (Altura 100dvh, Clique Lateral, Teclado, Filtros, Salvar, Zero Duplicação) + YouTube Facade + /wp-login.php', async ({
     page,
   }, testInfo) => {
     const issues = attachGuards(page);
+    const isDesktop = testInfo.project.name.includes('desktop');
 
     // Deep-link to VisionQuest
     const res = await page.goto('/reels/?post=visionquest-confira-nossa-critica', {
       waitUntil: 'domcontentloaded',
     });
     expect(res?.status()).toBe(200);
-    const firstCard = page.locator('#tg-reels-stage article').first();
+    const firstCard = page.locator('#tg-reels-stage article[data-reel-idx="0"]');
+    await expect(firstCard).toBeVisible();
     await expect(firstCard).toContainText(/VisionQuest/i);
     await expect(firstCard).toContainText(/Nota 10\.0\/10/i);
 
-    // Advance blades 0 -> 1 -> 2
-    await firstCard.locator('[data-next-blade]').click();
-    await expect(firstCard.locator('[data-blade-panel="1"]')).toBeVisible();
-    await firstCard.locator('[data-next-blade]').click();
-    await expect(firstCard.locator('[data-blade-panel="2"]')).toBeVisible();
-    await expect(firstCard.locator('[data-blade-panel="2"] a')).toContainText(/Ler matéria completa/i);
+    // Must NOT have static "Próxima lâmina" button
+    expect(await page.locator('[data-next-blade]').count()).toBe(0);
 
-    // Desktop sidebar filters & Trending tab
-    if (testInfo.project.name.includes('desktop')) {
-      await page.locator('[data-tg-reel-tab="trending"]').click();
-      await page.waitForTimeout(1500);
-      await expect(page.locator('#tg-reels-stage article').first()).toBeVisible({ timeout: 20_000 });
+    // Verify exact viewport fit: active card fits inside viewport and slide #2 does NOT peek/bleed
+    const reelLayout = await page.evaluate(() => {
+      const stage = document.getElementById('tg-reels-stage');
+      const card0 = document.querySelector('#tg-reels-stage article[data-reel-idx="0"]');
+      const slide1 = document.querySelectorAll('#tg-reels-stage .tg-reel-slide')[1];
+      const ctx = document.getElementById('tg-reels-context');
+      const sRect = stage.getBoundingClientRect();
+      const cRect = card0.getBoundingClientRect();
+      const s1Rect = slide1 ? slide1.getBoundingClientRect() : null;
+      const cardTitle = card0.querySelector('h2')?.textContent?.trim() || '';
+      const ctxText = ctx ? ctx.innerText : '';
+      const visibleReadLinks = Array.from(document.querySelectorAll('a'))
+        .filter((a) => /ler matéria completa/i.test(a.textContent || '') && a.offsetParent !== null)
+        .length;
+      return {
+        fitsViewport: cRect.bottom <= window.innerHeight + 2 && cRect.top >= 0,
+        nextSlideNoBleed: !s1Rect || s1Rect.top >= sRect.bottom - 2,
+        ctxRepeatsTitle: Boolean(cardTitle && ctxText.includes(cardTitle)),
+        visibleReadLinks,
+      };
+    });
+    expect(reelLayout.fitsViewport, 'Active reel card must fit inside viewport height').toBe(true);
+    expect(reelLayout.nextSlideNoBleed, 'Next reel slide must not bleed into viewport').toBe(true);
+
+    if (isDesktop) {
+      expect(reelLayout.ctxRepeatsTitle, 'Desktop right panel must NOT repeat center card title').toBe(false);
+      expect(reelLayout.visibleReadLinks, 'Desktop must display exactly 1 primary Ler matéria completa CTA').toBe(1);
+    } else {
+      // Mobile must hide left sidebar & show horizontal chips bar with zero overflow
+      await expect(page.locator('.tg-reels-mobile-bar')).toBeVisible();
     }
+
+    // Blade navigation: right tap zone (0 -> 1), top bar click (1 -> 2), keyboard ArrowLeft (2 -> 1)
+    await firstCard.locator('[data-blade-next]').click();
+    await expect(firstCard.locator('[data-blade-panel="1"]')).toBeVisible();
+    await firstCard.locator('[data-set-blade="2"]').click();
+    await expect(firstCard.locator('[data-blade-panel="2"]')).toBeVisible();
+    await page.keyboard.press('ArrowLeft');
+    await expect(firstCard.locator('[data-blade-panel="1"]')).toBeVisible();
+    await firstCard.locator('[data-blade-prev]').click();
+    await expect(firstCard.locator('[data-blade-panel="0"]')).toBeVisible();
+
+    // Save button in Reels -> persists in localStorage & shows up in Salvos tab
+    const reelSaveBtn = isDesktop
+      ? page.locator('#tg-reels-context [data-tg-reel-save]').first()
+      : firstCard.locator('[data-tg-reel-save]').first();
+    await reelSaveBtn.click();
+    await expect(reelSaveBtn).toHaveAttribute('aria-pressed', 'true');
+
+    // Switch reel with next button / ArrowDown
+    if (isDesktop) {
+      await page.locator('[data-tg-reel-next]').click();
+      await page.waitForTimeout(500);
+      await expect(page.locator('#tg-reels-counter-rail')).toContainText('2/');
+      await page.screenshot({
+        path: 'C:\\Users\\kelvi\\.gemini\\antigravity\\brain\\ab761713-dbe1-43fd-97f5-e9bf5c5d9243\\scratch\\reels-desktop.png',
+      });
+    } else {
+      await page.screenshot({
+        path: 'C:\\Users\\kelvi\\.gemini\\antigravity\\brain\\ab761713-dbe1-43fd-97f5-e9bf5c5d9243\\scratch\\reels-mobile.png',
+      });
+    }
+
+    // Test Mais Lidas tab & Editorias filter
+    const tabSelector = isDesktop ? 'aside [data-tg-reel-tab="trending"]' : '.tg-reels-mobile-bar [data-tg-reel-tab="trending"]';
+    await page.locator(tabSelector).first().click();
+    await expect(page.locator('#tg-reels-stage article[data-reel-idx="0"]')).toBeVisible({ timeout: 20_000 });
     await runPageHealthCheck(page, issues, 'Reels Interactive');
+
+    // Verify YouTube Facade on Vingadores article (0 YouTube iframes on load -> injects iframe on click)
+    const ytRes = await page.goto(
+      '/marvel-studios-vingadores-doutor-destino-trailer-e-poster-finais-disponiveis/',
+      { waitUntil: 'domcontentloaded' }
+    );
+    expect(ytRes?.status()).toBe(200);
+    const facadeCount = await page.locator('.entry-content .tg-yt-facade').count();
+    expect(facadeCount, 'YouTube embed must render as lightweight facade on initial load').toBeGreaterThan(0);
+    expect(await page.locator('.entry-content iframe[src*="youtube"]').count()).toBe(0);
+
+    // Verify single cover max-height <= 405px & desktop sticky sidebar
+    const singleMetrics = await page.evaluate(() => {
+      const cover = document.querySelector('#tg-article-body figure img.tg-cover-img');
+      const aside = document.querySelector('article aside[aria-label="Ranking e conteúdo complementar"]');
+      return {
+        coverH: cover ? Math.round(cover.getBoundingClientRect().height) : 0,
+        asidePos: aside ? getComputedStyle(aside).position : '',
+        asideTop: aside ? getComputedStyle(aside).top : '',
+      };
+    });
+    expect(singleMetrics.coverH).toBeLessThanOrEqual(405);
+    if (isDesktop) {
+      expect(singleMetrics.asidePos).toBe('sticky');
+      expect(singleMetrics.asideTop).toBe('88px');
+    }
+
+    await page.locator('.entry-content .tg-yt-facade-btn').first().click();
+    await expect(page.locator('.entry-content .tg-yt-facade iframe[src*="youtube-nocookie.com"]').first()).toBeVisible();
 
     // Verify wp-login.php is unaffected by theme (Site Manager login gate)
     const loginRes = await page.goto('/wp-login.php', { waitUntil: 'domcontentloaded' });

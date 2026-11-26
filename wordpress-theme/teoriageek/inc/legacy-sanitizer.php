@@ -232,14 +232,55 @@ function teoriageek_enhance_rendered_content( $html ) {
 		$html
 	);
 
-	// 3. Envolve iframes de YouTube/Vimeo/Dailymotion/Twitch que não estejam dentro de container responsivo.
+	// 3. YouTube Facade automático: substitui iframes do YouTube por thumbnail leve + botão play acessível
+	// (injeta o iframe youtube-nocookie apenas sob clique, eliminando scripts e fontes externas no load inicial).
+	$yt_facade_builder = static function ( $iframe_html ) {
+		if ( ! preg_match( '#src=["\'][^"\']*(?:youtube\.com|youtube-nocookie\.com|youtu\.be)/(?:embed/|shorts/|watch\?v=)?([a-zA-Z0-9_-]{11})#i', $iframe_html, $ym ) ) {
+			return '';
+		}
+		$vid   = $ym[1];
+		$title = __( 'Vídeo do YouTube', 'teoriageek' );
+		if ( preg_match( '/\btitle=["\']([^"\']+)["\']/i', $iframe_html, $tm ) && '' !== trim( $tm[1] ) ) {
+			$title = html_entity_decode( trim( $tm[1] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		}
+		$thumb = 'https://i.ytimg.com/vi/' . rawurlencode( $vid ) . '/hqdefault.jpg';
+		return sprintf(
+			'<div class="tg-yt-facade" data-yt-id="%1$s" data-yt-title="%2$s">'
+			. '<img src="%3$s" alt="" aria-hidden="true" loading="lazy" decoding="async" class="tg-yt-facade-thumb" />'
+			. '<button type="button" class="tg-yt-facade-btn" aria-label="%4$s">'
+			. '<span class="tg-yt-facade-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>'
+			. '<span class="tg-yt-facade-badge">%5$s</span>'
+			. '</button>'
+			. '</div>',
+			esc_attr( $vid ),
+			esc_attr( $title ),
+			esc_url( $thumb ),
+			esc_attr( sprintf( __( 'Reproduzir vídeo: %s', 'teoriageek' ), $title ) ),
+			esc_html__( 'Assistir vídeo', 'teoriageek' )
+		);
+	};
+
 	$html = (string) preg_replace_callback(
-		'#(<div[^>]*class=["\'][^"\']*(?:youtube-embed|wp-block-embed|tg-embed-responsive)[^"\']*["\'][^>]*>[\s\S]*?</div>)|(<iframe\b[^>]*src=["\'][^"\']*(?:youtube\.com|youtu\.be|youtube-nocookie\.com|player\.vimeo\.com|player\.twitch\.tv|dailymotion\.com)[^"\']*["\'][^>]*>\s*</iframe>)#i',
-		static function ( $m ) {
+		'#<div[^>]*class=["\'][^"\']*(?:youtube-embed|wp-block-embed__wrapper|tg-embed-responsive)[^"\']*["\'][^>]*>\s*(<iframe\b[^>]*src=["\'][^"\']*(?:youtube\.com|youtu\.be|youtube-nocookie\.com)[^"\']*["\'][^>]*>\s*</iframe>)\s*</div>#i',
+		static function ( $m ) use ( $yt_facade_builder ) {
+			$facade = $yt_facade_builder( $m[1] );
+			return '' !== $facade ? $facade : $m[0];
+		},
+		$html
+	);
+
+	// 3b. Envolve iframes restantes: YouTube vira facade; Vimeo/Twitch/Dailymotion ganham wrapper responsivo.
+	$html = (string) preg_replace_callback(
+		'#(<div[^>]*class=["\'][^"\']*(?:youtube-embed|wp-block-embed|tg-embed-responsive|tg-yt-facade)[^"\']*["\'][^>]*>[\s\S]*?</div>)|(<iframe\b[^>]*src=["\'][^"\']*(?:youtube\.com|youtu\.be|youtube-nocookie\.com|player\.vimeo\.com|player\.twitch\.tv|dailymotion\.com)[^"\']*["\'][^>]*>\s*</iframe>)#i',
+		static function ( $m ) use ( $yt_facade_builder ) {
 			if ( ! empty( $m[1] ) ) {
 				return $m[1];
 			}
 			$iframe = $m[2];
+			$facade = $yt_facade_builder( $iframe );
+			if ( '' !== $facade ) {
+				return $facade;
+			}
 			if ( false === stripos( $iframe, 'loading=' ) ) {
 				$iframe = str_ireplace( '<iframe', '<iframe loading="lazy"', $iframe );
 			}

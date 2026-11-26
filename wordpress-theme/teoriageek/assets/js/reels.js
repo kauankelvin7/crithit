@@ -1,5 +1,10 @@
 /**
  * Teoria Geek — Player Nativo Reels 2.0 (Micro-Stories em 3 Lâminas).
+ * - Altura exata 100% da viewport (zero vazamento do próximo reel)
+ * - Navegação de lâminas por clique/toque nas laterais (esquerda/direita) e barras clicáveis no topo
+ * - Roda do mouse com debounce, scroll-snap mandatory no mobile e atalhos ↑ ↓ ← → S
+ * - Painel direito complementar sem duplicar título/resumo do player central
+ * - Filtros reais (Para Você, Mais Lidas, Salvos, Editorias), Salvar, Compartilhar e deep-link
  */
 (function () {
   'use strict';
@@ -8,9 +13,16 @@
   var dataNode = document.getElementById('tg-reels-initial-data');
   if (!stage || !dataNode) return;
 
+  var STORAGE_SAVED = 'teoriageek-saved-slugs';
   var cfg = window.teoriageekConfig || {};
   var items = [];
   var activeIndex = 0;
+  var activeTab = 'foryou';
+  var activeCategory = '';
+  var wheelLocked = false;
+  var scrollTimer = null;
+
+  var BLADE_LABELS = ['Lâmina 1/3 · Manchete', 'Lâmina 2/3 · Pontos-Chave', 'Lâmina 3/3 · Veredito & Leitura'];
 
   try {
     items = JSON.parse(dataNode.textContent || '[]');
@@ -26,10 +38,127 @@
       .replace(/"/g, '&quot;');
   }
 
+  function getSavedSlugs() {
+    try {
+      var parsed = JSON.parse(window.localStorage.getItem(STORAGE_SAVED) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_e) {
+      return [];
+    }
+  }
+
+  function isSavedSlug(slug) {
+    return getSavedSlugs().indexOf(slug) !== -1;
+  }
+
+  function toggleSavedSlug(slug) {
+    var list = getSavedSlugs();
+    var idx = list.indexOf(slug);
+    var savedNow = false;
+    if (idx === -1) {
+      list.push(slug);
+      savedNow = true;
+    } else {
+      list.splice(idx, 1);
+      savedNow = false;
+    }
+    try {
+      window.localStorage.setItem(STORAGE_SAVED, JSON.stringify(list));
+    } catch (_e) {}
+    syncSaveControls();
+    return savedNow;
+  }
+
+  function syncSaveControls() {
+    var saved = getSavedSlugs();
+    document.querySelectorAll('[data-tg-reel-save]').forEach(function (btn) {
+      var slug = btn.getAttribute('data-tg-reel-save') || '';
+      var active = saved.indexOf(slug) !== -1;
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      btn.classList.toggle('bg-highlight', active);
+      btn.classList.toggle('text-ink-highlight', active);
+      btn.classList.toggle('border-highlight', active);
+      var lbl = btn.querySelector('[data-save-text]');
+      if (lbl) lbl.textContent = active ? 'Salvo' : 'Salvar';
+    });
+  }
+
+  function copyWithFeedback(url, btn) {
+    var applyMsg = function () {
+      if (!btn) return;
+      var lbl = btn.querySelector('[data-feedback-text]');
+      if (lbl) {
+        var prev = lbl.textContent;
+        lbl.textContent = 'Link copiado!';
+        setTimeout(function () {
+          lbl.textContent = prev;
+        }, 1800);
+      } else {
+        btn.setAttribute('data-copied', 'true');
+        setTimeout(function () {
+          btn.removeAttribute('data-copied');
+        }, 1800);
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(applyMsg).catch(applyMsg);
+    } else {
+      applyMsg();
+    }
+  }
+
+  function shareReel(item, btn) {
+    if (navigator.share) {
+      navigator
+        .share({
+          title: item.title,
+          url: item.reelsUrl || item.url,
+        })
+        .catch(function () {});
+    } else {
+      copyWithFeedback(item.reelsUrl || item.url, btn);
+    }
+  }
+
+  function iconSvg(type) {
+    if (type === 'bookmark') {
+      return '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>';
+    }
+    if (type === 'share') {
+      return '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>';
+    }
+    if (type === 'copy') {
+      return '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+    }
+    if (type === 'external') {
+      return '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+    }
+    return '';
+  }
+
+  function fallbackGradient(artKey) {
+    var map = {
+      games: 'linear-gradient(155deg,#0B132B 0%,#1D4ED8 55%,#2563EB 100%)',
+      cinema: 'linear-gradient(155deg,#062C22 0%,#047857 55%,#059669 100%)',
+      animes: 'linear-gradient(155deg,#082F49 0%,#0E7490 55%,#0284C7 100%)',
+      comics: 'linear-gradient(155deg,#3B1805 0%,#B45309 55%,#D97706 100%)',
+      tech: 'linear-gradient(155deg,#172554 0%,#1D4ED8 55%,#3B82F6 100%)',
+    };
+    return map[artKey] || map.tech;
+  }
+
   function renderStage() {
     if (!items.length) {
+      var emptyMsg =
+        activeTab === 'saved'
+          ? 'Você ainda não salvou nenhuma matéria. Toque em Salvar em qualquer reel ou artigo.'
+          : 'Nenhuma matéria encontrada para esta seleção.';
       stage.innerHTML =
-        '<div class="flex h-full items-center justify-center p-6 text-center font-sans text-sm text-chrome-muted">Nenhuma matéria encontrada para esta seleção.</div>';
+        '<div class="flex h-full w-full items-center justify-center p-6 text-center font-sans text-sm text-chrome-muted">' +
+        esc(emptyMsg) +
+        '</div>';
+      updateRailControls();
+      updateContextPanel(0, 0);
       return;
     }
 
@@ -37,13 +166,20 @@
       .map(function (item, index) {
         var bulletsHtml = (item.bullets || [])
           .slice(0, 3)
-          .map(function (b) {
-            return '<li class="rounded border border-white/15 bg-black/55 p-3 font-reading text-sm leading-snug text-white">' + esc(b) + '</li>';
+          .map(function (b, bi) {
+            return (
+              '<li class="flex gap-2 rounded-lg border border-white/15 bg-black/60 p-3 font-reading text-xs leading-snug text-white sm:text-sm">' +
+              '<span class="font-mono font-bold text-highlight">' +
+              (bi + 1) +
+              '.</span><span>' +
+              esc(b) +
+              '</span></li>'
+            );
           })
           .join('');
 
         var scoreBadge = item.score
-          ? '<span class="inline-flex items-center gap-1 rounded border-2 border-[#111111] bg-highlight px-2 py-0.5 font-display text-base text-ink-highlight">Nota ' +
+          ? '<span class="inline-flex items-center gap-1 rounded border-2 border-[#0B0F19] bg-highlight px-2 py-0.5 font-display text-base leading-none text-ink-highlight">Nota ' +
             esc(item.score) +
             '/10</span>'
           : '';
@@ -51,85 +187,155 @@
         var mediaBg = item.coverUrl
           ? '<img src="' +
             esc(item.coverUrl) +
-            '" alt="" aria-hidden="true" class="tg-cover-img pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55" loading="lazy" />'
+            '" alt="" aria-hidden="true" class="tg-reel-cover pointer-events-none absolute inset-0 h-full w-full object-cover opacity-60" loading="' +
+            (index === 0 ? 'eager' : 'lazy') +
+            '" decoding="async" />'
           : '';
 
+        var isSaved = isSavedSlug(item.slug);
+
         return (
+          '<div class="tg-reel-slide flex h-full w-full shrink-0 snap-start items-center justify-center sm:py-2.5">' +
           '<article data-reel-idx="' +
           index +
-          '" data-blade="0" class="relative mx-auto flex h-full w-full max-w-[430px] snap-start flex-col justify-between overflow-hidden bg-chrome-surface sm:mb-4 sm:rounded-xl sm:border-2 sm:border-white/15">' +
+          '" data-reel-slug="' +
+          esc(item.slug) +
+          '" data-blade="0" class="tg-reel-card relative flex h-full w-full flex-col justify-between overflow-hidden bg-chrome-surface sm:rounded-2xl sm:border-2 sm:border-white/15 sm:shadow-2xl">' +
+          /* Fallback gradiente elegante (sempre presente abaixo da imagem caso falhe ou inexista) */
+          '<div class="pointer-events-none absolute inset-0" style="background:' +
+          fallbackGradient(item.artKey) +
+          ';"></div>' +
           mediaBg +
-          '<div class="pointer-events-none absolute inset-0" style="background:linear-gradient(to top, #090A0F 8%, rgba(9,10,15,0.82) 56%, rgba(9,10,15,0.35) 100%);"></div>' +
-          /* Indicadores das 3 Lâminas */
-          '<div class="relative z-10 p-4">' +
-          '<div class="mb-3 grid grid-cols-3 gap-1.5">' +
-          '<button type="button" data-set-blade="0" aria-label="Lâmina 1: Manchete" class="h-1 rounded-full bg-highlight"></button>' +
-          '<button type="button" data-set-blade="1" aria-label="Lâmina 2: Pontos-Chave" class="h-1 rounded-full bg-white/30"></button>' +
-          '<button type="button" data-set-blade="2" aria-label="Lâmina 3: Leitura Completa" class="h-1 rounded-full bg-white/30"></button>' +
+          '<div class="pointer-events-none absolute inset-0" style="background:linear-gradient(to top, #090A0F 6%, rgba(9,10,15,0.82) 48%, rgba(9,10,15,0.28) 78%, rgba(9,10,15,0.65) 100%);"></div>' +
+          /* Zonas invisíveis clicáveis nas laterais esquerda/direita para avançar/voltar lâminas */
+          '<button type="button" data-blade-prev aria-label="Lâmina anterior" class="tg-reel-tap-zone absolute inset-y-14 left-0 z-20 w-[34%] cursor-pointer bg-transparent focus-visible:outline-highlight"></button>' +
+          '<button type="button" data-blade-next aria-label="Próxima lâmina" class="tg-reel-tap-zone absolute inset-y-14 right-0 z-20 w-[34%] cursor-pointer bg-transparent focus-visible:outline-highlight"></button>' +
+          /* Topo: barras de progresso clicáveis + categoria + contador */
+          '<div class="relative z-30 p-3.5 sm:p-4">' +
+          '<div role="tablist" aria-label="Lâminas do resumo" class="mb-2.5 grid grid-cols-3 gap-1.5">' +
+          '<button type="button" role="tab" aria-selected="true" data-set-blade="0" aria-label="Lâmina 1: Manchete" class="h-1.5 rounded-full bg-highlight transition-colors"></button>' +
+          '<button type="button" role="tab" aria-selected="false" data-set-blade="1" aria-label="Lâmina 2: Pontos-Chave" class="h-1.5 rounded-full bg-white/30 transition-colors hover:bg-white/60"></button>' +
+          '<button type="button" role="tab" aria-selected="false" data-set-blade="2" aria-label="Lâmina 3: Leitura Completa" class="h-1.5 rounded-full bg-white/30 transition-colors hover:bg-white/60"></button>' +
           '</div>' +
           '<div class="flex items-center justify-between gap-2">' +
-          '<span class="rounded px-2 py-0.5 font-mono text-[11px] font-bold uppercase" style="background:' +
+          '<span class="tg-cat-badge inline-flex max-w-[70%] items-center truncate rounded px-2 py-0.5 font-mono text-[11px] font-bold uppercase" style="background:' +
           esc(item.fillColor) +
           ';color:' +
           esc(item.inkColor) +
           ';">' +
           esc(item.categoryName) +
           '</span>' +
-          '<span class="font-mono text-[11px] text-white/80">' +
+          '<span class="rounded bg-black/55 px-2 py-0.5 font-mono text-[11px] font-bold text-white/90">' +
           (index + 1) +
           ' / ' +
           items.length +
           '</span>' +
           '</div>' +
           '</div>' +
-          /* Conteúdo das 3 Lâminas */
-          '<div class="relative z-10 mt-auto p-5 space-y-4">' +
-          '<div data-blade-panel="0" class="space-y-3">' +
+          /* Conteúdo principal do player (pointer-events-none para não bloquear toque lateral nas lâminas; links/botões são pointer-events-auto) */
+          '<div class="pointer-events-none relative z-30 mt-auto flex items-end justify-between gap-3 p-4 sm:p-5">' +
+          '<div class="min-w-0 flex-1 space-y-3">' +
+          /* Lâmina 0: Manchete */
+          '<div data-blade-panel="0" class="space-y-2.5">' +
           '<div class="flex flex-wrap items-center gap-2">' +
           '<span class="rounded bg-white/15 px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-highlight">' +
           esc(item.formatLabel) +
           '</span>' +
           scoreBadge +
           '</div>' +
-          '<h2 class="font-headline text-2xl font-extrabold leading-tight text-white sm:text-3xl">' +
+          '<h2 class="font-headline text-2xl font-extrabold leading-[1.12] tracking-[0.005em] text-white sm:text-[1.75rem]">' +
           esc(item.title) +
           '</h2>' +
-          '<p class="line-clamp-3 font-reading text-sm leading-relaxed text-white/90">' +
+          '<p class="line-clamp-3 font-reading text-xs leading-relaxed text-white/90 sm:text-sm">' +
           esc(item.summary) +
           '</p>' +
+          '<p class="font-mono text-[11px] text-white/65">Toque nas bordas ou use ← / → para avançar lâminas</p>' +
           '</div>' +
-          '<div data-blade-panel="1" class="hidden space-y-2.5">' +
+          /* Lâmina 1: Pontos-Chave */
+          '<div data-blade-panel="1" class="hidden space-y-2">' +
           '<p class="font-mono text-xs font-bold uppercase tracking-wider text-highlight">Em 10 Segundos — Pontos-Chave</p>' +
           '<ul class="space-y-2">' +
           bulletsHtml +
           '</ul>' +
           '</div>' +
-          '<div data-blade-panel="2" class="hidden space-y-3 rounded-lg border border-white/20 bg-black/65 p-4">' +
-          '<p class="font-mono text-xs text-white/80">Por ' +
+          /* Lâmina 2: Veredito & Leitura */
+          '<div data-blade-panel="2" class="hidden space-y-2.5 rounded-xl border border-white/20 bg-black/75 p-4">' +
+          '<p class="font-mono text-xs text-white/85">Por ' +
           esc(item.authorName) +
-          ' • ' +
+          ' · ' +
           esc(item.readingTime) +
           ' min de leitura</p>' +
           (item.verdict
-            ? '<p class="font-headline text-xl font-bold uppercase text-highlight">' + esc(item.verdict) + '</p>'
+            ? '<p class="font-headline text-xl font-extrabold uppercase text-highlight">' + esc(item.verdict) + '</p>'
             : '') +
           '<a href="' +
           esc(item.url) +
-          '" class="inline-flex w-full items-center justify-center rounded border-2 border-[#111111] bg-highlight px-4 py-2.5 font-mono text-xs font-bold uppercase text-ink-highlight">Ler matéria completa</a>' +
+          '" class="pointer-events-auto inline-flex w-full items-center justify-center gap-1.5 rounded border-2 border-[#0B0F19] bg-highlight px-4 py-2.5 font-mono text-xs font-bold uppercase text-ink-highlight xl:hidden">Ler matéria completa</a>' +
+          '<p class="hidden font-reading text-xs text-white/80 xl:block">Acesse os metadados completos, fila e leitura integral no painel ao lado.</p>' +
           '</div>' +
-          '<div class="flex items-center justify-between gap-2 border-t border-white/15 pt-3">' +
-          '<button type="button" data-next-blade class="rounded border border-white/25 bg-white/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase text-white hover:border-highlight hover:text-highlight">Próxima lâmina</button>' +
+          '</div>' +
+          /* Coluna compacta de ações no Mobile/Tablet (< xl) ancorada no canto inferior direito */
+          '<div class="pointer-events-auto flex shrink-0 flex-col items-center gap-2 xl:hidden">' +
+          '<button type="button" data-tg-reel-save="' +
+          esc(item.slug) +
+          '" aria-pressed="' +
+          (isSaved ? 'true' : 'false') +
+          '" aria-label="Salvar matéria" class="inline-flex h-10 w-10 items-center justify-center rounded-full border ' +
+          (isSaved ? 'border-highlight bg-highlight text-ink-highlight' : 'border-white/25 bg-black/65 text-white') +
+          '">' +
+          iconSvg('bookmark') +
+          '</button>' +
+          '<button type="button" data-tg-reel-share="' +
+          index +
+          '" aria-label="Compartilhar reel" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/65 text-white hover:border-highlight hover:text-highlight">' +
+          iconSvg('share') +
+          '</button>' +
           '<a href="' +
           esc(item.url) +
-          '" class="rounded bg-highlight px-3 py-1.5 font-mono text-[11px] font-bold uppercase text-ink-highlight">Abrir matéria</a>' +
+          '" aria-label="Ler matéria completa" class="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#0B0F19] bg-highlight text-ink-highlight">' +
+          iconSvg('external') +
+          '</a>' +
           '</div>' +
           '</div>' +
-          '</article>'
+          '</article>' +
+          '</div>'
         );
       })
       .join('');
 
-    updateContextPanel(0);
+    // Fallback limpo caso alguma imagem remota do reel falhe
+    stage.querySelectorAll('img.tg-reel-cover').forEach(function (img) {
+      img.addEventListener('error', function () {
+        img.style.display = 'none';
+      });
+    });
+
+    activeIndex = 0;
+    stage.scrollTop = 0;
+    updateRailControls();
+    updateContextPanel(0, 0);
+    syncSaveControls();
+  }
+
+  function updateRailControls() {
+    var counter = document.getElementById('tg-reels-counter-rail');
+    if (counter) {
+      counter.textContent = items.length ? activeIndex + 1 + '/' + items.length : '0/0';
+    }
+    var prevBtn = document.querySelector('[data-tg-reel-prev]');
+    var nextBtn = document.querySelector('[data-tg-reel-next]');
+    if (prevBtn) prevBtn.disabled = activeIndex <= 0;
+    if (nextBtn) nextBtn.disabled = activeIndex >= items.length - 1;
+  }
+
+  function syncUrlSlug(item) {
+    if (!item || !item.slug || !window.history || !window.history.replaceState) return;
+    try {
+      var u = new URL(window.location.href);
+      u.searchParams.set('post', item.slug);
+      u.searchParams.delete('id');
+      window.history.replaceState(null, '', u.toString());
+    } catch (_e) {}
   }
 
   function setCardBlade(card, bladeIdx) {
@@ -139,123 +345,362 @@
       p.classList.toggle('hidden', i !== b);
     });
     card.querySelectorAll('[data-set-blade]').forEach(function (dot, i) {
+      dot.setAttribute('aria-selected', i === b ? 'true' : 'false');
       dot.classList.toggle('bg-highlight', i === b);
       dot.classList.toggle('bg-white/30', i !== b);
     });
+    var idx = parseInt(card.getAttribute('data-reel-idx') || '0', 10);
+    if (idx === activeIndex) {
+      updateContextPanel(idx, b);
+    }
   }
 
-  function updateContextPanel(idx) {
+  function updateContextPanel(idx, bladeIdx) {
     var panel = document.getElementById('tg-reels-context');
     var item = items[idx];
-    if (!panel || !item) return;
+    if (!panel) return;
+    if (!item) {
+      panel.innerHTML = '<p class="font-mono text-xs text-chrome-muted">Selecione uma editoria para explorar os Reels.</p>';
+      return;
+    }
+
+    var activeBlade = typeof bladeIdx === 'number' ? bladeIdx : 0;
+    var isSaved = isSavedSlug(item.slug);
+
+    var bulletsList = (item.bullets || [])
+      .slice(0, 3)
+      .map(function (b, bi) {
+        return (
+          '<li class="flex gap-2 text-xs leading-relaxed text-chrome-ink">' +
+          '<span class="font-mono font-bold text-highlight">' +
+          (bi + 1) +
+          '.</span><span>' +
+          esc(b) +
+          '</span></li>'
+        );
+      })
+      .join('');
+
+    var queueHtml = items
+      .slice(idx + 1, idx + 4)
+      .map(function (nextItem, offset) {
+        var targetIdx = idx + 1 + offset;
+        return (
+          '<li>' +
+          '<button type="button" data-tg-reel-jump="' +
+          targetIdx +
+          '" class="group flex w-full items-start gap-2.5 rounded-lg border border-white/10 bg-chrome-surface/70 p-2.5 text-left transition-colors hover:border-highlight">' +
+          '<span class="font-mono text-xs font-bold text-highlight">' +
+          String(targetIdx + 1).padStart(2, '0') +
+          '</span>' +
+          '<span class="min-w-0 flex-1">' +
+          '<span class="block font-mono text-[11px] uppercase text-chrome-muted">' +
+          esc(nextItem.categoryName) +
+          '</span>' +
+          '<span class="line-clamp-2 block font-sans text-xs font-semibold text-white group-hover:text-highlight">' +
+          esc(nextItem.title) +
+          '</span>' +
+          '</span>' +
+          '</button>' +
+          '</li>'
+        );
+      })
+      .join('');
 
     panel.innerHTML =
-      '<span class="inline-block rounded px-2 py-0.5 font-mono text-[11px] font-bold uppercase" style="background:' +
-      esc(item.fillColor) +
-      ';color:' +
-      esc(item.inkColor) +
-      ';">' +
-      esc(item.categoryName) +
+      '<div class="flex items-center justify-between gap-2">' +
+      '<span class="rounded border border-white/15 bg-chrome-surface px-2.5 py-1 font-mono text-[11px] font-bold uppercase text-highlight">' +
+      esc(BLADE_LABELS[activeBlade] || BLADE_LABELS[0]) +
       '</span>' +
-      '<h3 class="font-headline text-2xl font-bold leading-tight text-white">' +
-      esc(item.title) +
-      '</h3>' +
-      '<p class="font-reading text-xs leading-relaxed text-chrome-muted">' +
-      esc(item.summary) +
-      '</p>' +
-      '<div class="border-t border-white/10 pt-3 font-mono text-[11px] text-chrome-muted space-y-1">' +
-      '<p>Autor: <strong class="text-white">' +
-      esc(item.authorName) +
-      '</strong></p>' +
-      '<p>Publicado: ' +
-      esc(item.dateRelative) +
-      '</p>' +
+      (item.score
+        ? '<span class="rounded bg-highlight px-2 py-0.5 font-mono text-[11px] font-bold text-ink-highlight">Nota ' +
+          esc(item.score) +
+          '/10</span>'
+        : '') +
       '</div>' +
+      /* Contexto complementar: Pontos-chave (não repete título nem resumo do player) */
+      '<div class="rounded-lg border border-white/10 bg-chrome-surface p-3.5 space-y-2.5">' +
+      '<p class="font-mono text-[11px] font-bold uppercase tracking-wider text-chrome-muted">Contexto & Pontos-Chave</p>' +
+      '<ul class="space-y-2">' +
+      bulletsList +
+      '</ul>' +
+      (item.sourceName
+        ? '<p class="border-t border-white/10 pt-2 font-mono text-[11px] text-chrome-muted">Fonte: <strong class="text-white">' +
+          esc(item.sourceName) +
+          '</strong></p>'
+        : '') +
+      '</div>' +
+      /* Metadados editoriais */
+      '<dl class="grid grid-cols-2 gap-2 rounded-lg border border-white/10 bg-chrome-surface/60 p-3 font-mono text-[11px]">' +
+      '<div><dt class="text-chrome-muted uppercase">Editoria</dt><dd class="mt-0.5 truncate font-bold text-white"><a href="' +
+      esc(item.categoryUrl) +
+      '" class="hover:text-highlight hover:underline">' +
+      esc(item.categoryName) +
+      '</a></dd></div>' +
+      '<div><dt class="text-chrome-muted uppercase">Autor</dt><dd class="mt-0.5 truncate font-bold text-white">' +
+      esc(item.authorName) +
+      '</dd></div>' +
+      '<div><dt class="text-chrome-muted uppercase">Publicado</dt><dd class="mt-0.5 text-white">' +
+      esc(item.dateRelative) +
+      '</dd></div>' +
+      '<div><dt class="text-chrome-muted uppercase">Leitura</dt><dd class="mt-0.5 text-white">' +
+      esc(item.readingTime) +
+      ' min</dd></div>' +
+      '</dl>' +
+      /* Ações reais: Salvar, Compartilhar, Copiar Link */
+      '<div class="grid grid-cols-3 gap-2">' +
+      '<button type="button" data-tg-reel-save="' +
+      esc(item.slug) +
+      '" aria-pressed="' +
+      (isSaved ? 'true' : 'false') +
+      '" class="inline-flex items-center justify-center gap-1.5 rounded border px-2.5 py-2 font-mono text-[11px] font-bold uppercase transition-colors ' +
+      (isSaved
+        ? 'border-highlight bg-highlight text-ink-highlight'
+        : 'border-white/20 bg-chrome-surface text-white hover:border-highlight hover:text-highlight') +
+      '">' +
+      iconSvg('bookmark') +
+      '<span data-save-text>' +
+      (isSaved ? 'Salvo' : 'Salvar') +
+      '</span></button>' +
+      '<button type="button" data-tg-reel-share="' +
+      idx +
+      '" class="inline-flex items-center justify-center gap-1.5 rounded border border-white/20 bg-chrome-surface px-2.5 py-2 font-mono text-[11px] font-bold uppercase text-white transition-colors hover:border-highlight hover:text-highlight">' +
+      iconSvg('share') +
+      '<span data-feedback-text>Enviar</span></button>' +
+      '<button type="button" data-tg-reel-copy="' +
+      esc(item.reelsUrl || item.url) +
+      '" class="inline-flex items-center justify-center gap-1.5 rounded border border-white/20 bg-chrome-surface px-2.5 py-2 font-mono text-[11px] font-bold uppercase text-white transition-colors hover:border-highlight hover:text-highlight">' +
+      iconSvg('copy') +
+      '<span data-feedback-text>Copiar</span></button>' +
+      '</div>' +
+      /* 1 Único CTA principal no Desktop */
       '<a href="' +
       esc(item.url) +
-      '" class="inline-flex w-full items-center justify-center rounded border-2 border-highlight bg-highlight px-4 py-2 font-mono text-xs font-bold uppercase text-ink-highlight">Ler Matéria Completa</a>';
+      '" class="inline-flex w-full items-center justify-center gap-2 rounded border-2 border-[#0B0F19] bg-highlight px-4 py-2.5 font-mono text-xs font-bold uppercase text-ink-highlight transition-transform hover:-translate-y-0.5">' +
+      '<span>Ler matéria completa</span>' +
+      iconSvg('external') +
+      '</a>' +
+      /* Fila de próximos reels */
+      (queueHtml
+        ? '<div class="space-y-2 pt-1"><p class="font-mono text-[11px] font-bold uppercase tracking-wider text-chrome-muted">Próximos na fila</p><ul class="space-y-2">' +
+          queueHtml +
+          '</ul></div>'
+        : '');
   }
 
   function scrollToIndex(idx) {
+    if (!items.length) return;
     var clamped = Math.max(0, Math.min(items.length - 1, idx));
     activeIndex = clamped;
     var target = stage.querySelector('[data-reel-idx="' + clamped + '"]');
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      updateContextPanel(clamped);
+      var slide = target.closest('.tg-reel-slide') || target;
+      slide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var blade = parseInt(target.getAttribute('data-blade') || '0', 10);
+      updateRailControls();
+      updateContextPanel(clamped, blade);
+      syncUrlSlug(items[clamped]);
     }
   }
 
+  function fetchReels(params) {
+    if (!cfg.restUrl) return;
+    var qs = new URLSearchParams(params);
+    stage.setAttribute('aria-busy', 'true');
+    fetch(cfg.restUrl + '/reels?' + qs.toString())
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (d) {
+        items = (d && Array.isArray(d.items)) ? d.items : [];
+        activeIndex = 0;
+        renderStage();
+      })
+      .finally(function () {
+        stage.removeAttribute('aria-busy');
+      });
+  }
+
+  function syncFilterStates() {
+    document.querySelectorAll('[data-tg-reel-tab]').forEach(function (b) {
+      var isCurr = b.getAttribute('data-tg-reel-tab') === activeTab;
+      b.setAttribute('aria-pressed', isCurr ? 'true' : 'false');
+      b.classList.toggle('bg-highlight', isCurr);
+      b.classList.toggle('text-ink-highlight', isCurr);
+      b.classList.toggle('bg-chrome-surface', !isCurr && b.classList.contains('tg-reel-chip'));
+      b.classList.toggle('text-chrome-ink', !isCurr);
+    });
+
+    document.querySelectorAll('[data-tg-reel-cat]').forEach(function (b) {
+      var isCurr = (b.getAttribute('data-tg-reel-cat') || '') === activeCategory;
+      b.setAttribute('aria-pressed', isCurr ? 'true' : 'false');
+      if (b.classList.contains('tg-reel-cat-chip')) {
+        b.classList.toggle('bg-brand-fill', isCurr);
+        b.classList.toggle('border-highlight', isCurr);
+        b.classList.toggle('text-white', isCurr);
+        b.classList.toggle('bg-chrome-surface', !isCurr);
+        b.classList.toggle('text-chrome-muted', !isCurr);
+      } else {
+        b.classList.toggle('bg-chrome-surface', isCurr);
+        b.classList.toggle('text-highlight', isCurr);
+        b.classList.toggle('font-bold', isCurr);
+        b.classList.toggle('text-chrome-muted', !isCurr);
+      }
+    });
+  }
+
+  /* Cliques dentro do palco (barras no topo, laterais esquerda/direita, ações mobile) */
   stage.addEventListener('click', function (e) {
+    var saveBtn = e.target.closest('[data-tg-reel-save]');
+    if (saveBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSavedSlug(saveBtn.getAttribute('data-tg-reel-save') || '');
+      return;
+    }
+
+    var shareBtn = e.target.closest('[data-tg-reel-share]');
+    if (shareBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var sIdx = parseInt(shareBtn.getAttribute('data-tg-reel-share') || '0', 10);
+      if (items[sIdx]) shareReel(items[sIdx], shareBtn);
+      return;
+    }
+
     var card = e.target.closest('[data-reel-idx]');
     if (!card) return;
+
     var dot = e.target.closest('[data-set-blade]');
     if (dot) {
       setCardBlade(card, parseInt(dot.getAttribute('data-set-blade'), 10) || 0);
       return;
     }
-    if (e.target.closest('[data-next-blade]')) {
-      var cur = parseInt(card.getAttribute('data-blade') || '0', 10);
-      setCardBlade(card, cur + 1);
+
+    if (e.target.closest('[data-blade-next]')) {
+      var curNext = parseInt(card.getAttribute('data-blade') || '0', 10);
+      setCardBlade(card, curNext + 1);
+      return;
+    }
+
+    if (e.target.closest('[data-blade-prev]')) {
+      var curPrev = parseInt(card.getAttribute('data-blade') || '0', 10);
+      setCardBlade(card, curPrev - 1);
     }
   });
 
+  /* Scroll-snap sync */
   stage.addEventListener(
     'scroll',
     function () {
-      var cards = stage.querySelectorAll('[data-reel-idx]');
-      var mid = stage.getBoundingClientRect().top + stage.clientHeight / 2;
-      cards.forEach(function (c, idx) {
-        var r = c.getBoundingClientRect();
-        if (r.top <= mid && r.bottom >= mid && activeIndex !== idx) {
-          activeIndex = idx;
-          updateContextPanel(idx);
-        }
-      });
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function () {
+        var cards = stage.querySelectorAll('[data-reel-idx]');
+        var mid = stage.getBoundingClientRect().top + stage.clientHeight / 2;
+        cards.forEach(function (c, idx) {
+          var r = c.getBoundingClientRect();
+          if (r.top <= mid && r.bottom >= mid && activeIndex !== idx) {
+            activeIndex = idx;
+            var blade = parseInt(c.getAttribute('data-blade') || '0', 10);
+            updateRailControls();
+            updateContextPanel(idx, blade);
+            syncUrlSlug(items[idx]);
+          }
+        });
+      }, 60);
     },
     { passive: true }
   );
 
+  /* Roda do mouse com debounce no desktop para troca suave 1-a-1 */
+  stage.addEventListener(
+    'wheel',
+    function (e) {
+      if (window.innerWidth < 640 || Math.abs(e.deltaY) < 24) return;
+      e.preventDefault();
+      if (wheelLocked) return;
+      wheelLocked = true;
+      scrollToIndex(activeIndex + (e.deltaY > 0 ? 1 : -1));
+      setTimeout(function () {
+        wheelLocked = false;
+      }, 380);
+    },
+    { passive: false }
+  );
+
+  /* Cliques globais: Anterior/Próximo, Abas, Editorias, Painel Direito (Salvar/Compartilhar/Copiar/Fila) */
   document.addEventListener('click', function (e) {
-    if (e.target.closest('[data-tg-reel-prev]')) scrollToIndex(activeIndex - 1);
-    if (e.target.closest('[data-tg-reel-next]')) scrollToIndex(activeIndex + 1);
+    if (e.target.closest('[data-tg-reel-prev]')) {
+      scrollToIndex(activeIndex - 1);
+      return;
+    }
+    if (e.target.closest('[data-tg-reel-next]')) {
+      scrollToIndex(activeIndex + 1);
+      return;
+    }
+
+    var jumpBtn = e.target.closest('[data-tg-reel-jump]');
+    if (jumpBtn) {
+      scrollToIndex(parseInt(jumpBtn.getAttribute('data-tg-reel-jump') || '0', 10));
+      return;
+    }
+
+    var ctxSave = e.target.closest('#tg-reels-context [data-tg-reel-save]');
+    if (ctxSave) {
+      e.preventDefault();
+      toggleSavedSlug(ctxSave.getAttribute('data-tg-reel-save') || '');
+      return;
+    }
+
+    var ctxShare = e.target.closest('#tg-reels-context [data-tg-reel-share]');
+    if (ctxShare) {
+      e.preventDefault();
+      var idx = parseInt(ctxShare.getAttribute('data-tg-reel-share') || '0', 10);
+      if (items[idx]) shareReel(items[idx], ctxShare);
+      return;
+    }
+
+    var ctxCopy = e.target.closest('[data-tg-reel-copy]');
+    if (ctxCopy) {
+      e.preventDefault();
+      copyWithFeedback(ctxCopy.getAttribute('data-tg-reel-copy') || window.location.href, ctxCopy);
+      return;
+    }
 
     var catBtn = e.target.closest('[data-tg-reel-cat]');
-    if (catBtn && cfg.restUrl) {
-      var slug = catBtn.getAttribute('data-tg-reel-cat') || '';
-      fetch(cfg.restUrl + '/reels?category=' + encodeURIComponent(slug))
-        .then(function (r) {
-          return r.json();
-        })
-        .then(function (d) {
-          items = (d && d.items) || [];
-          activeIndex = 0;
-          renderStage();
-        });
+    if (catBtn) {
+      activeTab = 'foryou';
+      activeCategory = catBtn.getAttribute('data-tg-reel-cat') || '';
+      syncFilterStates();
+      fetchReels({ category: activeCategory, tab: 'foryou' });
+      return;
     }
 
     var tabBtn = e.target.closest('[data-tg-reel-tab]');
-    if (tabBtn && cfg.restUrl) {
-      var tab = tabBtn.getAttribute('data-tg-reel-tab') || 'foryou';
-      document.querySelectorAll('[data-tg-reel-tab]').forEach(function (b) {
-        var isCurr = b === tabBtn;
-        b.setAttribute('aria-pressed', isCurr ? 'true' : 'false');
-        b.classList.toggle('bg-highlight', isCurr);
-        b.classList.toggle('text-ink-highlight', isCurr);
-      });
-      fetch(cfg.restUrl + '/reels?tab=' + encodeURIComponent(tab))
-        .then(function (r) {
-          return r.json();
-        })
-        .then(function (d) {
-          items = (d && d.items) || [];
+    if (tabBtn) {
+      activeTab = tabBtn.getAttribute('data-tg-reel-tab') || 'foryou';
+      activeCategory = '';
+      syncFilterStates();
+      if (activeTab === 'saved') {
+        var savedList = getSavedSlugs();
+        if (!savedList.length) {
+          items = [];
           activeIndex = 0;
           renderStage();
-        });
+        } else {
+          fetchReels({ tab: 'saved', slugs: savedList.join(',') });
+        }
+      } else {
+        fetchReels({ tab: activeTab });
+      }
     }
   });
 
+  /* Atalhos de teclado: ↑ ↓ troca reel | ← → troca lâmina | S salva */
   document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       scrollToIndex(activeIndex + 1);
@@ -265,9 +710,13 @@
     } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       var activeCard = stage.querySelector('[data-reel-idx="' + activeIndex + '"]');
       if (activeCard) {
+        e.preventDefault();
         var cur = parseInt(activeCard.getAttribute('data-blade') || '0', 10);
         setCardBlade(activeCard, cur + (e.key === 'ArrowRight' ? 1 : -1));
       }
+    } else if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey && items[activeIndex]) {
+      e.preventDefault();
+      toggleSavedSlug(items[activeIndex].slug);
     }
   });
 

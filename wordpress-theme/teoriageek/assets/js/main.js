@@ -14,25 +14,41 @@
   var STORAGE_SAVED = 'teoriageek-saved-slugs';
   var cfg = window.teoriageekConfig || {};
 
-  /* 1. Fallback automático para qualquer capa cuja imagem remota falhe */
+  /* 1. Fallback automático para qualquer capa cuja imagem remota falhe (tempo real + pós-load) */
+  function revealCoverFallback(img) {
+    if (!img) return;
+    img.style.display = 'none';
+    var wrap = img.closest('.tg-cover-wrap');
+    if (wrap) {
+      wrap.querySelectorAll('img').forEach(function (other) {
+        other.style.display = 'none';
+      });
+      var fb = wrap.querySelector('.tg-cover-fallback');
+      if (fb) {
+        fb.classList.remove('hidden');
+        fb.style.display = 'block';
+      }
+    }
+  }
+
   document.addEventListener(
     'error',
     function (event) {
       var target = event.target;
       if (target && target.tagName === 'IMG' && target.classList.contains('tg-cover-img')) {
-        target.style.display = 'none';
-        var wrap = target.closest('.tg-cover-wrap');
-        if (wrap) {
-          var fb = wrap.querySelector('.tg-cover-fallback');
-          if (fb) {
-            fb.classList.remove('hidden');
-            fb.style.display = 'block';
-          }
-        }
+        revealCoverFallback(target);
       }
     },
     true
   );
+
+  function scanBrokenCoverImages() {
+    document.querySelectorAll('img.tg-cover-img').forEach(function (img) {
+      if (img.complete && img.naturalWidth === 0) {
+        revealCoverFallback(img);
+      }
+    });
+  }
 
   /* 2. Tema Claro / Escuro */
   function getActiveTheme() {
@@ -396,7 +412,27 @@
       return;
     }
 
-    /* 8. Facade Pattern do card Reels em Destaque na Home (carregamento sob demanda) */
+    /* 8. YouTube Facade sob demanda no corpo do artigo (zero iframes/fontes externas no load inicial) */
+    var ytFacade = e.target.closest('.tg-yt-facade');
+    if (ytFacade) {
+      e.preventDefault();
+      var ytId = ytFacade.getAttribute('data-yt-id') || '';
+      var ytTitle = ytFacade.getAttribute('data-yt-title') || 'Vídeo do YouTube';
+      if (/^[a-zA-Z0-9_-]{11}$/.test(ytId)) {
+        var iframe = document.createElement('iframe');
+        iframe.src = 'https://www.youtube-nocookie.com/embed/' + ytId + '?autoplay=1&rel=0';
+        iframe.title = ytTitle;
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+        iframe.allowFullscreen = true;
+        iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+        ytFacade.innerHTML = '';
+        ytFacade.classList.add('tg-yt-loaded');
+        ytFacade.appendChild(iframe);
+      }
+      return;
+    }
+
+    /* 9. Facade Pattern do card Reels em Destaque na Home (carregamento sob demanda) */
     var facadePlay = e.target.closest('[data-tg-reel-facade-play]');
     if (facadePlay) {
       e.preventDefault();
@@ -460,4 +496,6 @@
   initMobileDrawer();
   initInstantSearch();
   syncSavedButtons();
+  scanBrokenCoverImages();
+  window.addEventListener('load', scanBrokenCoverImages);
 })();

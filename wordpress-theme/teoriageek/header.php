@@ -37,7 +37,7 @@ $tg_socials  = teoriageek_get_social_links();
 		<div class="flex min-w-0 items-center gap-3.5">
 			<?php teoriageek_render_brand_logo(); ?>
 			<span class="hidden xl:inline-block border-l border-white/15 pl-3.5 font-mono text-xs text-chrome-muted">
-				<?php echo esc_html( get_bloginfo( 'description' ) ?: __( 'O Importante é se divertir!', 'teoriageek' ) ); ?>
+				<?php echo esc_html( teoriageek_strip_emojis( get_bloginfo( 'description' ) ?: __( 'O Importante é se divertir!', 'teoriageek' ) ) ); ?>
 			</span>
 		</div>
 

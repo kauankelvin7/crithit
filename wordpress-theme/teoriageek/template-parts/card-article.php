@@ -56,16 +56,11 @@ $tg_rel_date    = teoriageek_get_relative_date( $tg_pid );
 	</div>
 
 	<div class="flex flex-1 flex-col gap-2.5 p-4">
-		<div class="flex flex-wrap items-center justify-between gap-2">
-			<div class="flex flex-wrap items-center gap-1.5">
-				<?php if ( 'review' === $tg_variant ) : ?>
-					<span class="rounded bg-brand-fill px-1.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider text-white">
-						<?php echo esc_html( $tg_format['label'] ); ?>
-					</span>
-				<?php endif; ?>
+		<div class="flex items-center justify-between gap-2">
+			<div class="min-w-0 flex-1">
 				<?php teoriageek_category_badge( $tg_cat, true, 'sm' ); ?>
 			</div>
-			<span class="font-mono text-[11px] text-ink-muted">
+			<span class="shrink-0 font-mono text-[11px] text-ink-muted">
 				<?php echo esc_html( $tg_rel_date ); ?>
 			</span>
 		</div>

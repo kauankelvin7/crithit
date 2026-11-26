@@ -47,7 +47,7 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 							</span>
 						<?php endif; ?>
 						<span class="font-mono text-xs uppercase tracking-wider text-chrome-muted">
-							<?php echo esc_html( get_bloginfo( 'description' ) ?: 'O Importante é se divertir!' ); ?>
+							<?php echo esc_html( teoriageek_strip_emojis( get_bloginfo( 'description' ) ?: 'O Importante é se divertir!' ) ); ?>
 						</span>
 					</div>
 					<p class="max-w-md font-reading text-sm leading-relaxed text-chrome-muted">
@@ -146,7 +146,7 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 						);
 						?>
 					</p>
-					<p><?php echo esc_html( get_bloginfo( 'description' ) ?: 'O Importante é se divertir!' ); ?></p>
+					<p><?php echo esc_html( teoriageek_strip_emojis( get_bloginfo( 'description' ) ?: 'O Importante é se divertir!' ) ); ?></p>
 				</div>
 			</div>
 		</div>

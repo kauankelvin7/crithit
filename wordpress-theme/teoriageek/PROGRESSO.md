@@ -1,7 +1,7 @@
-# Checkpoint de Desenvolvimento — Tema WordPress Nativo `teoriageek` (`v1.2.0`)
+# Checkpoint de Desenvolvimento — Tema WordPress Nativo `teoriageek` (`v1.2.1`)
 
 **Última atualização:** 2026-11-25  
-**Status:** Concluído, auditado e empacotado para produção (`dist/teoriageek-theme.zip`)  
+**Status:** Concluído, otimizado (pente-fino `v1.2.1`), auditado e empacotado para produção (`dist/teoriageek-theme.zip`)  
 **Objetivo:** Tema WordPress 100% nativo, autocontido em `wordpress-theme/teoriageek/` (sem alterar `/apps/web` ou `/apps/api`), substituindo o tema legado *Newspaper v12.6.2* (`td-composer` e `td-cloud-library`) no portal **Teoria Geek** (`https://teoriageek.com.br/`), com identidade Azul & Amarelo, logo clássica, fontes locais `.woff2`, operação 100% sem código e compatibilidade integral com o acervo legado (+65.000 posts).
 
 ---
@@ -41,4 +41,10 @@
 - [x] **PHP 8.3.37 Syntax Lint:** `40/40` arquivos `.php` aprovados com `0` erros.
 - [x] **Auditoria de Gestor (`admin-audit.php` no PHP 8.3.37):** `5` seções / `36` controles no Customizer, MetaBox com nonce, 4 sidebars, `universo`, `[spoiler]`, JSON-LD `Review`, `Mais Lidas 7d/24h` e `0` warnings/notices/deprecations.
 - [x] **Auditoria Playwright (`desktop-1440x900` e `mobile-390x844`):** `20/20` testes aprovados (`10/10` em `teoriageek-e2e.spec.mjs` + `10/10` em `full-audit.spec.mjs`), `0` violações WCAG 2.1 AA (Claro e Escuro), `0` mojibake, `0` erros JS/HTTP, `0` overflow horizontal e `font-size >= 11px`.
-- [x] **Pacote de produção:** `dist/teoriageek-theme.zip` contendo exatamente `teoriageek/style.css` na raiz, fontes `.woff2`, logos oficiais e `README.md`, sem arquivos de desenvolvimento ou URLs `teoriageek.local`.
+### Etapa 6 — Pente-Fino de Performance, `/reels`, Responsividade e Deduplicação (`v1.2.1`) — 100% Concluída
+- [x] **Performance Real (Transients + Batch Hydration):** `teoriageek_get_home_blocks()` em transient de `10 min` (invalidado em `save_post_post`, `deleted_post`, `trashed_post`, `customize_save_after`), `teoriageek_prime_post_views()` em lote (`1 ms`), `teoriageek_get_reels_categories()` cacheado (`15 min`) e `no_found_rows => true` + `ignore_sticky_posts => true` em todas as queries sem paginação.
+  - **Benchmark real (Home com +65k posts):** `155` → **`46` queries (-70,3%)** | renderização PHP/MySQL `1.058 ms` → **`129,7 ms` (8,2× mais rápido)** | query mais lenta `494 ms` → **`8,1 ms` (61× mais rápido)** | HTTP TTFB LocalWP `9,73s` (`Total 11,75s`) → **`6,94s`**.
+- [x] **YouTube Facade automático:** `inc/legacy-sanitizer.php` + `assets/js/main.js` substituem iframes YouTube em `.entry-content`/`.youtube-embed` por thumbnail + botão play acessível com injeção `youtube-nocookie.com` apenas sob clique.
+- [x] **Reels 2.0 reestruturado (`page-reels.php` + `assets/js/reels.js`):** altura exata `calc(100dvh - var(--tg-header-h) - var(--wp-admin-bar-h))`, card `9:16` sem vazamento de borda, clique/toque lateral (`[data-blade-prev]`/`[data-blade-next]`) + barras clicáveis no topo (sem botão estático `Próxima lâmina`), roda do mouse com debounce, atalhos `↑`/`↓`/`←`/`→`/`S`, controles Anterior/Próximo ancorados ao lado do player, painel direito 100% complementar (sem repetir título/resumo e com 1 único CTA `Ler matéria completa`), filtros reais (`Para Você`, `Mais Lidas`, `Salvos`, `Editorias`) e barra mobile horizontal sem overflow.
+- [x] **Proporções, Sticky Sidebar, Badges & Deduplicação:** Hero compacto (`max-h-[375px]`), capa do `single.php` controlada (`max-h-[400px]`), sidebar sticky (`top: 88px`), 1 única badge truncada em linha única por card, deduplicação global `$shown_ids` em todos os blocos da Home, barra de veredito compacta quando o post já contém `.div-selo` legado, fallback elegante para capas quebradas e proteção anti-emoji em `header.php` e `footer.php`.
+- [x] **Validação final `v1.2.1`:** `40/40` arquivos `.php` sem erros no PHP `8.3.37`, `0` avisos em `admin-audit.php`, `20/20` testes Playwright aprovados (`1440×900`, `1280×720`, `768×1024` e `390×844`) e `dist/teoriageek-theme.zip` (`v1.2.1`) empacotado.

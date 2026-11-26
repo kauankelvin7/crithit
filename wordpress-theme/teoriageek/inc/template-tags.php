@@ -31,7 +31,7 @@ function teoriageek_category_badge( $term, $linked = false, $size = 'sm', $skewe
 
 	if ( $linked ) {
 		printf(
-			'<a href="%1$s" class="inline-flex items-center font-mono %2$s %3$s font-bold uppercase tracking-wider leading-tight transition-opacity hover:opacity-90" style="%4$s"><span class="%5$s">%6$s</span></a>',
+			'<a href="%1$s" title="%6$s" class="tg-cat-badge inline-flex max-w-full items-center overflow-hidden whitespace-nowrap font-mono %2$s %3$s font-bold uppercase tracking-wider leading-tight transition-opacity hover:opacity-90" style="%4$s"><span class="%5$s truncate">%6$s</span></a>',
 			esc_url( get_category_link( $term->term_id ) ),
 			esc_attr( $size_class ),
 			esc_attr( $skew_outer ),
@@ -43,7 +43,7 @@ function teoriageek_category_badge( $term, $linked = false, $size = 'sm', $skewe
 	}
 
 	printf(
-		'<span class="inline-flex items-center font-mono %1$s %2$s font-bold uppercase tracking-wider leading-tight" style="%3$s"><span class="%4$s">%5$s</span></span>',
+		'<span title="%5$s" class="tg-cat-badge inline-flex max-w-full items-center overflow-hidden whitespace-nowrap font-mono %1$s %2$s font-bold uppercase tracking-wider leading-tight" style="%3$s"><span class="%4$s truncate">%5$s</span></span>',
 		esc_attr( $size_class ),
 		esc_attr( $skew_outer ),
 		esc_attr( $inline ),
@@ -428,6 +428,10 @@ function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array(), $wi
 			)
 		);
 		$posts = array_merge( $posts, $fallback->posts );
+	}
+
+	if ( ! empty( $posts ) ) {
+		teoriageek_prime_post_views( wp_list_pluck( $posts, 'ID' ) );
 	}
 
 	return $posts;

@@ -695,50 +695,79 @@ function teoriageek_has_post_views_table() {
 }
 
 /**
+ * Pré-carrega visualizações de múltiplos posts em UMA única query SQL indexada em `wp_post_views`,
+ * eliminando consultas N+1 na Home, Sidebar e `/reels/`.
+ *
+ * @param int[] $post_ids Lista de IDs.
+ */
+function teoriageek_prime_post_views( $post_ids ) {
+	global $teoriageek_views_cache;
+	if ( ! is_array( $teoriageek_views_cache ) ) {
+		$teoriageek_views_cache = array();
+	}
+
+	$ids = array();
+	foreach ( (array) $post_ids as $raw_id ) {
+		$pid = (int) $raw_id;
+		if ( $pid > 0 && ! isset( $teoriageek_views_cache[ $pid ] ) ) {
+			$ids[ $pid ] = $pid;
+		}
+	}
+	if ( empty( $ids ) ) {
+		return;
+	}
+
+	$pvc_map = array();
+	if ( teoriageek_has_post_views_table() ) {
+		global $wpdb;
+		$table        = $wpdb->prefix . 'post_views';
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		// Usa o índice coberto `id_type_period_count (id, type, period, count)` em lote.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, SUM(count) AS total_views FROM {$table} WHERE type = 0 AND id IN ({$placeholders}) GROUP BY id", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				array_values( $ids )
+			),
+			ARRAY_A
+		);
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$pvc_map[ (int) $row['id'] ] = (int) $row['total_views'];
+			}
+		}
+	}
+
+	foreach ( $ids as $pid ) {
+		$best = isset( $pvc_map[ $pid ] ) ? $pvc_map[ $pid ] : 0;
+		foreach ( array( '_tg_views_count', 'post_views_count', 'views', '_post_views_count' ) as $meta_key ) {
+			$val = get_post_meta( $pid, $meta_key, true );
+			if ( is_numeric( $val ) && (int) $val > $best ) {
+				$best = (int) $val;
+			}
+		}
+		$teoriageek_views_cache[ $pid ] = $best;
+	}
+}
+
+/**
  * Retorna contagem de visualizações de um post (combinando wp_post_views indexado, meta legado e contador próprio).
  *
  * @param int $post_id ID do post.
  * @return int
  */
 function teoriageek_get_post_views( $post_id ) {
-	static $views_cache = array();
-	$post_id            = (int) $post_id;
-
-	if ( isset( $views_cache[ $post_id ] ) ) {
-		return $views_cache[ $post_id ];
+	global $teoriageek_views_cache;
+	if ( ! is_array( $teoriageek_views_cache ) ) {
+		$teoriageek_views_cache = array();
 	}
 
-	$best = 0;
-
-	$own = get_post_meta( $post_id, '_tg_views_count', true );
-	if ( is_numeric( $own ) ) {
-		$best = max( $best, (int) $own );
+	$post_id = (int) $post_id;
+	if ( isset( $teoriageek_views_cache[ $post_id ] ) ) {
+		return $teoriageek_views_cache[ $post_id ];
 	}
 
-	foreach ( array( 'post_views_count', 'views', '_post_views_count' ) as $legacy_key ) {
-		$legacy = get_post_meta( $post_id, $legacy_key, true );
-		if ( is_numeric( $legacy ) && (int) $legacy > 0 ) {
-			$best = max( $best, (int) $legacy );
-		}
-	}
-
-	if ( teoriageek_has_post_views_table() ) {
-		global $wpdb;
-		$table = $wpdb->prefix . 'post_views';
-		// Usa o índice coberto `id_type_period_count (id, type, period, count)` em < 1ms.
-		$pvc_sum = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT SUM(count) FROM {$table} WHERE id = %d AND type = 0", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$post_id
-			)
-		);
-		if ( is_numeric( $pvc_sum ) && (int) $pvc_sum > 0 ) {
-			$best = max( $best, (int) $pvc_sum );
-		}
-	}
-
-	$views_cache[ $post_id ] = $best;
-	return $best;
+	teoriageek_prime_post_views( array( $post_id ) );
+	return isset( $teoriageek_views_cache[ $post_id ] ) ? $teoriageek_views_cache[ $post_id ] : 0;
 }
 
 /**
@@ -1014,7 +1043,438 @@ function teoriageek_icon( $name, $class = 'h-4 w-4' ) {
 }
 
 /**
- * Gera arte vetorial Pop-Art em Azul e Amarelo para posts antigos sem imagem destacada.
+ * Busca otimizada de IDs de posts para um bloco editorial com deduplicação via `$shown_ids`
+ * e fallback automático quando a categoria possui poucos posts restantes.
+ *
+ * @param array<string, mixed> $base_args Argumentos base de WP_Query.
+ * @param int                  $needed    Quantidade desejada.
+ * @param int[]                $shown_ids IDs já exibidos (passado por referência e atualizado).
+ * @return int[]
+ */
+function teoriageek_query_dedup_ids( $base_args, $needed, &$shown_ids ) {
+	$needed = max( 1, (int) $needed );
+	$args   = array_merge(
+		array(
+			'post_type'              => 'post',
+			'post_status'            => 'publish',
+			'posts_per_page'         => $needed,
+			'ignore_sticky_posts'    => true,
+			'no_found_rows'          => true,
+			'fields'                 => 'ids',
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		),
+		$base_args
+	);
+
+	if ( ! empty( $shown_ids ) ) {
+		$args['post__not_in'] = array_values( array_unique( array_map( 'intval', $shown_ids ) ) );
+	}
+
+	$q   = new WP_Query( $args );
+	$ids = array_values( array_map( 'intval', (array) $q->posts ) );
+
+	// Fallback seguro caso a categoria tenha poucos posts fora de $shown_ids.
+	if ( count( $ids ) < $needed && ! empty( $args['post__not_in'] ) ) {
+		$fb_args                   = $args;
+		$fb_args['posts_per_page'] = $needed - count( $ids );
+		if ( ! empty( $ids ) ) {
+			$fb_args['post__not_in'] = $ids;
+		} else {
+			unset( $fb_args['post__not_in'] );
+		}
+		$fb_q = new WP_Query( $fb_args );
+		foreach ( (array) $fb_q->posts as $fid ) {
+			$fid = (int) $fid;
+			if ( $fid > 0 && ! in_array( $fid, $ids, true ) ) {
+				$ids[] = $fid;
+			}
+		}
+	}
+
+	foreach ( $ids as $id ) {
+		if ( ! in_array( $id, $shown_ids, true ) ) {
+			$shown_ids[] = $id;
+		}
+	}
+
+	return array_slice( $ids, 0, $needed );
+}
+
+/**
+ * Monta e cacheia em Transient (10 min) todos os blocos de IDs da Home (`front-page.php`)
+ * com deduplicação global `$shown_ids` e hidratação em lote em uma única `WP_Query`.
+ *
+ * @return array<string, mixed>
+ */
+function teoriageek_get_home_blocks() {
+	static $runtime_cache = null;
+	if ( is_array( $runtime_cache ) ) {
+		return $runtime_cache;
+	}
+
+	$transient_key = 'teoriageek_home_blocks_v1';
+	$id_map        = get_transient( $transient_key );
+
+	if ( ! is_array( $id_map ) || empty( $id_map['hero'] ) ) {
+		$shown_ids = array();
+
+		// 1. Manchete Principal (_tg_main_headline -> DESTAQUE -> último post).
+		$hero_id  = 0;
+		$pinned_q = new WP_Query(
+			array(
+				'post_type'              => 'post',
+				'post_status'            => 'publish',
+				'posts_per_page'         => 1,
+				'ignore_sticky_posts'    => true,
+				'no_found_rows'          => true,
+				'fields'                 => 'ids',
+				'meta_key'               => '_tg_main_headline',
+				'meta_value'             => '1',
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+		if ( ! empty( $pinned_q->posts ) ) {
+			$hero_id = (int) $pinned_q->posts[0];
+		}
+
+		$destaque_slug = teoriageek_get_mapped_category_slug( 'destaque' );
+		$destaque_term = ( '' !== $destaque_slug ) ? get_category_by_slug( $destaque_slug ) : null;
+		$destaque_pool = array();
+		if ( $destaque_term && ! is_wp_error( $destaque_term ) ) {
+			$dq            = new WP_Query(
+				array(
+					'post_type'              => 'post',
+					'post_status'            => 'publish',
+					'cat'                    => (int) $destaque_term->term_id,
+					'posts_per_page'         => 8,
+					'ignore_sticky_posts'    => true,
+					'no_found_rows'          => true,
+					'fields'                 => 'ids',
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
+				)
+			);
+			$destaque_pool = array_map( 'intval', (array) $dq->posts );
+		}
+
+		$recent_q    = new WP_Query(
+			array(
+				'post_type'              => 'post',
+				'post_status'            => 'publish',
+				'posts_per_page'         => 24,
+				'ignore_sticky_posts'    => true,
+				'no_found_rows'          => true,
+				'fields'                 => 'ids',
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+		$recent_pool = array_map( 'intval', (array) $recent_q->posts );
+
+		if ( 0 === $hero_id && ! empty( $destaque_pool ) ) {
+			$hero_id = $destaque_pool[0];
+		}
+		if ( 0 === $hero_id && ! empty( $recent_pool ) ) {
+			$hero_id = $recent_pool[0];
+		}
+		if ( $hero_id > 0 ) {
+			$shown_ids[] = $hero_id;
+		}
+
+		// 2. 3 Destaques Secundários.
+		$secondary_ids = array();
+		foreach ( array_merge( $destaque_pool, $recent_pool ) as $cid ) {
+			if ( $cid > 0 && ! in_array( $cid, $shown_ids, true ) ) {
+				$secondary_ids[] = $cid;
+				$shown_ids[]     = $cid;
+			}
+			if ( count( $secondary_ids ) >= 3 ) {
+				break;
+			}
+		}
+
+		// 3. Reel em Destaque (1) + Radar na Redação (2).
+		$reel_id = 0;
+		foreach ( $recent_pool as $cid ) {
+			if ( $cid > 0 && ! in_array( $cid, $shown_ids, true ) ) {
+				$reel_id     = $cid;
+				$shown_ids[] = $cid;
+				break;
+			}
+		}
+
+		$urgent_ids = array();
+		foreach ( $recent_pool as $cid ) {
+			if ( $cid > 0 && ! in_array( $cid, $shown_ids, true ) ) {
+				$urgent_ids[] = $cid;
+				$shown_ids[]  = $cid;
+			}
+			if ( count( $urgent_ids ) >= 2 ) {
+				break;
+			}
+		}
+
+		// 4. Plantão Geek (8 itens — meta _tg_plantao ou últimas notícias).
+		$plantao_q   = new WP_Query(
+			array(
+				'post_type'              => 'post',
+				'post_status'            => 'publish',
+				'posts_per_page'         => 8,
+				'ignore_sticky_posts'    => true,
+				'no_found_rows'          => true,
+				'fields'                 => 'ids',
+				'meta_key'               => '_tg_plantao',
+				'meta_value'             => '1',
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+		$ticker_ids  = array_map( 'intval', (array) $plantao_q->posts );
+		if ( count( $ticker_ids ) < 8 ) {
+			foreach ( $recent_pool as $rid ) {
+				if ( $rid > 0 && ! in_array( $rid, $ticker_ids, true ) ) {
+					$ticker_ids[] = $rid;
+				}
+				if ( count( $ticker_ids ) >= 8 ) {
+					break;
+				}
+			}
+		}
+
+		// 5. Giro Geek — Últimas Notícias (8 cards sem repetir a dobra principal).
+		$noticias_slug = teoriageek_get_mapped_category_slug( 'noticias' );
+		$noticias_term = ( '' !== $noticias_slug ) ? get_category_by_slug( $noticias_slug ) : null;
+		$giro_base     = ( $noticias_term && ! is_wp_error( $noticias_term ) ) ? array( 'cat' => (int) $noticias_term->term_id ) : array();
+		$giro_ids      = teoriageek_query_dedup_ids( $giro_base, 8, $shown_ids );
+
+		// 6. Críticas & Reviews (4 cards sem repetir).
+		$review_cat_ids = array();
+		foreach ( array( teoriageek_get_mapped_category_slug( 'criticas' ), teoriageek_get_mapped_category_slug( 'reviews' ) ) as $r_slug ) {
+			if ( '' !== $r_slug ) {
+				$r_term = get_category_by_slug( $r_slug );
+				if ( $r_term && ! is_wp_error( $r_term ) ) {
+					$review_cat_ids[] = (int) $r_term->term_id;
+				}
+			}
+		}
+		$reviews_base = ! empty( $review_cat_ids ) ? array( 'category__in' => $review_cat_ids ) : array();
+		$reviews_ids  = teoriageek_query_dedup_ids( $reviews_base, 4, $shown_ids );
+
+		// 7. Especiais & Colunas (4 cards sem repetir).
+		$especiais_slug = teoriageek_get_mapped_category_slug( 'especiais' );
+		$especiais_term = ( '' !== $especiais_slug ) ? get_category_by_slug( $especiais_slug ) : null;
+		$especiais_ids  = array();
+		if ( $especiais_term && ! is_wp_error( $especiais_term ) ) {
+			$especiais_ids = teoriageek_query_dedup_ids( array( 'cat' => (int) $especiais_term->term_id ), 4, $shown_ids );
+		}
+
+		// 8. Carrossel de Reels (6 itens — prioriza itens fora dos já exibidos).
+		$reels_strip_ids = array();
+		foreach ( $recent_pool as $rid ) {
+			if ( $rid > 0 && ! in_array( $rid, $shown_ids, true ) ) {
+				$reels_strip_ids[] = $rid;
+				$shown_ids[]       = $rid;
+			}
+			if ( count( $reels_strip_ids ) >= 6 ) {
+				break;
+			}
+		}
+		if ( count( $reels_strip_ids ) < 6 ) {
+			foreach ( $recent_pool as $rid ) {
+				if ( $rid > 0 && ! in_array( $rid, $reels_strip_ids, true ) ) {
+					$reels_strip_ids[] = $rid;
+				}
+				if ( count( $reels_strip_ids ) >= 6 ) {
+					break;
+				}
+			}
+		}
+
+		// 9. Colunas de Editorias (5 blocos x 4 posts, sem duplicar matérias já exibidas na Home).
+		$col_blocks = array();
+		foreach ( array( 'col_1', 'col_2', 'col_3', 'col_4', 'col_5' ) as $col_slot ) {
+			$col_slug = teoriageek_get_mapped_category_slug( $col_slot );
+			$col_term = ( '' !== $col_slug ) ? get_category_by_slug( $col_slug ) : null;
+			if ( ! $col_term || is_wp_error( $col_term ) ) {
+				continue;
+			}
+			$col_ids = teoriageek_query_dedup_ids( array( 'cat' => (int) $col_term->term_id ), 4, $shown_ids );
+			if ( ! empty( $col_ids ) ) {
+				$col_blocks[ $col_slot ] = array(
+					'term_id' => (int) $col_term->term_id,
+					'ids'     => $col_ids,
+				);
+			}
+		}
+
+		$id_map = array(
+			'hero'        => $hero_id,
+			'secondary'   => $secondary_ids,
+			'reel'        => $reel_id,
+			'urgent'      => $urgent_ids,
+			'ticker'      => $ticker_ids,
+			'giro'        => $giro_ids,
+			'reviews'     => $reviews_ids,
+			'especiais'   => $especiais_ids,
+			'reels_strip' => $reels_strip_ids,
+			'cols'        => $col_blocks,
+		);
+
+		set_transient( $transient_key, $id_map, 10 * MINUTE_IN_SECONDS );
+	}
+
+	// Hidrata TODOS os posts da Home em UMA única consulta em lote + caches de meta, termos, capas e autores.
+	$all_ids = array();
+	if ( ! empty( $id_map['hero'] ) ) {
+		$all_ids[] = (int) $id_map['hero'];
+	}
+	if ( ! empty( $id_map['reel'] ) ) {
+		$all_ids[] = (int) $id_map['reel'];
+	}
+	foreach ( array( 'secondary', 'urgent', 'ticker', 'giro', 'reviews', 'especiais', 'reels_strip' ) as $list_key ) {
+		foreach ( (array) ( $id_map[ $list_key ] ?? array() ) as $pid ) {
+			$all_ids[] = (int) $pid;
+		}
+	}
+	foreach ( (array) ( $id_map['cols'] ?? array() ) as $col_data ) {
+		foreach ( (array) ( $col_data['ids'] ?? array() ) as $pid ) {
+			$all_ids[] = (int) $pid;
+		}
+	}
+	$all_ids = array_values( array_unique( array_filter( $all_ids ) ) );
+
+	$post_map   = array();
+	$author_ids = array();
+	if ( ! empty( $all_ids ) ) {
+		$hydrate_q = new WP_Query(
+			array(
+				'post_type'              => 'post',
+				'post_status'            => 'publish',
+				'post__in'               => $all_ids,
+				'posts_per_page'         => count( $all_ids ),
+				'ignore_sticky_posts'    => true,
+				'no_found_rows'          => true,
+				'orderby'                => 'post__in',
+				'update_post_meta_cache' => true,
+				'update_post_term_cache' => true,
+			)
+		);
+		update_post_thumbnail_cache( $hydrate_q );
+		foreach ( $hydrate_q->posts as $p ) {
+			$post_map[ (int) $p->ID ] = $p;
+			$author_ids[]             = (int) $p->post_author;
+		}
+		if ( ! empty( $author_ids ) && function_exists( 'cache_users' ) ) {
+			cache_users( array_values( array_unique( $author_ids ) ) );
+		}
+		teoriageek_prime_post_views( $all_ids );
+	}
+
+	$resolve_list = static function ( $ids ) use ( $post_map ) {
+		$out = array();
+		foreach ( (array) $ids as $id ) {
+			$id = (int) $id;
+			if ( isset( $post_map[ $id ] ) ) {
+				$out[] = $post_map[ $id ];
+			}
+		}
+		return $out;
+	};
+
+	$resolved_cols = array();
+	foreach ( (array) ( $id_map['cols'] ?? array() ) as $slot => $col_data ) {
+		$term  = get_category( (int) ( $col_data['term_id'] ?? 0 ) );
+		$posts = $resolve_list( $col_data['ids'] ?? array() );
+		if ( $term && ! is_wp_error( $term ) && ! empty( $posts ) ) {
+			$resolved_cols[ $slot ] = array(
+				'term'  => $term,
+				'posts' => $posts,
+			);
+		}
+	}
+
+	$runtime_cache = array(
+		'hero'        => isset( $post_map[ (int) ( $id_map['hero'] ?? 0 ) ] ) ? $post_map[ (int) $id_map['hero'] ] : null,
+		'secondary'   => $resolve_list( $id_map['secondary'] ?? array() ),
+		'reel'        => isset( $post_map[ (int) ( $id_map['reel'] ?? 0 ) ] ) ? $post_map[ (int) $id_map['reel'] ] : null,
+		'urgent'      => $resolve_list( $id_map['urgent'] ?? array() ),
+		'ticker'      => $resolve_list( $id_map['ticker'] ?? array() ),
+		'giro'        => $resolve_list( $id_map['giro'] ?? array() ),
+		'reviews'     => $resolve_list( $id_map['reviews'] ?? array() ),
+		'especiais'   => $resolve_list( $id_map['especiais'] ?? array() ),
+		'reels_strip' => $resolve_list( $id_map['reels_strip'] ?? array() ),
+		'cols'        => $resolved_cols,
+	);
+
+	return $runtime_cache;
+}
+
+/**
+ * Retorna categorias do `/reels/` com cache em transient (15 min) evitando múltiplas queries de termo.
+ *
+ * @return array<int, array{slug:string,name:string,count:int}>
+ */
+function teoriageek_get_reels_categories() {
+	$cached = get_transient( 'teoriageek_reels_cats_v1' );
+	if ( is_array( $cached ) ) {
+		return $cached;
+	}
+
+	$slugs = array( 'noticias', 'games', 'filmes', 'series', 'animes-mangas', 'criticas', 'reviews' );
+	$terms = get_terms(
+		array(
+			'taxonomy'   => 'category',
+			'slug'       => $slugs,
+			'hide_empty' => true,
+		)
+	);
+
+	$indexed = array();
+	if ( is_array( $terms ) ) {
+		foreach ( $terms as $t ) {
+			if ( $t instanceof WP_Term ) {
+				$indexed[ $t->slug ] = array(
+					'slug'  => $t->slug,
+					'name'  => teoriageek_fix_mojibake( html_entity_decode( $t->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ),
+					'count' => (int) $t->count,
+				);
+			}
+		}
+	}
+
+	$ordered = array();
+	foreach ( $slugs as $slug ) {
+		if ( isset( $indexed[ $slug ] ) ) {
+			$ordered[] = $indexed[ $slug ];
+		}
+	}
+
+	set_transient( 'teoriageek_reels_cats_v1', $ordered, 15 * MINUTE_IN_SECONDS );
+	return $ordered;
+}
+
+/**
+ * Invalida transients editoriais automaticamente ao publicar, editar, excluir posts ou salvar o Customizer.
+ *
+ * @param int $post_id ID opcional do post.
+ */
+function teoriageek_flush_editorial_transients( $post_id = 0 ) {
+	if ( $post_id > 0 && ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) ) {
+		return;
+	}
+	delete_transient( 'teoriageek_home_blocks_v1' );
+	delete_transient( 'teoriageek_reels_cats_v1' );
+}
+add_action( 'save_post_post', 'teoriageek_flush_editorial_transients' );
+add_action( 'deleted_post', 'teoriageek_flush_editorial_transients' );
+add_action( 'trashed_post', 'teoriageek_flush_editorial_transients' );
+add_action( 'customize_save_after', 'teoriageek_flush_editorial_transients' );
+
+/**
+ * Gera arte vetorial editorial elegante em Azul e Amarelo para capas ausentes ou quebradas,
+ * evitando retângulos pretos vazios.
  *
  * @param string $category_slug Slug da categoria.
  * @param bool   $full_bleed    Modo vertical (Reels).
@@ -1025,35 +1485,29 @@ function teoriageek_render_fallback_art( $category_slug, $full_bleed = false ) {
 	$art   = $style['art'];
 
 	$palettes = array(
-		'games'  => array( '#0B0F19', '#1D4ED8', '#2563EB', '#FACC15', 'PLAY!' ),
-		'cinema' => array( '#062C22', '#047857', '#059669', '#FACC15', 'CINE!' ),
-		'animes' => array( '#082F49', '#0E7490', '#06B6D4', '#FACC15', 'POP!' ),
-		'comics' => array( '#451A03', '#B45309', '#D97706', '#FACC15', 'HQ!' ),
-		'tech'   => array( '#1E1B4B', '#1D4ED8', '#3B82F6', '#FACC15', 'GEEK!' ),
+		'games'  => array( '#0B132B', '#1D4ED8', '#2563EB', '#FACC15', 'GAMES', 'play' ),
+		'cinema' => array( '#062C22', '#047857', '#059669', '#FACC15', 'CINE & SÉRIES', 'film' ),
+		'animes' => array( '#082F49', '#0E7490', '#0284C7', '#FACC15', 'ANIMES', 'zap' ),
+		'comics' => array( '#3B1805', '#B45309', '#D97706', '#FACC15', 'HQS & LIVROS', 'book-open' ),
+		'tech'   => array( '#172554', '#1D4ED8', '#3B82F6', '#FACC15', 'TEORIA GEEK', 'newspaper' ),
 	);
-	$pal = isset( $palettes[ $art ] ) ? $palettes[ $art ] : $palettes['games'];
+	$pal = isset( $palettes[ $art ] ) ? $palettes[ $art ] : $palettes['tech'];
 
 	$bg = $full_bleed
-		? sprintf( 'radial-gradient(circle at 50%% 34%%, %s 0%%, %s 55%%, %s 100%%)', $pal[2], $pal[1], $pal[0] )
-		: sprintf( 'linear-gradient(135deg, %s 0%%, %s 55%%, %s 100%%)', $pal[0], $pal[1], $pal[2] );
+		? sprintf( 'radial-gradient(circle at 50%% 32%%, %s 0%%, %s 52%%, %s 100%%)', $pal[2], $pal[1], $pal[0] )
+		: sprintf( 'linear-gradient(135deg, %s 0%%, %s 58%%, %s 100%%)', $pal[0], $pal[1], $pal[2] );
 
-	$svg  = '<svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet" class="block h-full w-full" aria-hidden="true" focusable="false">';
-	$svg .= '<polygon points="320,38 358,118 446,96 398,166 476,204 390,224 414,306 334,264 282,322 266,240 182,254 226,184 156,138 242,126 236,48 302,102" fill="' . esc_attr( $pal[3] ) . '" stroke="#111111" stroke-width="8" stroke-linejoin="round"/>';
-	$svg .= '<rect x="230" y="142" width="180" height="68" rx="10" transform="rotate(-4 320 176)" fill="#111111" stroke="' . esc_attr( $pal[3] ) . '" stroke-width="5"/>';
-	$svg .= '<text x="320" y="188" text-anchor="middle" font-family="Bangers, Impact, sans-serif" font-size="38" letter-spacing="2" fill="' . esc_attr( $pal[3] ) . '">' . esc_html( $pal[4] ) . '</text>';
-	$svg .= '</svg>';
-
-	if ( $full_bleed ) {
-		return '<div class="relative h-full w-full overflow-hidden" style="background:' . esc_attr( $bg ) . ';" aria-hidden="true">'
-			. '<div class="comic-sunburst pointer-events-none absolute inset-0 opacity-75"></div>'
-			. '<div class="bg-halftone-overlay pointer-events-none absolute inset-0 opacity-60"></div>'
-			. '<div class="relative z-10 flex h-[56%] w-full items-center justify-center pt-10">' . $svg . '</div>'
-			. '</div>';
-	}
+	$svg = '<svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" class="block h-full w-full" aria-hidden="true" focusable="false">'
+		. '<defs><pattern id="tg-grid-' . esc_attr( $art ) . '" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="rgba(255,255,255,0.16)"/></pattern></defs>'
+		. '<rect width="640" height="360" fill="url(#tg-grid-' . esc_attr( $art ) . ')"/>'
+		. '<circle cx="520" cy="70" r="140" fill="' . esc_attr( $pal[3] ) . '" opacity="0.12"/>'
+		. '<circle cx="110" cy="300" r="120" fill="#FFFFFF" opacity="0.08"/>'
+		. '<rect x="272" y="114" width="96" height="96" rx="20" fill="rgba(11,15,25,0.72)" stroke="' . esc_attr( $pal[3] ) . '" stroke-width="4"/>'
+		. '<polygon points="308,142 344,162 308,182" fill="' . esc_attr( $pal[3] ) . '"/>'
+		. '<text x="320" y="250" text-anchor="middle" font-family="Barlow Condensed, Space Grotesk, sans-serif" font-weight="800" font-size="24" letter-spacing="3" fill="#FFFFFF" opacity="0.92">' . esc_html( $pal[4] ) . '</text>'
+		. '</svg>';
 
 	return '<div class="relative flex h-full w-full items-center justify-center overflow-hidden" style="background:' . esc_attr( $bg ) . ';" aria-hidden="true">'
-		. '<div class="comic-sunburst pointer-events-none absolute inset-0 opacity-55"></div>'
-		. '<div class="bg-halftone-overlay pointer-events-none absolute inset-0 opacity-45"></div>'
-		. '<div class="relative z-10 h-full w-full">' . $svg . '</div>'
+		. $svg
 		. '</div>';
 }

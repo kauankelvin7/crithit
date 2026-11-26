@@ -10,167 +10,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 get_header();
-get_template_part( 'template-parts/breaking-ticker' );
 
-$tg_used_ids = array();
+// Carrega TODOS os blocos da Home via Transient (10 min) + hidratação em lote + deduplicação global $shown_ids.
+$tg_home            = teoriageek_get_home_blocks();
+$tg_hero_post       = $tg_home['hero'];
+$tg_secondary       = $tg_home['secondary'];
+$tg_featured_reel   = $tg_home['reel'];
+$tg_urgent_posts    = $tg_home['urgent'];
+$tg_giro_posts      = $tg_home['giro'];
+$tg_reviews_posts   = $tg_home['reviews'];
+$tg_especiais_posts = $tg_home['especiais'];
+$tg_reels_strip     = $tg_home['reels_strip'];
+$tg_resolved_cols   = $tg_home['cols'];
 
-// 1. Manchete Principal (meta explícita _tg_main_headline -> categoria DESTAQUE -> último post).
-$tg_hero_post = null;
-
-$tg_pinned_q = new WP_Query(
-	array(
-		'post_type'           => 'post',
-		'post_status'         => 'publish',
-		'posts_per_page'      => 1,
-		'ignore_sticky_posts' => true,
-		'meta_key'            => '_tg_main_headline',
-		'meta_value'          => '1',
-		'no_found_rows'       => true,
-	)
+get_template_part(
+	'template-parts/breaking-ticker',
+	null,
+	array( 'posts' => $tg_home['ticker'] )
 );
-if ( ! empty( $tg_pinned_q->posts ) ) {
-	$tg_hero_post = $tg_pinned_q->posts[0];
-}
 
-$tg_destaque_slug = teoriageek_get_mapped_category_slug( 'destaque' );
-$tg_destaque_args = array(
-	'post_type'           => 'post',
-	'post_status'         => 'publish',
-	'posts_per_page'      => 6,
-	'ignore_sticky_posts' => true,
-	'no_found_rows'       => true,
-);
-if ( '' !== $tg_destaque_slug && get_category_by_slug( $tg_destaque_slug ) ) {
-	$tg_destaque_args['category_name'] = $tg_destaque_slug;
-}
-$tg_destaque_q    = new WP_Query( $tg_destaque_args );
-$tg_destaque_pool = $tg_destaque_q->posts;
+$tg_noticias_slug  = teoriageek_get_mapped_category_slug( 'noticias' );
+$tg_especiais_slug = teoriageek_get_mapped_category_slug( 'especiais' );
 
-if ( ! $tg_hero_post && ! empty( $tg_destaque_pool ) ) {
-	$tg_hero_post = $tg_destaque_pool[0];
-}
-
-$tg_recent_q    = new WP_Query(
-	array(
-		'post_type'           => 'post',
-		'post_status'         => 'publish',
-		'posts_per_page'      => 16,
-		'ignore_sticky_posts' => true,
-		'no_found_rows'       => true,
-	)
-);
-$tg_recent_pool = $tg_recent_q->posts;
-
-if ( ! $tg_hero_post && ! empty( $tg_recent_pool ) ) {
-	$tg_hero_post = $tg_recent_pool[0];
-}
-
-if ( $tg_hero_post ) {
-	$tg_used_ids[] = (int) $tg_hero_post->ID;
-}
-
-// 2. Três Destaques Secundários (sem repetir o Hero).
-$tg_secondary = array();
-foreach ( array_merge( $tg_destaque_pool, $tg_recent_pool ) as $tg_cand ) {
-	$tg_cid = (int) $tg_cand->ID;
-	if ( ! in_array( $tg_cid, $tg_used_ids, true ) ) {
-		$tg_secondary[] = $tg_cand;
-		$tg_used_ids[]  = $tg_cid;
-	}
-	if ( count( $tg_secondary ) >= 3 ) {
-		break;
-	}
-}
-
-// 3. Reel em Destaque + 2 Radar na Redação (sem repetição na 1ª dobra).
-$tg_featured_reel = null;
-foreach ( $tg_recent_pool as $tg_cand ) {
-	$tg_cid = (int) $tg_cand->ID;
-	if ( ! in_array( $tg_cid, $tg_used_ids, true ) ) {
-		$tg_featured_reel = $tg_cand;
-		$tg_used_ids[]    = $tg_cid;
-		break;
-	}
-}
-
-$tg_urgent_posts = array();
-foreach ( $tg_recent_pool as $tg_cand ) {
-	$tg_cid = (int) $tg_cand->ID;
-	if ( ! in_array( $tg_cid, $tg_used_ids, true ) ) {
-		$tg_urgent_posts[] = $tg_cand;
-		$tg_used_ids[]     = $tg_cid;
-	}
-	if ( count( $tg_urgent_posts ) >= 2 ) {
-		break;
-	}
-}
-
-// 4. Giro Geek — Últimas Notícias (8 cards).
-$tg_noticias_slug = teoriageek_get_mapped_category_slug( 'noticias' );
-$tg_giro_args     = array(
-	'post_type'           => 'post',
-	'post_status'         => 'publish',
-	'posts_per_page'      => 8,
-	'post__not_in'        => $tg_used_ids,
-	'ignore_sticky_posts' => true,
-	'no_found_rows'       => true,
-);
-if ( '' !== $tg_noticias_slug && get_category_by_slug( $tg_noticias_slug ) ) {
-	$tg_giro_args['category_name'] = $tg_noticias_slug;
-}
-$tg_giro_q     = new WP_Query( $tg_giro_args );
-$tg_giro_posts = $tg_giro_q->posts;
-
-// 5. Mais Lidas 7d & 24h (lendo wp_post_views via Transients API).
+// Mais Lidas 7d & 24h (lendo wp_post_views via Transients API de 15 min).
 $tg_most_read_7d  = teoriageek_get_most_read_posts( 5, array(), '7d' );
 $tg_most_read_24h = teoriageek_get_most_read_posts( 5, array(), '24h' );
 $tg_premieres     = teoriageek_get_weekly_premieres();
 $tg_top_ad        = teoriageek_get_ad_slot_markup( 'top' );
 
-// 6. Críticas & Reviews (4 cards com nota extraída).
-$tg_review_cat_ids = array();
-foreach ( array( teoriageek_get_mapped_category_slug( 'criticas' ), teoriageek_get_mapped_category_slug( 'reviews' ) ) as $tg_r_slug ) {
-	if ( '' !== $tg_r_slug ) {
-		$tg_r_term = get_category_by_slug( $tg_r_slug );
-		if ( $tg_r_term && ! is_wp_error( $tg_r_term ) ) {
-			$tg_review_cat_ids[] = (int) $tg_r_term->term_id;
-		}
-	}
-}
-$tg_reviews_args = array(
-	'post_type'           => 'post',
-	'post_status'         => 'publish',
-	'posts_per_page'      => 4,
-	'ignore_sticky_posts' => true,
-	'no_found_rows'       => true,
-);
-if ( ! empty( $tg_review_cat_ids ) ) {
-	$tg_reviews_args['category__in'] = $tg_review_cat_ids;
-}
-$tg_reviews_q     = new WP_Query( $tg_reviews_args );
-$tg_reviews_posts = $tg_reviews_q->posts;
-
-// 7. Especiais & Colunas (4 cards).
-$tg_especiais_slug  = teoriageek_get_mapped_category_slug( 'especiais' );
-$tg_especiais_posts = array();
-if ( '' !== $tg_especiais_slug && get_category_by_slug( $tg_especiais_slug ) ) {
-	$tg_esp_q           = new WP_Query(
-		array(
-			'post_type'           => 'post',
-			'post_status'         => 'publish',
-			'category_name'       => $tg_especiais_slug,
-			'posts_per_page'      => 4,
-			'ignore_sticky_posts' => true,
-			'no_found_rows'       => true,
-		)
-	);
-	$tg_especiais_posts = $tg_esp_q->posts;
-}
-
-// 8. Carrossel de Reels (6 itens).
-$tg_reels_strip = array_slice( $tg_recent_pool, 0, 6 );
-
-// 9. Colunas de Editorias configuráveis (3 superiores + 2 inferiores).
+// Colunas de Editorias configuráveis (3 superiores + 2 inferiores).
 $tg_primary_cols   = array( 'col_1', 'col_2', 'col_3' );
 $tg_secondary_cols = array( 'col_4', 'col_5' );
 ?>
@@ -456,27 +324,14 @@ $tg_secondary_cols = array( 'col_4', 'col_5' );
 		<div class="grid gap-6 lg:grid-cols-3">
 			<?php foreach ( $tg_primary_cols as $tg_col_slot ) : ?>
 				<?php
-				$tg_col_slug = teoriageek_get_mapped_category_slug( $tg_col_slot );
-				$tg_col_term = ( '' !== $tg_col_slug ) ? get_category_by_slug( $tg_col_slug ) : null;
-				if ( ! $tg_col_term ) {
+				if ( empty( $tg_resolved_cols[ $tg_col_slot ]['term'] ) || empty( $tg_resolved_cols[ $tg_col_slot ]['posts'] ) ) {
 					continue;
 				}
-				$tg_col_q = new WP_Query(
-					array(
-						'post_type'           => 'post',
-						'post_status'         => 'publish',
-						'cat'                 => (int) $tg_col_term->term_id,
-						'posts_per_page'      => 4,
-						'ignore_sticky_posts' => true,
-						'no_found_rows'       => true,
-					)
-				);
-				if ( empty( $tg_col_q->posts ) ) {
-					continue;
-				}
+				$tg_col_term  = $tg_resolved_cols[ $tg_col_slot ]['term'];
+				$tg_col_posts = $tg_resolved_cols[ $tg_col_slot ]['posts'];
 				$tg_col_style = teoriageek_get_category_style( $tg_col_term->slug );
-				$tg_col_lead  = $tg_col_q->posts[0];
-				$tg_col_rest  = array_slice( $tg_col_q->posts, 1, 3 );
+				$tg_col_lead  = $tg_col_posts[0];
+				$tg_col_rest  = array_slice( $tg_col_posts, 1, 3 );
 				?>
 				<div class="flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface shadow-sm">
 					<div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3" style="<?php echo esc_attr( sprintf( 'background-color:%s;color:%s;', $tg_col_style['fill'], $tg_col_style['ink'] ) ); ?>">
@@ -555,27 +410,14 @@ $tg_secondary_cols = array( 'col_4', 'col_5' );
 		<div class="mt-6 grid gap-6 lg:grid-cols-2">
 			<?php foreach ( $tg_secondary_cols as $tg_col_slot ) : ?>
 				<?php
-				$tg_col_slug = teoriageek_get_mapped_category_slug( $tg_col_slot );
-				$tg_col_term = ( '' !== $tg_col_slug ) ? get_category_by_slug( $tg_col_slug ) : null;
-				if ( ! $tg_col_term ) {
+				if ( empty( $tg_resolved_cols[ $tg_col_slot ]['term'] ) || empty( $tg_resolved_cols[ $tg_col_slot ]['posts'] ) ) {
 					continue;
 				}
-				$tg_col_q = new WP_Query(
-					array(
-						'post_type'           => 'post',
-						'post_status'         => 'publish',
-						'cat'                 => (int) $tg_col_term->term_id,
-						'posts_per_page'      => 4,
-						'ignore_sticky_posts' => true,
-						'no_found_rows'       => true,
-					)
-				);
-				if ( empty( $tg_col_q->posts ) ) {
-					continue;
-				}
+				$tg_col_term  = $tg_resolved_cols[ $tg_col_slot ]['term'];
+				$tg_col_posts = $tg_resolved_cols[ $tg_col_slot ]['posts'];
 				$tg_col_style = teoriageek_get_category_style( $tg_col_term->slug );
-				$tg_col_lead  = $tg_col_q->posts[0];
-				$tg_col_rest  = array_slice( $tg_col_q->posts, 1, 3 );
+				$tg_col_lead  = $tg_col_posts[0];
+				$tg_col_rest  = array_slice( $tg_col_posts, 1, 3 );
 				?>
 				<div class="flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface shadow-sm">
 					<div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3" style="<?php echo esc_attr( sprintf( 'background-color:%s;color:%s;', $tg_col_style['fill'], $tg_col_style['ink'] ) ); ?>">

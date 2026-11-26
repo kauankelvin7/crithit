@@ -164,7 +164,7 @@ get_header();
 								array(
 									'post_id'      => $tg_pid,
 									'size'         => 'tg-hero',
-									'aspect_class' => 'aspect-[16/9] max-h-[440px]',
+									'aspect_class' => 'aspect-[16/9] max-h-[280px] sm:max-h-[360px] lg:max-h-[400px]',
 									'priority'     => true,
 								)
 							);
@@ -242,7 +242,7 @@ get_header();
 					?>
 				</div>
 
-				<aside aria-label="<?php esc_attr_e( 'Ranking e conteúdo complementar', 'teoriageek' ); ?>" class="space-y-6 lg:sticky lg:top-28 lg:col-span-4 lg:self-start">
+				<aside aria-label="<?php esc_attr_e( 'Ranking e conteúdo complementar', 'teoriageek' ); ?>" class="space-y-6 lg:sticky lg:top-[88px] lg:col-span-4 lg:self-start">
 					<?php if ( ! empty( $tg_most_read ) ) : ?>
 						<section aria-labelledby="tg-sidebar-mais-lidas" class="rounded-lg border border-border-subtle bg-surface p-4 shadow-sm">
 							<div class="mb-3 flex items-center gap-2 border-b border-border-subtle pb-2.5">

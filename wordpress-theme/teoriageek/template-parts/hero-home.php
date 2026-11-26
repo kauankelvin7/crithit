@@ -39,7 +39,7 @@ $tg_urgent    = isset( $args['urgent'] ) && is_array( $args['urgent'] ) ? $args[
 							array(
 								'post_id'      => $tg_h_id,
 								'size'         => 'tg-hero',
-								'aspect_class' => 'aspect-[16/9]',
+								'aspect_class' => 'aspect-[16/9] max-h-[250px] sm:max-h-[330px] lg:max-h-[375px]',
 								'priority'     => true,
 							)
 						);
@@ -53,7 +53,7 @@ $tg_urgent    = isset( $args['urgent'] ) && is_array( $args['urgent'] ) ? $args[
 					<?php endif; ?>
 				</div>
 
-				<div class="space-y-4 p-5 sm:p-6">
+				<div class="space-y-3 p-4 sm:p-5">
 					<div class="flex flex-wrap items-center gap-2.5">
 						<?php teoriageek_category_badge( $tg_h_cat, true, 'md', true ); ?>
 						<span class="font-mono text-xs text-ink-muted">
@@ -65,14 +65,14 @@ $tg_urgent    = isset( $args['urgent'] ) && is_array( $args['urgent'] ) ? $args[
 						</span>
 					</div>
 
-					<h1 class="font-headline text-3xl font-extrabold leading-[1.1] tracking-[0.005em] text-ink-primary sm:text-[2.75rem]">
+					<h1 class="font-headline text-2xl font-extrabold leading-[1.1] tracking-[0.005em] text-ink-primary sm:text-[2.25rem]">
 						<a href="<?php echo esc_url( $tg_h_url ); ?>" class="hover:text-brand">
 							<?php echo esc_html( $tg_h_title ); ?>
 						</a>
 					</h1>
 
 					<?php if ( '' !== $tg_h_lead ) : ?>
-						<p class="font-reading text-base leading-relaxed text-ink-secondary sm:text-lg">
+						<p class="line-clamp-2 font-reading text-sm leading-relaxed text-ink-secondary sm:text-base">
 							<?php echo esc_html( $tg_h_lead ); ?>
 						</p>
 					<?php endif; ?>
@@ -139,7 +139,7 @@ $tg_urgent    = isset( $args['urgent'] ) && is_array( $args['urgent'] ) ? $args[
 				</div>
 
 				<!-- Facade Pattern 3:4: thumbnail leve; carrega micro-story sob demanda ao clicar -->
-				<div class="tg-reel-facade relative aspect-[3/4] w-full overflow-hidden" data-tg-reel-slug="<?php echo esc_attr( $tg_reel->post_name ); ?>" data-tg-reel-full-url="<?php echo esc_url( teoriageek_get_reels_url( $tg_reel->post_name ) ); ?>">
+				<div class="tg-reel-facade relative aspect-[3/4] max-h-[430px] w-full overflow-hidden lg:max-h-[460px]" data-tg-reel-slug="<?php echo esc_attr( $tg_reel->post_name ); ?>" data-tg-reel-full-url="<?php echo esc_url( teoriageek_get_reels_url( $tg_reel->post_name ) ); ?>">
 					<?php
 					get_template_part(
 						'template-parts/cover-media',

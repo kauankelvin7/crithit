@@ -40,8 +40,10 @@ $tg_read_mins = teoriageek_get_reading_time( $tg_pid );
 			?>
 		</a>
 		<div class="min-w-0 flex-1">
-			<div class="mb-1.5 flex items-center justify-between gap-1.5">
-				<?php teoriageek_category_badge( $tg_cat, false, 'sm' ); ?>
+			<div class="mb-1.5 flex items-center justify-between gap-2">
+				<div class="min-w-0 flex-1">
+					<?php teoriageek_category_badge( $tg_cat, false, 'sm' ); ?>
+				</div>
 				<span class="shrink-0 font-mono text-[11px] text-ink-muted">
 					<?php echo esc_html( teoriageek_get_relative_date( $tg_pid ) ); ?>
 				</span>

@@ -24,7 +24,32 @@ $tg_num     = (float) $tg_score;
 $tg_pct     = max( 5, min( 100, (int) round( $tg_num * 10 ) ) );
 $tg_verdict = teoriageek_get_score_verdict( $tg_num );
 $tg_fmt     = teoriageek_get_post_format_badge( $tg_pid );
+
+// Quando o post legado já possui o selo visual (.div-selo / selo-teoria-geek) no corpo,
+// exibe uma barra editorial compacta integrada para evitar duplicação de dois blocos gigantes de nota.
+$tg_raw_content    = (string) get_post_field( 'post_content', $tg_pid );
+$tg_has_legacy_selo = (bool) preg_match( '/\b(?:div-selo|selo-teoria-geek)\b/i', $tg_raw_content );
 ?>
+<?php if ( $tg_has_legacy_selo && empty( $tg_details['criteria'] ) && '' === $tg_details['summary'] ) : ?>
+	<aside aria-label="<?php esc_attr_e( 'Nota da avaliação editorial', 'teoriageek' ); ?>" class="my-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border-2 border-[#0B0F19] bg-highlight px-4 py-3 text-[#0B0F19] shadow-hard-sm">
+		<div class="flex items-center gap-3">
+			<span class="inline-flex items-center gap-1 rounded bg-[#0B0F19] px-2.5 py-1 font-display text-xl leading-none text-highlight">
+				<?php echo esc_html( $tg_score ); ?><span class="font-mono text-[11px] text-white">/10</span>
+			</span>
+			<div>
+				<span class="block font-mono text-[11px] font-bold uppercase tracking-wider text-[#0B0F19]/80">
+					<?php echo esc_html( sprintf( __( 'Veredito %s', 'teoriageek' ), $tg_fmt['label'] ) ); ?>
+				</span>
+				<strong class="font-headline text-lg font-extrabold uppercase leading-none text-[#0B0F19]">
+					<?php echo esc_html( $tg_verdict ); ?>
+				</strong>
+			</div>
+		</div>
+		<div class="h-2.5 w-36 overflow-hidden rounded-full border border-[#0B0F19] bg-white/80 sm:w-48" role="progressbar" aria-valuenow="<?php echo esc_attr( $tg_score ); ?>" aria-valuemin="0" aria-valuemax="10" aria-label="<?php esc_attr_e( 'Barra de pontuação de 0 a 10', 'teoriageek' ); ?>">
+			<div class="h-full bg-brand-fill" style="width: <?php echo esc_attr( (string) $tg_pct ); ?>%;"></div>
+		</div>
+	</aside>
+<?php else : ?>
 <aside aria-label="<?php esc_attr_e( 'Nota da avaliação editorial', 'teoriageek' ); ?>" class="my-8 overflow-hidden rounded-lg border-2 border-[#0B0F19] bg-highlight p-5 text-[#0B0F19] shadow-hard sm:p-6">
 	<div class="flex flex-col gap-5 sm:flex-row sm:items-center">
 		<div class="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-[#0B0F19] bg-[#0B0F19] text-highlight shadow-hard-sm">
@@ -70,3 +95,4 @@ $tg_fmt     = teoriageek_get_post_format_badge( $tg_pid );
 		</ul>
 	<?php endif; ?>
 </aside>
+<?php endif; ?>

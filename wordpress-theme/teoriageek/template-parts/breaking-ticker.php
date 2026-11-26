@@ -9,36 +9,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$tg_plantao_query = new WP_Query(
-	array(
-		'post_type'           => 'post',
-		'post_status'         => 'publish',
-		'posts_per_page'      => 8,
-		'ignore_sticky_posts' => true,
-		'meta_key'            => '_tg_plantao',
-		'meta_value'          => '1',
-		'no_found_rows'       => true,
-	)
-);
+$tg_ticker_posts = ( isset( $args['posts'] ) && is_array( $args['posts'] ) ) ? $args['posts'] : array();
 
-$tg_ticker_posts = $tg_plantao_query->posts;
-
-if ( count( $tg_ticker_posts ) < 8 ) {
-	$tg_cat_news = teoriageek_get_mapped_category_slug( 'noticias' );
-	$tg_already  = wp_list_pluck( $tg_ticker_posts, 'ID' );
-	$tg_fb_args  = array(
-		'post_type'           => 'post',
-		'post_status'         => 'publish',
-		'posts_per_page'      => 8 - count( $tg_ticker_posts ),
-		'post__not_in'        => $tg_already,
-		'ignore_sticky_posts' => true,
-		'no_found_rows'       => true,
+if ( empty( $tg_ticker_posts ) ) {
+	$tg_plantao_query = new WP_Query(
+		array(
+			'post_type'           => 'post',
+			'post_status'         => 'publish',
+			'posts_per_page'      => 8,
+			'ignore_sticky_posts' => true,
+			'meta_key'            => '_tg_plantao',
+			'meta_value'          => '1',
+			'no_found_rows'       => true,
+		)
 	);
-	if ( '' !== $tg_cat_news && get_category_by_slug( $tg_cat_news ) ) {
-		$tg_fb_args['category_name'] = $tg_cat_news;
+
+	$tg_ticker_posts = $tg_plantao_query->posts;
+
+	if ( count( $tg_ticker_posts ) < 8 ) {
+		$tg_cat_news = teoriageek_get_mapped_category_slug( 'noticias' );
+		$tg_already  = wp_list_pluck( $tg_ticker_posts, 'ID' );
+		$tg_fb_args  = array(
+			'post_type'           => 'post',
+			'post_status'         => 'publish',
+			'posts_per_page'      => 8 - count( $tg_ticker_posts ),
+			'post__not_in'        => $tg_already,
+			'ignore_sticky_posts' => true,
+			'no_found_rows'       => true,
+		);
+		if ( '' !== $tg_cat_news && get_category_by_slug( $tg_cat_news ) ) {
+			$tg_fb_args['category_name'] = $tg_cat_news;
+		}
+		$tg_fb_query     = new WP_Query( $tg_fb_args );
+		$tg_ticker_posts = array_merge( $tg_ticker_posts, $tg_fb_query->posts );
 	}
-	$tg_fb_query     = new WP_Query( $tg_fb_args );
-	$tg_ticker_posts = array_merge( $tg_ticker_posts, $tg_fb_query->posts );
 }
 
 if ( empty( $tg_ticker_posts ) ) {
