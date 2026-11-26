@@ -39,7 +39,7 @@ $tg_urgent    = isset( $args['urgent'] ) && is_array( $args['urgent'] ) ? $args[
 							array(
 								'post_id'      => $tg_h_id,
 								'size'         => 'tg-hero',
-								'aspect_class' => 'aspect-[16/9] max-h-[250px] sm:max-h-[330px] lg:max-h-[375px]',
+								'aspect_class' => 'w-full h-[220px] sm:h-[310px] lg:h-[360px]',
 								'priority'     => true,
 							)
 						);

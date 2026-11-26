@@ -1113,7 +1113,7 @@ function teoriageek_get_home_blocks() {
 		return $runtime_cache;
 	}
 
-	$transient_key = 'teoriageek_home_blocks_v1';
+	$transient_key = 'teoriageek_home_blocks_v2';
 	$id_map        = get_transient( $transient_key );
 
 	if ( ! is_array( $id_map ) || empty( $id_map['hero'] ) ) {
@@ -1211,7 +1211,7 @@ function teoriageek_get_home_blocks() {
 				$urgent_ids[] = $cid;
 				$shown_ids[]  = $cid;
 			}
-			if ( count( $urgent_ids ) >= 2 ) {
+			if ( count( $urgent_ids ) >= 3 ) {
 				break;
 			}
 		}
@@ -1270,23 +1270,23 @@ function teoriageek_get_home_blocks() {
 			$especiais_ids = teoriageek_query_dedup_ids( array( 'cat' => (int) $especiais_term->term_id ), 4, $shown_ids );
 		}
 
-		// 8. Carrossel de Reels (6 itens — prioriza itens fora dos já exibidos).
+		// 8. Carrossel de Reels (5 itens verticais Web Stories — prioriza itens fora dos já exibidos).
 		$reels_strip_ids = array();
 		foreach ( $recent_pool as $rid ) {
 			if ( $rid > 0 && ! in_array( $rid, $shown_ids, true ) ) {
 				$reels_strip_ids[] = $rid;
 				$shown_ids[]       = $rid;
 			}
-			if ( count( $reels_strip_ids ) >= 6 ) {
+			if ( count( $reels_strip_ids ) >= 5 ) {
 				break;
 			}
 		}
-		if ( count( $reels_strip_ids ) < 6 ) {
+		if ( count( $reels_strip_ids ) < 5 ) {
 			foreach ( $recent_pool as $rid ) {
 				if ( $rid > 0 && ! in_array( $rid, $reels_strip_ids, true ) ) {
 					$reels_strip_ids[] = $rid;
 				}
-				if ( count( $reels_strip_ids ) >= 6 ) {
+				if ( count( $reels_strip_ids ) >= 5 ) {
 					break;
 				}
 			}
@@ -1465,6 +1465,7 @@ function teoriageek_flush_editorial_transients( $post_id = 0 ) {
 		return;
 	}
 	delete_transient( 'teoriageek_home_blocks_v1' );
+	delete_transient( 'teoriageek_home_blocks_v2' );
 	delete_transient( 'teoriageek_reels_cats_v1' );
 }
 add_action( 'save_post_post', 'teoriageek_flush_editorial_transients' );

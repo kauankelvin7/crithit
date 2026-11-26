@@ -31,8 +31,9 @@ if ( $tg_thumb_id > 0 && 'tg-thumb' !== $tg_size ) {
 		$tg_is_small_legacy = true;
 	}
 }
+$tg_pos_class = ( false !== strpos( $tg_aspect, 'absolute' ) ) ? '' : 'relative';
 ?>
-<div class="tg-cover-wrap relative overflow-hidden bg-chrome <?php echo esc_attr( $tg_aspect ); ?>">
+<div class="tg-cover-wrap <?php echo esc_attr( trim( $tg_pos_class . ' w-full overflow-hidden bg-chrome ' . $tg_aspect ) ); ?>">
 	<?php if ( '' !== $tg_img_url ) : ?>
 		<div class="tg-cover-fallback pointer-events-none absolute inset-0 hidden">
 			<?php echo teoriageek_render_fallback_art( $tg_cat_slug, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -44,7 +45,7 @@ if ( $tg_thumb_id > 0 && 'tg-thumb' !== $tg_size ) {
 				aria-hidden="true"
 				loading="lazy"
 				decoding="async"
-				class="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-xl"
+				class="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover opacity-70 blur-lg"
 			/>
 		<?php endif; ?>
 		<img
@@ -54,7 +55,7 @@ if ( $tg_thumb_id > 0 && 'tg-thumb' !== $tg_size ) {
 			loading="<?php echo $tg_priority ? 'eager' : 'lazy'; ?>"
 			<?php echo $tg_priority ? 'fetchpriority="high"' : ''; ?>
 			decoding="async"
-			class="tg-cover-img editorial-cover-media relative z-10 h-full w-full <?php echo $tg_is_small_legacy ? 'object-contain p-2' : 'object-cover object-center'; ?>"
+			class="tg-cover-img editorial-cover-media relative z-10 h-full w-full <?php echo $tg_is_small_legacy ? 'object-contain p-1.5' : 'object-cover object-center'; ?>"
 		/>
 	<?php else : ?>
 		<?php echo teoriageek_render_fallback_art( $tg_cat_slug, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

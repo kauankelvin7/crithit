@@ -137,10 +137,13 @@ test.describe('Auditoria Completa Teoria Geek — Usuário Real & Gestor', () =>
       await expect(page.locator('[data-tg-mr-panel="24h"]')).toBeVisible();
     }
 
-    // Home Deduplication + Controlled Hero Height + Single-line Category Badges (v1.2.1)
+    // Home Deduplication + Controlled Hero Height & Full Width + Single-line Category Badges (v1.2.1)
     const homeMetrics = await page.evaluate(() => {
-      const heroImg = document.querySelector('main section:first-of-type article img.tg-cover-img');
+      const heroCard = document.querySelector('main section:first-of-type article');
+      const heroImg = heroCard ? heroCard.querySelector('img.tg-cover-img') : null;
       const heroH = heroImg ? Math.round(heroImg.getBoundingClientRect().height) : 0;
+      const heroW = heroImg ? Math.round(heroImg.getBoundingClientRect().width) : 0;
+      const heroCardW = heroCard ? Math.round(heroCard.getBoundingClientRect().width) : 0;
 
       // Collect all post links across primary editorial sections (excluding ticker, Mais Lidas, and Carrossel Reels)
       const sections = [
@@ -180,12 +183,85 @@ test.describe('Auditoria Completa Teoria Geek — Usuário Real & Gestor', () =>
           if (h > 28) wrappedBadges.push(`${b.textContent?.trim()}: ${h}px`);
         });
 
-      return { heroH, totalHomeCards: cardHeadingLinks.length, dups, wrappedBadges };
+      return { heroH, heroW, heroCardW, totalHomeCards: cardHeadingLinks.length, dups, wrappedBadges };
     });
 
     expect(homeMetrics.heroH, `Hero cover height (${homeMetrics.heroH}px) must be <= 385px`).toBeLessThanOrEqual(385);
+    expect(
+      homeMetrics.heroCardW - homeMetrics.heroW,
+      `Hero cover width (${homeMetrics.heroW}px) must fill 100% of Hero card width (${homeMetrics.heroCardW}px)`
+    ).toBeLessThanOrEqual(6);
     expect(homeMetrics.dups, 'Home editorial blocks must not repeat posts').toEqual([]);
     expect(homeMetrics.wrappedBadges, 'Category badges must remain single-line').toEqual([]);
+
+    // Verify "TEORIA GEEK REELS — RESUMO RÁPIDO" Web Stories 3:4 Full-Bleed Strip (5 cols Desktop / horizontal carousel Mobile)
+    const reelsStripSection = page.locator('section[aria-labelledby="tg-reels-strip-heading"]');
+    await reelsStripSection.scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    await page.evaluate(async () => {
+      const imgs = Array.from(document.querySelectorAll('section[aria-labelledby="tg-reels-strip-heading"] img.tg-story-img'));
+      await Promise.all(
+        imgs.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener('load', () => resolve(), { once: true });
+            img.addEventListener('error', () => resolve(), { once: true });
+            setTimeout(() => resolve(), 6000);
+          });
+        })
+      );
+    });
+    await page.waitForTimeout(200);
+
+    const storyMetrics = await page.evaluate(() => {
+      const grid = document.querySelector('section[aria-labelledby="tg-reels-strip-heading"] .tg-story-grid');
+      const cards = Array.from(document.querySelectorAll('section[aria-labelledby="tg-reels-strip-heading"] .tg-story-card'));
+      if (!grid || !cards.length) return { count: 0 };
+      const gridCs = getComputedStyle(grid);
+      const colTracks = gridCs.gridTemplateColumns ? gridCs.gridTemplateColumns.split(' ').filter(Boolean).length : 0;
+      const issues = [];
+      for (const card of cards) {
+        const cRect = card.getBoundingClientRect();
+        const img = card.querySelector('img.tg-story-img');
+        const badge = card.querySelector('.tg-cat-badge');
+        const title = card.querySelector('.tg-story-title');
+        const bars = card.querySelectorAll('.tg-story-bar').length;
+        const play = card.querySelector('.tg-story-play');
+        if (bars !== 3) issues.push(`Expected 3 story bars, got ${bars}`);
+        if (!play) issues.push('Missing yellow play button');
+        if (img && img.style.display !== 'none') {
+          const iRect = img.getBoundingClientRect();
+          if (iRect.height < cRect.height - 6 || iRect.width < cRect.width - 6) {
+            issues.push(`Image smaller than card: img ${Math.round(iRect.width)}x${Math.round(iRect.height)} vs card ${Math.round(cRect.width)}x${Math.round(cRect.height)}`);
+          }
+        }
+        if (badge && title) {
+          const bRect = badge.getBoundingClientRect();
+          const tRect = title.getBoundingClientRect();
+          const gap = tRect.top - bRect.bottom;
+          if (gap > 20 || gap < 0) issues.push(`Unexpected gap between badge and title: ${Math.round(gap)}px`);
+          if (badge.scrollWidth > badge.clientWidth + 2) issues.push(`Badge clipped: ${badge.textContent?.trim()}`);
+        }
+      }
+      return {
+        count: cards.length,
+        display: gridCs.display,
+        colTracks,
+        overflowX: gridCs.overflowX,
+        issues,
+      };
+    });
+
+    expect(storyMetrics.count, 'Reels strip must render 5 Web Story cards').toBe(5);
+    expect(storyMetrics.issues, 'Reels strip Web Stories layout issues').toEqual([]);
+    if (testInfo.project.name.includes('desktop')) {
+      expect(storyMetrics.display).toBe('grid');
+      expect(storyMetrics.colTracks).toBe(5);
+    } else {
+      expect(storyMetrics.display).toBe('flex');
+      expect(storyMetrics.overflowX).toBe('auto');
+    }
+    await page.evaluate(() => window.scrollTo(0, 0));
 
     // Capture multi-breakpoint visual check on desktop run (1280x720 + 768x1024)
     if (testInfo.project.name.includes('desktop')) {

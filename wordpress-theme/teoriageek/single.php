@@ -164,7 +164,7 @@ get_header();
 								array(
 									'post_id'      => $tg_pid,
 									'size'         => 'tg-hero',
-									'aspect_class' => 'aspect-[16/9] max-h-[280px] sm:max-h-[360px] lg:max-h-[400px]',
+									'aspect_class' => 'w-full h-[220px] sm:h-[340px] lg:h-[390px]',
 									'priority'     => true,
 								)
 							);

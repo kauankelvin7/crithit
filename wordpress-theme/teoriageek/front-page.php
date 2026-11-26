@@ -63,7 +63,7 @@ $tg_secondary_cols = array( 'col_4', 'col_5' );
 	?>
 
 	<?php if ( ! empty( $tg_giro_posts ) ) : ?>
-		<section aria-labelledby="tg-giro-heading" class="mt-12">
+		<section aria-labelledby="tg-giro-heading" class="mt-10">
 			<div class="mb-5 flex items-end justify-between border-b-2 border-border-strong pb-2">
 				<div>
 					<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
@@ -93,7 +93,7 @@ $tg_secondary_cols = array( 'col_4', 'col_5' );
 	<?php endif; ?>
 
 	<?php if ( ! empty( $tg_most_read_7d ) ) : ?>
-		<section aria-labelledby="tg-most-read-heading" class="mt-12 rounded-lg border border-border-subtle bg-surface p-5 shadow-sm sm:p-6">
+		<section aria-labelledby="tg-most-read-heading" class="mt-10 rounded-lg border border-border-subtle bg-surface p-5 shadow-sm sm:p-6">
 			<div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
 				<div class="flex items-center gap-2.5">
 					<span class="inline-flex h-8 w-8 items-center justify-center rounded border border-[#0B0F19] bg-highlight text-ink-highlight">
@@ -190,7 +190,7 @@ $tg_secondary_cols = array( 'col_4', 'col_5' );
 	<?php endif; ?>
 
 	<?php if ( ! empty( $tg_reviews_posts ) ) : ?>
-		<section aria-labelledby="tg-reviews-heading" class="mt-12">
+		<section aria-labelledby="tg-reviews-heading" class="mt-10">
 			<div class="mb-5 flex items-end justify-between border-b-[3px] border-border-strong pb-2">
 				<div>
 					<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
@@ -228,61 +228,16 @@ $tg_secondary_cols = array( 'col_4', 'col_5' );
 		</section>
 	<?php endif; ?>
 
-	<?php if ( ! empty( $tg_reels_strip ) ) : ?>
-		<section aria-labelledby="tg-reels-strip-heading" data-chrome="dark" class="mt-12 rounded-lg border-2 border-border-strong bg-chrome p-5 text-chrome-ink shadow-hard sm:p-6">
-			<div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-				<div class="flex items-center gap-2.5">
-					<span class="rounded border-2 border-[#0B0F19] bg-highlight px-2.5 py-0.5 font-display text-xl tracking-wider text-ink-highlight">
-						REELS
-					</span>
-					<h2 id="tg-reels-strip-heading" class="font-headline text-2xl font-extrabold uppercase tracking-tight text-white sm:text-3xl">
-						<?php esc_html_e( 'Teoria Geek Reels — Resumo Rápido', 'teoriageek' ); ?>
-					</h2>
-				</div>
-				<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="tactile-btn inline-flex items-center gap-1.5 rounded border-2 border-highlight bg-highlight px-3.5 py-1.5 font-mono text-xs font-bold uppercase text-ink-highlight hover:bg-white">
-					<span><?php esc_html_e( 'Ver todos os Reels', 'teoriageek' ); ?></span>
-					<?php echo teoriageek_icon( 'arrow-right', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-				</a>
-			</div>
-
-			<div class="reels-scroller grid grid-flow-col auto-cols-[72%] gap-4 overflow-x-auto pb-2 sm:auto-cols-[38%] lg:grid-flow-row lg:grid-cols-6">
-				<?php foreach ( $tg_reels_strip as $tg_rs_post ) : ?>
-					<?php
-					$tg_rs_id  = (int) $tg_rs_post->ID;
-					$tg_rs_cat = teoriageek_get_primary_category( $tg_rs_id );
-					?>
-					<a href="<?php echo esc_url( teoriageek_get_reels_url( $tg_rs_post->post_name ) ); ?>" class="editorial-card group relative flex aspect-[9/16] flex-col justify-end overflow-hidden rounded border-2 border-white/15 bg-chrome-surface hover:border-highlight">
-						<?php
-						get_template_part(
-							'template-parts/cover-media',
-							null,
-							array(
-								'post_id'      => $tg_rs_id,
-								'size'         => 'tg-card',
-								'aspect_class' => 'absolute inset-0 h-full w-full',
-								'decorative'   => true,
-							)
-						);
-						?>
-						<div class="relative z-20 flex h-full flex-col justify-between p-3" style="background:linear-gradient(to top, var(--scrim-reels) 0%, rgba(9,10,15,0.78) 52%, rgba(9,10,15,0.18) 100%);">
-							<div class="flex items-center justify-between gap-1">
-								<?php teoriageek_category_badge( $tg_rs_cat, false, 'sm' ); ?>
-								<span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/75 text-highlight">
-									<?php echo teoriageek_icon( 'play', 'h-3.5 w-3.5 fill-current' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-								</span>
-							</div>
-							<h3 class="line-clamp-3 font-headline text-lg font-bold leading-tight text-white group-hover:text-highlight">
-								<?php echo esc_html( teoriageek_clean_title( get_the_title( $tg_rs_id ) ) ); ?>
-							</h3>
-						</div>
-					</a>
-				<?php endforeach; ?>
-			</div>
-		</section>
-	<?php endif; ?>
+	<?php
+	get_template_part(
+		'template-parts/reels-strip',
+		null,
+		array( 'posts' => $tg_reels_strip )
+	);
+	?>
 
 	<?php if ( ! empty( $tg_especiais_posts ) ) : ?>
-		<section aria-labelledby="tg-especiais-heading" class="mt-12">
+		<section aria-labelledby="tg-especiais-heading" class="mt-10">
 			<div class="mb-5 flex items-end justify-between border-b-[3px] border-border-strong pb-2">
 				<div>
 					<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
@@ -311,7 +266,7 @@ $tg_secondary_cols = array( 'col_4', 'col_5' );
 		</section>
 	<?php endif; ?>
 
-	<section id="editorias" aria-labelledby="tg-editorias-heading" class="mt-12">
+	<section id="editorias" aria-labelledby="tg-editorias-heading" class="mt-10">
 		<div class="mb-5 border-b-[3px] border-border-strong pb-2">
 			<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
 				<?php esc_html_e( 'Cobertura por Universo', 'teoriageek' ); ?>
