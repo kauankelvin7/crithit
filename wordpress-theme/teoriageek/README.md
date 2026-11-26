@@ -1,6 +1,6 @@
-# Tema WordPress Nativo — Teoria Geek (`v1.2.1`)
+# Tema WordPress Nativo — Teoria Geek (`v2.3.0`)
 
-Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vitals, desenvolvido sob medida para o portal **Teoria Geek** (`teoriageek.com.br`) em substituição ao tema legado *Newspaper v12.6.2* (`td-composer` e `td-cloud-library`).
+Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vitals, desenvolvido por **Kauan Kelvin** sob medida para o portal **Teoria Geek** (`teoriageek.com.br`) em substituição ao tema legado *Newspaper v12.6.2* (`td-composer` e `td-cloud-library`).
 
 ---
 

@@ -25,8 +25,8 @@ $tg_sub   = ( $tg_term instanceof WP_Term ) ? get_categories(
 <main id="conteudo-principal" class="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8">
 	<?php teoriageek_breadcrumb(); ?>
 
-	<header class="mb-8 overflow-hidden rounded-lg border-2 border-border-strong bg-surface shadow-hard">
-		<div class="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-7" style="<?php echo esc_attr( sprintf( 'background-color:%s;color:%s;', $tg_style['fill'], $tg_style['ink'] ) ); ?>">
+	<header class="mb-8 overflow-hidden rounded-sm border border-border-subtle bg-surface">
+		<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-7 sm:py-5" style="<?php echo esc_attr( sprintf( 'background-color:%s;color:%s;', $tg_style['fill'], $tg_style['ink'] ) ); ?>">
 			<div>
 				<span class="font-mono text-xs font-bold uppercase tracking-widest opacity-90">
 					<?php esc_html_e( 'Editoria Oficial', 'teoriageek' ); ?>
@@ -49,7 +49,7 @@ $tg_sub   = ( $tg_term instanceof WP_Term ) ? get_categories(
 		$tg_cat_desc = category_description();
 		if ( ! empty( $tg_cat_desc ) || ! empty( $tg_sub ) ) :
 			?>
-			<div class="space-y-3 border-t border-border-subtle bg-surface-alt px-5 py-4 sm:px-7">
+			<div class="space-y-3 border-t border-border-subtle bg-surface-alt px-4 py-4 sm:px-7">
 				<?php if ( ! empty( $tg_cat_desc ) ) : ?>
 					<div class="max-w-3xl font-reading text-sm text-ink-secondary">
 						<?php echo wp_kses_post( $tg_cat_desc ); ?>
@@ -93,11 +93,11 @@ $tg_sub   = ( $tg_term instanceof WP_Term ) ? get_categories(
 
 		<?php teoriageek_pagination(); ?>
 	<?php else : ?>
-		<div class="rounded-lg border-2 border-border-strong bg-surface p-10 text-center shadow-hard-sm">
+		<div class="rounded-sm border border-border-subtle bg-surface p-10 text-center">
 			<p class="font-reading text-base text-ink-secondary">
 				<?php esc_html_e( 'Nenhuma matéria publicada foi encontrada nesta editoria.', 'teoriageek' ); ?>
 			</p>
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="mt-4 inline-flex items-center gap-1.5 rounded border-2 border-border-strong bg-highlight px-4 py-2 font-mono text-xs font-bold uppercase text-ink-highlight">
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="tactile-btn mt-4 inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-4 py-2 font-sans text-xs font-extrabold uppercase text-ink-highlight">
 				<?php esc_html_e( 'Voltar para a capa', 'teoriageek' ); ?>
 			</a>
 		</div>

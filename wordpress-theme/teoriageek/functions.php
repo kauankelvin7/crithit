@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TEORIAGEEK_VERSION', '1.2.0' );
+define( 'TEORIAGEEK_VERSION', '2.3.0' );
 define( 'TEORIAGEEK_DIR', get_template_directory() );
 define( 'TEORIAGEEK_URI', get_template_directory_uri() );
 

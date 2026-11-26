@@ -1,0 +1,486 @@
+/**
+ * Teoria Geek — Design System Editorial Jornal Digital (v2.2.0)
+ * Clareza estrutural de jornal digital moderno (estilo Metrópoles) + DNA Teoria Geek:
+ * - Azul Cobalto (#1D4ED8), Amarelo Elétrico (#FACC15), Claro #FFFFFF contínuo e Escuro #0B0F19
+ * - Cantos retos editoriais (2px), zero pílulas em botões/abas/tags (círculos apenas em avatares)
+ * - Zero fundo halftone pontilhado, zero "caixas com sombra dura dentro de caixas"
+ * - Separação visual por espaço em branco e linhas finas de grade (1px solid var(--ds-rule))
+ */
+
+/* ==========================================================================
+   1. Tokens Globais & Arquitetura Tipográfica Local
+   ========================================================================== */
+:root,
+[data-theme="light"] {
+	--ds-r: 2px;
+	--ds-bg: var(--tg-bg, #ffffff);
+	--ds-surface: var(--tg-surface, #ffffff);
+	--ds-surface-alt: var(--tg-surface-alt, #f4f6f9);
+	--ds-rule: #e2e8f0;
+	--ds-rule-strong: #0b0f19;
+	--ds-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--ds-fast: 150ms;
+	--ds-ring: 0 0 0 2px var(--accent-brand-soft);
+
+	--font-display: "Barlow Condensed";
+	--font-headline: "Barlow Condensed";
+	--font-sans: "Plus Jakarta Sans";
+	--font-reading: "Plus Jakarta Sans";
+	--font-mono: "JetBrains Mono";
+}
+
+.dark,
+[data-theme="dark"] {
+	--ds-bg: #0b0f19;
+	--ds-surface: #0f1524;
+	--ds-surface-alt: #161f33;
+	--ds-rule: rgba(255, 255, 255, 0.11);
+	--ds-rule-strong: #f8fafc;
+}
+
+html,
+body {
+	background-color: var(--ds-bg);
+	background-image: none;
+}
+
+body.tg-reels-page {
+	--ds-bg: #090a0f;
+	background-color: #090a0f;
+}
+
+/* Impede que a Admin Bar do WordPress corte o header sticky (logo/botão de tema) quando logado */
+body.admin-bar header[data-chrome="dark"] {
+	top: var(--wp-admin-bar-h, 32px);
+}
+
+body.tg-reels-page.admin-bar header[data-chrome="dark"] {
+	top: 0;
+}
+
+.font-display {
+	font-family: var(--font-headline), sans-serif;
+	font-weight: 800;
+	font-style: normal;
+	letter-spacing: 0.015em;
+}
+
+/* Metadados, datas, breadcrumbs e contadores em Plus Jakarta Sans tabular (JetBrains Mono restrito a código/notas técnicas) */
+article header .font-mono,
+.tg-share-bar .font-mono,
+nav[aria-label="Navegação estrutural"],
+footer .font-mono,
+.editorial-card .font-mono,
+section[aria-labelledby] > div:first-child .font-mono {
+	font-family: var(--font-sans), system-ui, sans-serif;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   2. Botões, Navegação Mobile & Inputs Retangulares (2px)
+   ========================================================================== */
+.tactile-btn,
+button[type="submit"],
+.tg-header-reels-btn,
+.tgx-comment-submit {
+	border-radius: var(--ds-r);
+	font-family: var(--font-sans), system-ui, sans-serif;
+	font-weight: 800;
+	letter-spacing: 0.03em;
+	box-shadow: none;
+	transition:
+		background-color var(--ds-fast) var(--ds-ease),
+		border-color var(--ds-fast) var(--ds-ease),
+		color var(--ds-fast) var(--ds-ease),
+		opacity var(--ds-fast) var(--ds-ease);
+}
+
+.tactile-btn.bg-highlight,
+.tg-header-reels-btn {
+	border: 1px solid #0b0f19;
+	background-color: var(--tg-accent);
+	color: #0b0f19;
+}
+
+@media (hover: hover) {
+	.tactile-btn.bg-highlight:hover:not(:disabled),
+	.tg-header-reels-btn:hover {
+		background-color: #fde047;
+	}
+}
+
+/* Faixa rápida de editorias no mobile com indicador ativo em sublinhado amarelo */
+.tgx-mobile-cat-pill {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+	white-space: nowrap;
+	min-height: 40px;
+	padding: 0.5rem 0.7rem;
+	border-radius: 0;
+	border-bottom: 2px solid transparent;
+	background-color: transparent;
+	font-family: var(--font-sans), system-ui, sans-serif;
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--chrome-ink-muted);
+	transition: color var(--ds-fast) var(--ds-ease), border-color var(--ds-fast) var(--ds-ease);
+}
+
+.tgx-mobile-cat-pill:hover,
+.tgx-mobile-cat-pill.is-active {
+	color: #ffffff;
+	border-bottom-color: var(--tg-accent);
+}
+
+/* Inputs editoriais retos */
+main input[type="search"],
+main input[type="text"],
+main input[type="email"],
+main input[type="url"],
+main textarea,
+#tg-search-modal input[type="search"] {
+	border: 1px solid var(--ds-rule);
+	border-radius: var(--ds-r);
+	background-color: var(--ds-surface-alt);
+	transition: border-color var(--ds-fast) var(--ds-ease), background-color var(--ds-fast) var(--ds-ease), box-shadow var(--ds-fast) var(--ds-ease);
+}
+
+main input[type="search"]:focus,
+main input[type="text"]:focus,
+main input[type="email"]:focus,
+main input[type="url"]:focus,
+main textarea:focus,
+#tg-search-modal input[type="search"]:focus {
+	background-color: var(--ds-surface);
+	border-color: var(--tg-primary);
+	box-shadow: var(--ds-ring);
+	outline: none;
+}
+
+/* Paginação editorial reta */
+.tg-page-link a,
+.tg-page-link span {
+	border-width: 1px;
+	border-color: var(--ds-rule);
+	border-radius: var(--ds-r);
+	box-shadow: none;
+}
+
+.tg-page-link.is-current span {
+	border-color: var(--tg-primary);
+}
+
+/* ==========================================================================
+   3. Capa (Hero, Cards, Radar, Mais Lidas & Cabeçalhos de Seção)
+   ========================================================================== */
+.tgx-hero-card {
+	border: 0;
+	border-bottom: 1px solid var(--ds-rule);
+	background-color: transparent;
+	padding-bottom: 1.25rem;
+}
+
+.tgx-hero-card:not(.tg-hero-carousel) > div:last-child {
+	padding: 1rem 0 0;
+}
+
+.tgx-hero-card .tg-cover-wrap {
+	border-radius: var(--ds-r);
+}
+
+/* Carrossel Editorial de Destaques (Hero) — Crossfade 550ms, Ken Burns 6s, Entrada Escalonada e Zero CLS */
+.tg-hero-track {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.tg-hero-slide {
+	grid-area: 1 / 1;
+	min-width: 0;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	z-index: 1;
+	transition:
+		opacity 550ms cubic-bezier(0.22, 1, 0.36, 1),
+		visibility 550ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tg-hero-slide.is-active {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	z-index: 2;
+}
+
+@keyframes tg-hero-kenburns {
+	0% {
+		transform: scale(1);
+	}
+	100% {
+		transform: scale(1.045);
+	}
+}
+
+.tg-hero-carousel .tg-hero-slide.is-active .tg-cover-img {
+	animation: tg-hero-kenburns 6s linear forwards;
+	will-change: transform;
+}
+
+.tg-hero-carousel.is-paused .tg-hero-slide.is-active .tg-cover-img {
+	animation-play-state: paused;
+}
+
+.tg-hero-stagger {
+	opacity: 0;
+	transform: translateY(8px);
+	transition:
+		opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+		transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tg-hero-slide.is-active .tg-hero-stagger {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.tg-hero-slide.is-active .tg-hero-stagger-1 {
+	transition-delay: 40ms;
+}
+
+.tg-hero-slide.is-active .tg-hero-stagger-2 {
+	transition-delay: 120ms;
+}
+
+.tg-hero-slide.is-active .tg-hero-stagger-3 {
+	transition-delay: 200ms;
+}
+
+.tg-hero-progress-wrap {
+	background: linear-gradient(to top, rgba(8, 11, 18, 0.84) 0%, rgba(8, 11, 18, 0.32) 60%, transparent 100%);
+}
+
+@keyframes tg-hero-bar-fill {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
+	}
+}
+
+.tg-hero-bar-fill {
+	transform-origin: left center;
+	transform: scaleX(0);
+}
+
+.tg-hero-bar-btn.is-done .tg-hero-bar-fill {
+	transform: scaleX(1);
+}
+
+.tg-hero-bar-btn.is-active .tg-hero-bar-fill {
+	animation: tg-hero-bar-fill var(--tg-hero-duration, 6000ms) linear forwards;
+}
+
+.tg-hero-carousel.is-paused .tg-hero-bar-btn.is-active .tg-hero-bar-fill {
+	animation-play-state: paused;
+}
+
+.tg-hero-tab {
+	border-top-color: transparent;
+	background-color: transparent;
+	color: var(--ink-muted);
+}
+
+.tg-hero-tab:hover {
+	background-color: var(--ds-surface-alt);
+	color: var(--tg-text);
+}
+
+.tg-hero-tab.is-active {
+	border-top-color: var(--tg-accent);
+	background-color: var(--ds-surface-alt);
+	color: var(--tg-text);
+}
+
+.tg-hero-tab-num {
+	color: var(--ink-muted);
+}
+
+.tg-hero-tab.is-active .tg-hero-tab-num {
+	color: var(--accent-brand);
+}
+
+[data-theme="dark"] .tg-hero-tab.is-active .tg-hero-tab-num,
+.dark .tg-hero-tab.is-active .tg-hero-tab-num {
+	color: var(--tg-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tg-hero-slide,
+	.tg-hero-stagger {
+		transition: none;
+		transform: none;
+	}
+
+	.tg-hero-carousel .tg-hero-slide.is-active .tg-cover-img {
+		animation: none;
+		transform: none;
+	}
+
+	.tg-hero-bar-btn.is-active .tg-hero-bar-fill {
+		animation: none;
+		transform: scaleX(1);
+	}
+}
+
+.tgx-article-card {
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+}
+
+.tgx-article-card > div:last-child {
+	padding: 0.85rem 0 0.25rem;
+	gap: 0.55rem;
+}
+
+@media (max-width: 639px) {
+	.tgx-article-card {
+		padding-bottom: 1.15rem;
+		border-bottom: 1px solid var(--ds-rule);
+	}
+}
+
+.tgx-compact-card {
+	border: 0;
+	border-bottom: 1px solid var(--ds-rule);
+	border-radius: 0;
+	background-color: transparent;
+	padding: 0.85rem 0;
+}
+
+aside[aria-label*="Reels"] > div:not([data-chrome="dark"]) {
+	border: 0;
+	border-top: 2px solid var(--tg-primary);
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+	padding: 0.85rem 0 0;
+}
+
+/* Cabeçalhos de seção estilo jornal (barra azul à esquerda + fio forte na base) */
+section[aria-labelledby="tg-giro-heading"] > div:first-child,
+section[aria-labelledby="tg-reviews-heading"] > div:first-child,
+section[aria-labelledby="tg-especiais-heading"] > div:first-child,
+section[aria-labelledby="tg-editorias-heading"] > div:first-child,
+section[aria-labelledby="tg-related-heading"] > div:first-child,
+section[aria-labelledby="tg-404-latest"] > h2 {
+	border-bottom: 2px solid var(--ds-rule-strong);
+	padding-bottom: 0.6rem;
+	margin-bottom: 1.25rem;
+}
+
+section[aria-labelledby="tg-giro-heading"] h2,
+section[aria-labelledby="tg-reviews-heading"] h2,
+section[aria-labelledby="tg-especiais-heading"] h2,
+section[aria-labelledby="tg-editorias-heading"] h2,
+section[aria-labelledby="tg-related-heading"] h2 {
+	border-left: 4px solid var(--tg-primary);
+	padding-left: 0.65rem;
+	line-height: 1.05;
+}
+
+/* Mais Lidas (7d / 24h) com destaque editorial amarelo no #1 */
+section[aria-labelledby="tg-most-read-heading"] {
+	border: 0;
+	border-top: 2px solid var(--ds-rule-strong);
+	border-bottom: 1px solid var(--ds-rule);
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+	padding: 1.5rem 0;
+}
+
+ol[data-tg-mr-panel] > li {
+	border: 0;
+	border-bottom: 1px solid var(--ds-rule);
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	padding: 0.85rem 0;
+}
+
+@media (min-width: 1024px) {
+	ol[data-tg-mr-panel] > li {
+		border-bottom: 0;
+		border-right: 1px solid var(--ds-rule);
+		padding: 0.25rem 1rem 0.25rem 0;
+	}
+
+	ol[data-tg-mr-panel] > li:last-child {
+		border-right: 0;
+		padding-right: 0;
+	}
+}
+
+ol[data-tg-mr-panel] > li:first-child span.font-display {
+	display: inline-block;
+	background-color: var(--tg-accent);
+	color: #0b0f19;
+	padding: 0.15rem 0.5rem;
+	border-radius: var(--ds-r);
+}
+
+section[aria-labelledby="tg-premieres-heading"] {
+	border: 1px solid var(--ds-rule);
+	border-radius: var(--ds-r);
+	box-shadow: none;
+}
+
+/* ==========================================================================
+   4. Matéria Individual (single.php) — Coluna Limpa de Jornal Sem Caixas Duplas
+   ========================================================================== */
+body.single-post article > header,
+body.single-post #tg-article-body {
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+	padding: 0;
+}
+
+body.single-post article > header {
+	padding-bottom: 1.25rem;
+	border-bottom: 1px solid var(--ds-rule);
+}
+
+body.single-post #tg-article-body > figure:first-child {
+	border: 1px solid var(--ds-rule);
+	border-radius: var(--ds-r);
+	margin-bottom: 1.5rem;
+}
+
+.tg-share-bar > a,
+.tg-share-bar > button {
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+/* Preserva blocos legados .ficha e .tg-spoiler limpos sem sombra dura pesada */
+.entry-content .ficha,
+.entry-content details.tg-spoiler {
+	border: 1px solid var(--ds-rule);
+	border-radius: var(--ds-r);
+	box-shadow: none;
+}
+
+.entry-content .ficha .capa img {
+	border: 1px solid var(--ds-rule);
+	border-radius: var(--ds-r);
+}

@@ -577,7 +577,78 @@ function teoriageek_get_score_verdict( $score ) {
 }
 
 /**
- * Extrai linha fina / lead limpo do post (excerpt -> td_subtitle -> abertura narrativa limpa).
+ * Trunca texto respeitando fronteira de palavras e removendo preposições/artigos soltos no fim.
+ *
+ * @param string $text      Texto limpo.
+ * @param int    $max_chars Limite máximo de caracteres.
+ * @return string
+ */
+function teoriageek_truncate_clean_words( $text, $max_chars = 175 ) {
+	$text = trim( (string) preg_replace( '/\s+/u', ' ', (string) $text ) );
+	if ( mb_strlen( $text, 'UTF-8' ) <= $max_chars ) {
+		return $text;
+	}
+	$cut = mb_substr( $text, 0, max( 20, $max_chars - 1 ), 'UTF-8' );
+	$cut = (string) preg_replace( '/\s+\S*$/u', '', $cut );
+	$cut = (string) preg_replace( '/(?:[\s,;:\-–—]+(?:de|da|do|das|dos|e|ou|a|o|os|as|em|no|na|nos|nas|para|com|por|que|um|uma|ao|aos|à|às))+$/iu', '', $cut );
+	return rtrim( $cut, " \t\n\r\0\x0B,;:-–—" ) . '…';
+}
+
+/**
+ * Extrai parágrafos narrativos limpos do corpo de um post (compatível com Editor Clássico sem <p> e Gutenberg).
+ *
+ * @param int $post_id ID do post.
+ * @return string[]
+ */
+function teoriageek_extract_clean_paragraphs( $post_id ) {
+	$content       = teoriageek_fix_mojibake( (string) get_post_field( 'post_content', (int) $post_id ) );
+	$content_clean = teoriageek_strip_ficha_tecnica( $content );
+
+	// Remove blocos de mídia, legendas, figuras, tabelas, cabeçalhos, listas secundárias e shortcodes antes do wpautop().
+	$content_clean = (string) preg_replace( '#<!--\s*/?wp:[^>]*-->#u', "\n\n", $content_clean );
+	$content_clean = (string) preg_replace( '#<(figure|figcaption|table|script|style|blockquote|h[1-6]|ul|ol)[^>]*>[\s\S]*?</\1>#iu', "\n\n", $content_clean );
+	$content_clean = (string) preg_replace( '#<div[^>]*class=["\'][^"\']*(?:wp-caption|div-selo|ficha|youtube-embed)[^"\']*["\'][^>]*>[\s\S]*?</div>#iu', "\n\n", $content_clean );
+	$content_clean = (string) preg_replace( '#<p[^>]*class=["\'][^"\']*wp-caption-text[^"\']*["\'][^>]*>[\s\S]*?</p>#iu', "\n\n", $content_clean );
+	$content_clean = (string) preg_replace( '#\[caption[^\]]*\][\s\S]*?\[/caption\]#iu', "\n\n", $content_clean );
+	$content_clean = (string) preg_replace( '#\[gallery[^\]]*\]#iu', '', $content_clean );
+	$content_clean = (string) preg_replace( '#\[/?[a-zA-Z0-9_-]+[^\]]*\]#', '', $content_clean );
+
+	// Garante que posts do Editor Clássico (separados apenas por quebras de linha) virem parágrafos <p> reais em ordem!
+	if ( function_exists( 'wpautop' ) ) {
+		$content_clean = wpautop( $content_clean );
+	}
+
+	$skip_re = '/^(?:quer saber mais|conheça nosso canal|ficha técnica|leia também|veja também|confira também|saiba mais|título:|desenvolvido por:|publicado por:|foto\s*:|fotos?\s*\/|imagem\s*:|imagens?\s*:|créditos?\s*:|reprodu[çc][ãa]o\s*[:\/]|divulga[çc][ãa]o\s*[:\/]|fonte da imagem\s*:|assista ao trailer|confira o trailer)/iu';
+
+	$paragraphs = array();
+	if ( preg_match_all( '#<p[^>]*>([\s\S]*?)</p>#i', $content_clean, $matches ) ) {
+		foreach ( $matches[1] as $raw_p ) {
+			$txt = html_entity_decode( wp_strip_all_tags( $raw_p ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+			$txt = (string) preg_replace( '/\s+/u', ' ', trim( teoriageek_strip_emojis( $txt ) ) );
+			$txt = (string) preg_replace( '/\s*[\(\[](?:divulga[çc][ãa]o|foto|reprodu[çc][ãa]o|imagem|cr[ée]ditos?)[^\)\]]*[\)\]]/iu', '', $txt );
+			$txt = trim( $txt );
+			if ( mb_strlen( $txt, 'UTF-8' ) >= 35 && ! preg_match( '#^https?://#i', $txt ) && ! preg_match( $skip_re, $txt ) ) {
+				$paragraphs[] = $txt;
+			}
+			if ( count( $paragraphs ) >= 10 ) {
+				break;
+			}
+		}
+	}
+
+	if ( empty( $paragraphs ) ) {
+		$plain = html_entity_decode( wp_strip_all_tags( $content_clean ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$plain = trim( (string) preg_replace( '/\s+/u', ' ', teoriageek_strip_emojis( $plain ) ) );
+		if ( mb_strlen( $plain, 'UTF-8' ) >= 28 ) {
+			$paragraphs[] = $plain;
+		}
+	}
+
+	return $paragraphs;
+}
+
+/**
+ * Extrai linha fina / lead limpo do post (excerpt -> td_subtitle -> 1º parágrafo narrativo de abertura).
  *
  * @param int $post_id   ID do post.
  * @param int $max_chars Limite de caracteres.
@@ -590,23 +661,24 @@ function teoriageek_get_post_lead( $post_id, $max_chars = 220 ) {
 	if ( '' !== $raw_excerpt ) {
 		$clean = teoriageek_fix_mojibake( teoriageek_strip_ficha_tecnica( $raw_excerpt ) );
 		$clean = teoriageek_strip_emojis( html_entity_decode( wp_strip_all_tags( strip_shortcodes( $clean ) ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		$clean = trim( (string) preg_replace( '/\s+/u', ' ', $clean ) );
 		if ( '' !== $clean && 0 !== stripos( $clean, 'Ficha Técnica' ) ) {
-			return ( mb_strlen( $clean, 'UTF-8' ) > $max_chars ) ? rtrim( mb_substr( $clean, 0, $max_chars - 1, 'UTF-8' ) ) . '…' : $clean;
+			return teoriageek_truncate_clean_words( $clean, $max_chars );
 		}
 	}
 
 	$td = teoriageek_get_legacy_td_settings( $post_id );
 	if ( ! empty( $td['td_subtitle'] ) && is_string( $td['td_subtitle'] ) ) {
 		$sub = teoriageek_strip_emojis( html_entity_decode( teoriageek_fix_mojibake( wp_strip_all_tags( $td['td_subtitle'] ) ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		$sub = trim( (string) preg_replace( '/\s+/u', ' ', $sub ) );
 		if ( mb_strlen( $sub, 'UTF-8' ) >= 12 ) {
-			return ( mb_strlen( $sub, 'UTF-8' ) > $max_chars ) ? rtrim( mb_substr( $sub, 0, $max_chars - 1, 'UTF-8' ) ) . '…' : $sub;
+			return teoriageek_truncate_clean_words( $sub, $max_chars );
 		}
 	}
 
-	$bullets = teoriageek_get_post_bullets( $post_id );
-	if ( ! empty( $bullets ) ) {
-		$joined = implode( ' ', array_slice( $bullets, 0, 2 ) );
-		return ( mb_strlen( $joined, 'UTF-8' ) > $max_chars ) ? rtrim( mb_substr( $joined, 0, $max_chars - 1, 'UTF-8' ) ) . '…' : $joined;
+	$paragraphs = teoriageek_extract_clean_paragraphs( $post_id );
+	if ( ! empty( $paragraphs ) ) {
+		return teoriageek_truncate_clean_words( $paragraphs[0], $max_chars );
 	}
 
 	return '';
@@ -812,7 +884,16 @@ function teoriageek_strip_emojis( $text ) {
  * @param bool $only_meta Quando true, retorna apenas pontos explicitamente preenchidos pelo redator.
  * @return string[]
  */
-function teoriageek_get_post_bullets( $post_id, $only_meta = false ) {
+/**
+ * Extrai até 3 pontos-chave distintos da matéria (meta manual _tg_bullet_1..3 ou sentenças coerentes do corpo).
+ * Evita repetir literalmente o subtítulo/resumo já exibido na Lâmina 1 do Reels quando `$exclude_text` é informado.
+ *
+ * @param int    $post_id      ID do post.
+ * @param bool   $only_meta    Se true, retorna apenas bullets salvos manualmente no meta box.
+ * @param string $exclude_text Resumo/lead já exibido no card para evitar duplicação literal.
+ * @return string[]
+ */
+function teoriageek_get_post_bullets( $post_id, $only_meta = false, $exclude_text = '' ) {
 	$post_id = (int) $post_id;
 	$bullets = array();
 
@@ -826,71 +907,56 @@ function teoriageek_get_post_bullets( $post_id, $only_meta = false ) {
 		return $bullets;
 	}
 
-	$candidates  = array();
-	$raw_excerpt = trim( (string) get_post_field( 'post_excerpt', $post_id ) );
-	if ( '' !== $raw_excerpt ) {
-		$candidates[] = wp_strip_all_tags( strip_shortcodes( $raw_excerpt ) );
-	}
-
-	$content       = teoriageek_fix_mojibake( (string) get_post_field( 'post_content', $post_id ) );
-	$content_clean = teoriageek_strip_ficha_tecnica( $content );
-	$content_clean = preg_replace( '#\[/?[a-zA-Z0-9_-]+[^\]]*\]#', '', (string) $content_clean );
-
-	if ( preg_match_all( '#<p[^>]*>([\s\S]*?)</p>#i', (string) $content_clean, $matches ) ) {
-		foreach ( $matches[1] as $p ) {
-			$txt = html_entity_decode( wp_strip_all_tags( $p ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-			$txt = teoriageek_strip_emojis( $txt );
-			if ( mb_strlen( $txt, 'UTF-8' ) >= 35 && ! preg_match( '/^(quer saber mais|conheça nosso canal|ficha técnica|leia também|título:|desenvolvido por:|publicado por:)/iu', $txt ) ) {
-				$candidates[] = $txt;
-			}
-			if ( count( $candidates ) >= 6 ) {
-				break;
-			}
-		}
-	}
-
-	if ( empty( $candidates ) ) {
-		$plain = html_entity_decode( wp_strip_all_tags( (string) $content_clean ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-		$plain = teoriageek_strip_emojis( $plain );
-		if ( mb_strlen( $plain, 'UTF-8' ) > 20 ) {
-			$candidates[] = $plain;
-		}
-	}
+	$paragraphs = teoriageek_extract_clean_paragraphs( $post_id );
+	$norm_excl  = mb_strtolower( trim( rtrim( (string) preg_replace( '/\s+/u', ' ', (string) $exclude_text ), '….' ) ), 'UTF-8' );
+	$excl_head  = mb_strlen( $norm_excl, 'UTF-8' ) >= 28 ? mb_substr( $norm_excl, 0, 48, 'UTF-8' ) : '';
 
 	$sentences = array();
-	foreach ( $candidates as $block ) {
+	$fallback  = array();
+	foreach ( $paragraphs as $block ) {
 		$parts = preg_split( '/(?<=[.!?])\s+/u', trim( $block ) );
 		foreach ( (array) $parts as $sent ) {
-			$sent = trim( (string) $sent );
-			if ( mb_strlen( $sent, 'UTF-8' ) >= 28 && ! preg_match( '#^https?://#i', $sent ) && ! preg_match( '/^(ficha técnica|título:|desenvolvido por:)/iu', $sent ) ) {
-				if ( mb_strlen( $sent, 'UTF-8' ) > 145 ) {
-					$sent = rtrim( mb_substr( $sent, 0, 142, 'UTF-8' ) ) . '…';
-				}
-				if ( ! in_array( $sent, $sentences, true ) ) {
-					$sentences[] = $sent;
-				}
+			$sent = trim( (string) preg_replace( '/\s+/u', ' ', (string) $sent ) );
+			if ( mb_strlen( $sent, 'UTF-8' ) < 32 || preg_match( '#^https?://#i', $sent ) ) {
+				continue;
 			}
+			$formatted = teoriageek_truncate_clean_words( $sent, 165 );
+			$norm_sent = mb_strtolower( rtrim( $formatted, '….' ), 'UTF-8' );
+
+			if ( in_array( $formatted, $sentences, true ) || in_array( $formatted, $fallback, true ) ) {
+				continue;
+			}
+
+			// Se a sentença já é o início exato do subtítulo do card, guarda apenas como fallback secundário.
+			$is_dup_lead = ( '' !== $excl_head && ( 0 === mb_strpos( $norm_sent, $excl_head, 0, 'UTF-8' ) || 0 === mb_strpos( $norm_excl, mb_substr( $norm_sent, 0, 48, 'UTF-8' ), 0, 'UTF-8' ) ) );
+			if ( $is_dup_lead ) {
+				$fallback[] = $formatted;
+				continue;
+			}
+
+			$sentences[] = $formatted;
 			if ( count( $sentences ) >= 3 ) {
 				break 2;
 			}
 		}
 	}
 
-	if ( empty( $sentences ) ) {
-		$sentences[] = teoriageek_strip_emojis( teoriageek_clean_title( get_the_title( $post_id ) ) );
+	// Se o artigo for muito curto (< 2 pontos distintos), completa com o fallback sem repetir o título.
+	if ( empty( $sentences ) && ! empty( $fallback ) ) {
+		$sentences = array_slice( $fallback, 0, 3 );
 	}
 
 	return array_slice( $sentences, 0, 3 );
 }
 
 /**
- * Gera resumo curto para Reels (até 235 caracteres).
+ * Gera resumo curto de abertura para a Lâmina 1 do Reels (até 160 caracteres, 2-3 linhas limpas).
  *
  * @param int $post_id ID do post.
  * @return string
  */
 function teoriageek_get_reels_summary( $post_id ) {
-	return teoriageek_get_post_lead( $post_id, 235 );
+	return teoriageek_get_post_lead( $post_id, 160 );
 }
 
 /**
@@ -1044,16 +1110,20 @@ function teoriageek_icon( $name, $class = 'h-4 w-4' ) {
 
 /**
  * Busca otimizada de IDs de posts para um bloco editorial com deduplicação via `$shown_ids`
- * e fallback automático quando a categoria possui poucos posts restantes.
+ * e exclusão rígida (`$hard_exclude_ids`) que jamais é relaxada no fallback (impede repetição entre colunas).
  *
- * @param array<string, mixed> $base_args Argumentos base de WP_Query.
- * @param int                  $needed    Quantidade desejada.
- * @param int[]                $shown_ids IDs já exibidos (passado por referência e atualizado).
+ * @param array<string, mixed> $base_args        Argumentos base de WP_Query.
+ * @param int                  $needed           Quantidade desejada.
+ * @param int[]                $shown_ids        IDs já exibidos na Home (passado por referência e atualizado).
+ * @param int[]                $hard_exclude_ids IDs proibidos mesmo em fallback (ex.: matérias de outras colunas de Editoria).
  * @return int[]
  */
-function teoriageek_query_dedup_ids( $base_args, $needed, &$shown_ids ) {
-	$needed = max( 1, (int) $needed );
-	$args   = array_merge(
+function teoriageek_query_dedup_ids( $base_args, $needed, &$shown_ids, $hard_exclude_ids = array() ) {
+	$needed       = max( 1, (int) $needed );
+	$hard_exclude = array_values( array_unique( array_filter( array_map( 'intval', (array) $hard_exclude_ids ) ) ) );
+	$soft_exclude = array_values( array_unique( array_filter( array_map( 'intval', array_merge( (array) $shown_ids, $hard_exclude ) ) ) ) );
+
+	$args = array_merge(
 		array(
 			'post_type'              => 'post',
 			'post_status'            => 'publish',
@@ -1067,26 +1137,28 @@ function teoriageek_query_dedup_ids( $base_args, $needed, &$shown_ids ) {
 		$base_args
 	);
 
-	if ( ! empty( $shown_ids ) ) {
-		$args['post__not_in'] = array_values( array_unique( array_map( 'intval', $shown_ids ) ) );
+	if ( ! empty( $soft_exclude ) ) {
+		$args['post__not_in'] = $soft_exclude;
 	}
 
 	$q   = new WP_Query( $args );
 	$ids = array_values( array_map( 'intval', (array) $q->posts ) );
 
-	// Fallback seguro caso a categoria tenha poucos posts fora de $shown_ids.
-	if ( count( $ids ) < $needed && ! empty( $args['post__not_in'] ) ) {
+	// Fallback seguro caso a categoria tenha poucos posts fora das dobras superiores,
+	// mas preservando ESTRITAMENTE $hard_exclude + $ids já selecionados para nunca repetir entre colunas.
+	if ( count( $ids ) < $needed && ! empty( $soft_exclude ) ) {
 		$fb_args                   = $args;
 		$fb_args['posts_per_page'] = $needed - count( $ids );
-		if ( ! empty( $ids ) ) {
-			$fb_args['post__not_in'] = $ids;
+		$strict_not_in             = array_values( array_unique( array_merge( $hard_exclude, $ids ) ) );
+		if ( ! empty( $strict_not_in ) ) {
+			$fb_args['post__not_in'] = $strict_not_in;
 		} else {
 			unset( $fb_args['post__not_in'] );
 		}
 		$fb_q = new WP_Query( $fb_args );
 		foreach ( (array) $fb_q->posts as $fid ) {
 			$fid = (int) $fid;
-			if ( $fid > 0 && ! in_array( $fid, $ids, true ) ) {
+			if ( $fid > 0 && ! in_array( $fid, $ids, true ) && ! in_array( $fid, $hard_exclude, true ) ) {
 				$ids[] = $fid;
 			}
 		}
@@ -1113,13 +1185,13 @@ function teoriageek_get_home_blocks() {
 		return $runtime_cache;
 	}
 
-	$transient_key = 'teoriageek_home_blocks_v2';
+	$transient_key = 'teoriageek_home_blocks_v4';
 	$id_map        = get_transient( $transient_key );
 
-	if ( ! is_array( $id_map ) || empty( $id_map['hero'] ) ) {
+	if ( ! is_array( $id_map ) || empty( $id_map['hero_slides'] ) ) {
 		$shown_ids = array();
 
-		// 1. Manchete Principal (_tg_main_headline -> DESTAQUE -> último post).
+		// 1. Carrossel Hero (4 slides): prioriza _tg_main_headline como Slide 1 e completa com os posts mais recentes.
 		$hero_id  = 0;
 		$pinned_q = new WP_Query(
 			array(
@@ -1148,7 +1220,7 @@ function teoriageek_get_home_blocks() {
 					'post_type'              => 'post',
 					'post_status'            => 'publish',
 					'cat'                    => (int) $destaque_term->term_id,
-					'posts_per_page'         => 8,
+					'posts_per_page'         => 10,
 					'ignore_sticky_posts'    => true,
 					'no_found_rows'          => true,
 					'fields'                 => 'ids',
@@ -1163,7 +1235,7 @@ function teoriageek_get_home_blocks() {
 			array(
 				'post_type'              => 'post',
 				'post_status'            => 'publish',
-				'posts_per_page'         => 24,
+				'posts_per_page'         => 30,
 				'ignore_sticky_posts'    => true,
 				'no_found_rows'          => true,
 				'fields'                 => 'ids',
@@ -1173,15 +1245,32 @@ function teoriageek_get_home_blocks() {
 		);
 		$recent_pool = array_map( 'intval', (array) $recent_q->posts );
 
-		if ( 0 === $hero_id && ! empty( $destaque_pool ) ) {
-			$hero_id = $destaque_pool[0];
-		}
-		if ( 0 === $hero_id && ! empty( $recent_pool ) ) {
-			$hero_id = $recent_pool[0];
-		}
+		$hero_slide_ids = array();
 		if ( $hero_id > 0 ) {
-			$shown_ids[] = $hero_id;
+			$hero_slide_ids[] = $hero_id;
+			$shown_ids[]      = $hero_id;
 		}
+		foreach ( $recent_pool as $rid ) {
+			if ( $rid > 0 && ! in_array( $rid, $shown_ids, true ) ) {
+				$hero_slide_ids[] = $rid;
+				$shown_ids[]      = $rid;
+			}
+			if ( count( $hero_slide_ids ) >= 4 ) {
+				break;
+			}
+		}
+		if ( count( $hero_slide_ids ) < 4 ) {
+			foreach ( $destaque_pool as $did ) {
+				if ( $did > 0 && ! in_array( $did, $shown_ids, true ) ) {
+					$hero_slide_ids[] = $did;
+					$shown_ids[]      = $did;
+				}
+				if ( count( $hero_slide_ids ) >= 4 ) {
+					break;
+				}
+			}
+		}
+		$hero_id = ! empty( $hero_slide_ids ) ? $hero_slide_ids[0] : 0;
 
 		// 2. 3 Destaques Secundários.
 		$secondary_ids = array();
@@ -1292,18 +1381,27 @@ function teoriageek_get_home_blocks() {
 			}
 		}
 
-		// 9. Colunas de Editorias (5 blocos x 4 posts, sem duplicar matérias já exibidas na Home).
-		$col_blocks = array();
+		// 9. Colunas de Editorias (5 blocos x 4 posts, com exclusão rígida entre colunas para impedir destaques repetidos).
+		$col_blocks    = array();
+		$col_used_ids  = $hero_slide_ids;
+		$col_used_cats = array();
 		foreach ( array( 'col_1', 'col_2', 'col_3', 'col_4', 'col_5' ) as $col_slot ) {
 			$col_slug = teoriageek_get_mapped_category_slug( $col_slot );
 			$col_term = ( '' !== $col_slug ) ? get_category_by_slug( $col_slug ) : null;
 			if ( ! $col_term || is_wp_error( $col_term ) ) {
 				continue;
 			}
-			$col_ids = teoriageek_query_dedup_ids( array( 'cat' => (int) $col_term->term_id ), 4, $shown_ids );
+			$cat_id = (int) $col_term->term_id;
+			if ( in_array( $cat_id, $col_used_cats, true ) ) {
+				continue;
+			}
+			$col_used_cats[] = $cat_id;
+
+			$col_ids = teoriageek_query_dedup_ids( array( 'cat' => $cat_id ), 4, $shown_ids, $col_used_ids );
 			if ( ! empty( $col_ids ) ) {
+				$col_used_ids            = array_values( array_unique( array_merge( $col_used_ids, $col_ids ) ) );
 				$col_blocks[ $col_slot ] = array(
-					'term_id' => (int) $col_term->term_id,
+					'term_id' => $cat_id,
 					'ids'     => $col_ids,
 				);
 			}
@@ -1311,6 +1409,7 @@ function teoriageek_get_home_blocks() {
 
 		$id_map = array(
 			'hero'        => $hero_id,
+			'hero_slides' => $hero_slide_ids,
 			'secondary'   => $secondary_ids,
 			'reel'        => $reel_id,
 			'urgent'      => $urgent_ids,
@@ -1333,7 +1432,7 @@ function teoriageek_get_home_blocks() {
 	if ( ! empty( $id_map['reel'] ) ) {
 		$all_ids[] = (int) $id_map['reel'];
 	}
-	foreach ( array( 'secondary', 'urgent', 'ticker', 'giro', 'reviews', 'especiais', 'reels_strip' ) as $list_key ) {
+	foreach ( array( 'hero_slides', 'secondary', 'urgent', 'ticker', 'giro', 'reviews', 'especiais', 'reels_strip' ) as $list_key ) {
 		foreach ( (array) ( $id_map[ $list_key ] ?? array() ) as $pid ) {
 			$all_ids[] = (int) $pid;
 		}
@@ -1395,8 +1494,15 @@ function teoriageek_get_home_blocks() {
 		}
 	}
 
+	$hero_slides   = $resolve_list( $id_map['hero_slides'] ?? array() );
+	$hero_fallback = isset( $post_map[ (int) ( $id_map['hero'] ?? 0 ) ] ) ? $post_map[ (int) $id_map['hero'] ] : ( $hero_slides[0] ?? null );
+	if ( empty( $hero_slides ) && $hero_fallback instanceof WP_Post ) {
+		$hero_slides = array( $hero_fallback );
+	}
+
 	$runtime_cache = array(
-		'hero'        => isset( $post_map[ (int) ( $id_map['hero'] ?? 0 ) ] ) ? $post_map[ (int) $id_map['hero'] ] : null,
+		'hero'        => $hero_fallback,
+		'hero_slides' => $hero_slides,
 		'secondary'   => $resolve_list( $id_map['secondary'] ?? array() ),
 		'reel'        => isset( $post_map[ (int) ( $id_map['reel'] ?? 0 ) ] ) ? $post_map[ (int) $id_map['reel'] ] : null,
 		'urgent'      => $resolve_list( $id_map['urgent'] ?? array() ),
@@ -1412,46 +1518,69 @@ function teoriageek_get_home_blocks() {
 }
 
 /**
- * Retorna categorias do `/reels/` com cache em transient (15 min) evitando múltiplas queries de termo.
+ * Retorna todas as editorias ativas do `/reels/` com cache em transient (15 min),
+ * garantindo consistência taxonômica entre os selos dos cards e o filtro lateral.
  *
  * @return array<int, array{slug:string,name:string,count:int}>
  */
 function teoriageek_get_reels_categories() {
-	$cached = get_transient( 'teoriageek_reels_cats_v1' );
+	$cached = get_transient( 'teoriageek_reels_cats_v2' );
 	if ( is_array( $cached ) ) {
 		return $cached;
 	}
 
-	$slugs = array( 'noticias', 'games', 'filmes', 'series', 'animes-mangas', 'criticas', 'reviews' );
+	$priority_slugs = array(
+		'noticias',
+		'games',
+		'filmes',
+		'series',
+		'animes-mangas',
+		'livros-hqs',
+		'criticas',
+		'reviews',
+		'especial-teoria-geek',
+		'eventos-shows-festivais',
+		'musicas',
+	);
+	$excluded_slugs = array( 'uncategorized', 'sem-categoria', 'destaque' );
+
 	$terms = get_terms(
 		array(
 			'taxonomy'   => 'category',
-			'slug'       => $slugs,
 			'hide_empty' => true,
+			'parent'     => 0,
+			'orderby'    => 'count',
+			'order'      => 'DESC',
+			'number'     => 24,
 		)
 	);
 
 	$indexed = array();
 	if ( is_array( $terms ) ) {
 		foreach ( $terms as $t ) {
-			if ( $t instanceof WP_Term ) {
-				$indexed[ $t->slug ] = array(
-					'slug'  => $t->slug,
-					'name'  => teoriageek_fix_mojibake( html_entity_decode( $t->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ),
-					'count' => (int) $t->count,
-				);
+			if ( ! $t instanceof WP_Term || in_array( $t->slug, $excluded_slugs, true ) ) {
+				continue;
 			}
+			$indexed[ $t->slug ] = array(
+				'slug'  => $t->slug,
+				'name'  => teoriageek_fix_mojibake( html_entity_decode( $t->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ),
+				'count' => (int) $t->count,
+			);
 		}
 	}
 
 	$ordered = array();
-	foreach ( $slugs as $slug ) {
+	foreach ( $priority_slugs as $slug ) {
 		if ( isset( $indexed[ $slug ] ) ) {
 			$ordered[] = $indexed[ $slug ];
+			unset( $indexed[ $slug ] );
 		}
 	}
+	foreach ( $indexed as $extra ) {
+		$ordered[] = $extra;
+	}
 
-	set_transient( 'teoriageek_reels_cats_v1', $ordered, 15 * MINUTE_IN_SECONDS );
+	set_transient( 'teoriageek_reels_cats_v2', $ordered, 15 * MINUTE_IN_SECONDS );
 	return $ordered;
 }
 
@@ -1466,7 +1595,10 @@ function teoriageek_flush_editorial_transients( $post_id = 0 ) {
 	}
 	delete_transient( 'teoriageek_home_blocks_v1' );
 	delete_transient( 'teoriageek_home_blocks_v2' );
+	delete_transient( 'teoriageek_home_blocks_v3' );
+	delete_transient( 'teoriageek_home_blocks_v4' );
 	delete_transient( 'teoriageek_reels_cats_v1' );
+	delete_transient( 'teoriageek_reels_cats_v2' );
 }
 add_action( 'save_post_post', 'teoriageek_flush_editorial_transients' );
 add_action( 'deleted_post', 'teoriageek_flush_editorial_transients' );
@@ -1474,8 +1606,7 @@ add_action( 'trashed_post', 'teoriageek_flush_editorial_transients' );
 add_action( 'customize_save_after', 'teoriageek_flush_editorial_transients' );
 
 /**
- * Gera arte vetorial editorial elegante em Azul e Amarelo para capas ausentes ou quebradas,
- * evitando retângulos pretos vazios.
+ * Gera arte vetorial editorial reta (grade fina, zero halftone) em Azul e Amarelo para capas ausentes ou quebradas.
  *
  * @param string $category_slug Slug da categoria.
  * @param bool   $full_bleed    Modo vertical (Reels).
@@ -1495,20 +1626,33 @@ function teoriageek_render_fallback_art( $category_slug, $full_bleed = false ) {
 	$pal = isset( $palettes[ $art ] ) ? $palettes[ $art ] : $palettes['tech'];
 
 	$bg = $full_bleed
-		? sprintf( 'radial-gradient(circle at 50%% 32%%, %s 0%%, %s 52%%, %s 100%%)', $pal[2], $pal[1], $pal[0] )
+		? sprintf( 'linear-gradient(160deg, %s 0%%, %s 55%%, %s 100%%)', $pal[0], $pal[1], $pal[2] )
 		: sprintf( 'linear-gradient(135deg, %s 0%%, %s 58%%, %s 100%%)', $pal[0], $pal[1], $pal[2] );
 
 	$svg = '<svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" class="block h-full w-full" aria-hidden="true" focusable="false">'
-		. '<defs><pattern id="tg-grid-' . esc_attr( $art ) . '" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="rgba(255,255,255,0.16)"/></pattern></defs>'
+		. '<defs><pattern id="tg-grid-' . esc_attr( $art ) . '" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/></pattern></defs>'
 		. '<rect width="640" height="360" fill="url(#tg-grid-' . esc_attr( $art ) . ')"/>'
-		. '<circle cx="520" cy="70" r="140" fill="' . esc_attr( $pal[3] ) . '" opacity="0.12"/>'
-		. '<circle cx="110" cy="300" r="120" fill="#FFFFFF" opacity="0.08"/>'
-		. '<rect x="272" y="114" width="96" height="96" rx="20" fill="rgba(11,15,25,0.72)" stroke="' . esc_attr( $pal[3] ) . '" stroke-width="4"/>'
-		. '<polygon points="308,142 344,162 308,182" fill="' . esc_attr( $pal[3] ) . '"/>'
-		. '<text x="320" y="250" text-anchor="middle" font-family="Barlow Condensed, Space Grotesk, sans-serif" font-weight="800" font-size="24" letter-spacing="3" fill="#FFFFFF" opacity="0.92">' . esc_html( $pal[4] ) . '</text>'
+		. '<rect x="0" y="0" width="640" height="4" fill="' . esc_attr( $pal[3] ) . '" opacity="0.85"/>'
+		. '<rect x="276" y="116" width="88" height="88" rx="2" fill="rgba(11,15,25,0.78)" stroke="' . esc_attr( $pal[3] ) . '" stroke-width="3"/>'
+		. '<polygon points="308,140 344,160 308,180" fill="' . esc_attr( $pal[3] ) . '"/>'
+		. '<text x="320" y="246" text-anchor="middle" font-family="Barlow Condensed, Plus Jakarta Sans, sans-serif" font-weight="800" font-size="24" letter-spacing="3" fill="#FFFFFF" opacity="0.94">' . esc_html( $pal[4] ) . '</text>'
 		. '</svg>';
 
 	return '<div class="relative flex h-full w-full items-center justify-center overflow-hidden" style="background:' . esc_attr( $bg ) . ';" aria-hidden="true">'
 		. $svg
 		. '</div>';
+}
+
+/**
+ * Detecta rapidamente se a matéria contém vídeo embutido (YouTube, Vimeo ou <video>).
+ *
+ * @param int $post_id ID do post.
+ * @return bool
+ */
+function teoriageek_post_has_video( $post_id ) {
+	$raw = (string) get_post_field( 'post_content', (int) $post_id );
+	if ( '' === $raw ) {
+		return false;
+	}
+	return (bool) preg_match( '#(?:youtube\.com|youtu\.be|youtube-nocookie\.com|player\.vimeo\.com|<video\b)#i', $raw );
 }

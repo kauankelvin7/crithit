@@ -162,3 +162,59 @@ function teoriageek_build_single_schema( $post_id ) {
 
 	return $schema;
 }
+
+/**
+ * Emite schema BreadcrumbList em JSON-LD quando não há plugin dedicado de SEO ativo.
+ */
+function teoriageek_output_breadcrumb_schema() {
+	if ( teoriageek_has_seo_plugin() || is_front_page() || is_home() ) {
+		return;
+	}
+	$items = array(
+		array(
+			'@type'    => 'ListItem',
+			'position' => 1,
+			'name'     => __( 'Capa', 'teoriageek' ),
+			'item'     => home_url( '/' ),
+		),
+	);
+	$pos   = 2;
+	if ( is_singular( 'post' ) ) {
+		$cat = teoriageek_get_primary_category( get_the_ID() );
+		if ( $cat ) {
+			$items[] = array(
+				'@type'    => 'ListItem',
+				'position' => $pos++,
+				'name'     => html_entity_decode( $cat->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+				'item'     => get_category_link( $cat->term_id ),
+			);
+		}
+		$items[] = array(
+			'@type'    => 'ListItem',
+			'position' => $pos,
+			'name'     => teoriageek_clean_title( get_the_title() ),
+			'item'     => get_permalink(),
+		);
+	} elseif ( is_category() || is_tag() || is_tax( 'universo' ) ) {
+		$term = get_queried_object();
+		if ( $term instanceof WP_Term ) {
+			$items[] = array(
+				'@type'    => 'ListItem',
+				'position' => $pos,
+				'name'     => html_entity_decode( $term->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
+				'item'     => get_term_link( $term ),
+			);
+		}
+	}
+	if ( count( $items ) < 2 ) {
+		return;
+	}
+	$schema = array(
+		'@context'        => 'https://schema.org',
+		'@type'           => 'BreadcrumbList',
+		'itemListElement' => $items,
+	);
+	echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "</script>
+";
+}
+add_action( 'wp_head', 'teoriageek_output_breadcrumb_schema', 6 );

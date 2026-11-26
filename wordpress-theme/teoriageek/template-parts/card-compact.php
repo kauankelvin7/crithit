@@ -23,9 +23,9 @@ $tg_title     = teoriageek_clean_title( get_the_title( $tg_pid ) );
 $tg_author    = get_the_author_meta( 'display_name', (int) $tg_cpost->post_author );
 $tg_read_mins = teoriageek_get_reading_time( $tg_pid );
 ?>
-<article class="editorial-card editorial-card-soft group flex flex-col justify-between rounded-lg border border-border-subtle p-3.5 shadow-sm <?php echo esc_attr( $tg_surface ); ?>">
+<article class="tgx-compact-card editorial-card editorial-card-soft group flex flex-col justify-between border-b border-border-subtle py-3.5">
 	<div class="flex items-start gap-3">
-		<a href="<?php echo esc_url( $tg_permalink ); ?>" tabindex="-1" aria-hidden="true" class="h-16 w-16 shrink-0 overflow-hidden rounded border border-border-subtle">
+		<a href="<?php echo esc_url( $tg_permalink ); ?>" tabindex="-1" aria-hidden="true" class="h-20 w-24 shrink-0 overflow-hidden rounded-sm border border-border-subtle">
 			<?php
 			get_template_part(
 				'template-parts/cover-media',
@@ -56,7 +56,7 @@ $tg_read_mins = teoriageek_get_reading_time( $tg_pid );
 		</div>
 	</div>
 	<div class="mt-3 flex items-center justify-between border-t border-border-subtle pt-2 font-mono text-[11px] text-ink-muted">
-		<span class="truncate"><?php echo esc_html( $tg_author ); ?></span>
+		<?php teoriageek_render_author_chip( (int) $tg_cpost->post_author, 18, false ); ?>
 		<span><?php echo esc_html( sprintf( '%d min', $tg_read_mins ) ); ?></span>
 	</div>
 </article>

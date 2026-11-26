@@ -102,13 +102,18 @@ function teoriageek_serialize_reels_batch( $posts ) {
  * @return array<string, mixed>
  */
 function teoriageek_serialize_post_card( $post ) {
-	$pid   = (int) $post->ID;
-	$cat   = teoriageek_get_primary_category( $pid );
-	$style = teoriageek_get_category_style( $cat ? $cat->slug : 'noticias' );
-	$fmt   = teoriageek_get_post_format_badge( $pid );
-	$thumb = get_the_post_thumbnail_url( $pid, 'tg-card' );
-	$src   = teoriageek_get_external_source( $pid );
-	$score = teoriageek_get_post_score( $pid );
+	$pid     = (int) $post->ID;
+	$cat     = teoriageek_get_primary_category( $pid );
+	$style   = teoriageek_get_category_style( $cat ? $cat->slug : 'noticias' );
+	$fmt     = teoriageek_get_post_format_badge( $pid );
+	$thumb   = get_the_post_thumbnail_url( $pid, 'tg-hero' );
+	if ( ! $thumb ) {
+		$thumb = get_the_post_thumbnail_url( $pid, 'large' ) ?: get_the_post_thumbnail_url( $pid, 'tg-card' );
+	}
+	$src     = teoriageek_get_external_source( $pid );
+	$score   = teoriageek_get_post_score( $pid );
+	$summary = teoriageek_get_reels_summary( $pid );
+	$bullets = teoriageek_get_post_bullets( $pid, false, $summary );
 
 	return array(
 		'id'            => $pid,
@@ -116,8 +121,8 @@ function teoriageek_serialize_post_card( $post ) {
 		'title'         => teoriageek_clean_title( get_the_title( $pid ) ),
 		'url'           => get_permalink( $pid ),
 		'reelsUrl'      => teoriageek_get_reels_url( $post->post_name ),
-		'summary'       => teoriageek_get_reels_summary( $pid ),
-		'bullets'       => teoriageek_get_post_bullets( $pid ),
+		'summary'       => $summary,
+		'bullets'       => $bullets,
 		'coverUrl'      => $thumb ? $thumb : '',
 		'categoryName'  => $cat ? teoriageek_fix_mojibake( html_entity_decode( $cat->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ) : 'GEEK',
 		'categorySlug'  => $cat ? $cat->slug : 'noticias',
@@ -226,7 +231,7 @@ function teoriageek_register_rest_routes() {
 						$posts = $sq->posts;
 					}
 				} elseif ( 'trending' === $tab ) {
-					$posts = teoriageek_get_most_read_posts( 12 );
+					$posts = ( 1 === $page ) ? teoriageek_get_most_read_posts( 16 ) : array();
 				} else {
 					$args = array(
 						'post_type'           => 'post',

@@ -1,0 +1,556 @@
+/**
+ * Teoria Geek — Responsividade, Contenção Mobile & Ergonomia de Widgets (v2.2.0)
+ * - Zero overflow horizontal a partir de 320px até 1536px+
+ * - Inputs 16px no mobile (anti-zoom iOS Safari) e alvos de toque >= 40px
+ * - Empilhamento vertical estrito de slots de anúncios/widgets e proteção de altura em tg-footer-widgets
+ */
+
+/* ==========================================================================
+   1. Contenção Global & Prevenção de Overflow Horizontal
+   ========================================================================== */
+html {
+	overflow-x: clip;
+	max-width: 100%;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	overflow-x: clip;
+	max-width: 100%;
+	overflow-wrap: break-word;
+}
+
+main section > *,
+main .grid > *,
+footer .grid > *,
+article .grid > * {
+	min-width: 0;
+}
+
+.backdrop-blur-xs {
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
+}
+
+.border-brand\/40 {
+	border-color: var(--accent-brand);
+	border-color: color-mix(in srgb, var(--accent-brand) 40%, transparent);
+}
+
+.border-current\/30 {
+	border-color: currentColor;
+	border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+	max-width: 100%;
+}
+
+/* ==========================================================================
+   2. Anti-Zoom iOS Safari (16px) & Respiro Mobile (320px–639px)
+   ========================================================================== */
+@media (max-width: 639px) {
+	input[type="search"],
+	input[type="text"],
+	input[type="email"],
+	input[type="url"],
+	textarea,
+	select {
+		font-size: 16px;
+	}
+
+	main#conteudo-principal:not(.tg-reels-shell) {
+		padding: 1.25rem 1rem 2rem;
+	}
+
+	main#conteudo-principal h1,
+	main#conteudo-principal h2 {
+		overflow-wrap: break-word;
+	}
+}
+
+@media (max-width: 359px) {
+	main#conteudo-principal:not(.tg-reels-shell) {
+		padding-left: 0.75rem;
+		padding-right: 0.75rem;
+	}
+}
+
+/* ==========================================================================
+   3. Cabeçalho Global, Faixa Mobile & Gaveta (320px–1023px)
+   ========================================================================== */
+@media (max-width: 1023px) {
+	body:not(.tg-reels-page) {
+		--tg-header-h: 104px;
+	}
+}
+
+@media (max-width: 639px) {
+	header[data-chrome="dark"] > div:first-child {
+		height: 3.75rem;
+		padding-left: 0.75rem;
+		padding-right: 0.75rem;
+		gap: 0.5rem;
+	}
+
+	body.tg-reels-page {
+		--tg-header-h: 63px;
+	}
+
+	.tg-brand-logo {
+		height: 2.35rem;
+		max-width: 118px;
+	}
+}
+
+@media (max-width: 374px) {
+	.tg-brand-logo {
+		height: 2rem;
+		max-width: 98px;
+	}
+
+	header[data-chrome="dark"] > div:first-child {
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
+		gap: 0.35rem;
+	}
+
+	.tg-header-reels-btn {
+		padding-left: 0.55rem;
+		padding-right: 0.55rem;
+		font-size: 0.6875rem;
+	}
+}
+
+#tg-mobile-drawer [role="dialog"] {
+	height: 100dvh;
+	max-width: min(24rem, 90vw);
+	padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tg-mobile-menu li > a,
+.tg-mobile-menu li > div > a {
+	min-height: 44px;
+	display: flex;
+	align-items: center;
+	padding: 0.625rem 0.25rem;
+	line-height: 1.25;
+}
+
+.tg-mobile-menu .sub-menu a {
+	min-height: 40px;
+	display: flex;
+	align-items: center;
+	padding: 0.45rem 0.25rem;
+}
+
+/* ==========================================================================
+   4. Plantão Geek (Ticker), Reels Strip & Hero no Mobile
+   ========================================================================== */
+.ticker-marquee {
+	overflow: hidden;
+}
+
+@media (max-width: 639px) {
+	.ticker-marquee .tg-ticker-label {
+		padding-left: 0.65rem;
+		padding-right: 0.65rem;
+		gap: 0.35rem;
+	}
+
+	.ticker-marquee .tg-ticker-label span {
+		font-size: 0.8125rem;
+		letter-spacing: 0.03em;
+	}
+
+	.ticker-viewport {
+		padding-left: 0.65rem;
+		padding-right: 0.65rem;
+		-webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent);
+		mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent);
+	}
+
+	.tg-hero-title {
+		font-size: clamp(1.5rem, 6.2vw, 1.9rem);
+		line-height: 1.1;
+	}
+
+	.tg-reel-facade {
+		max-height: 370px;
+	}
+}
+
+@media (max-width: 479px) {
+	.tg-story-card {
+		flex: 0 0 74%;
+	}
+
+	.tg-story-footer {
+		padding: 0.75rem;
+	}
+
+	.tg-story-title {
+		font-size: 1rem;
+	}
+}
+
+@media (min-width: 480px) and (max-width: 639px) {
+	.tg-story-card {
+		flex: 0 0 46%;
+	}
+}
+
+.tg-story-grid {
+	-webkit-overflow-scrolling: touch;
+	scroll-padding-inline: 0.25rem;
+}
+
+/* ==========================================================================
+   5. Contenção de Conteúdo Legado em .entry-content & Tabelas
+   ========================================================================== */
+.entry-content {
+	width: 100%;
+	max-width: 68ch;
+	overflow-wrap: break-word;
+	word-break: break-word;
+}
+
+/* Contenção necessária contra larguras fixas inline (style="width:900px") coladas em posts antigos */
+.entry-content > *,
+.entry-content div,
+.entry-content section,
+.entry-content article,
+.entry-content figure,
+.entry-content blockquote {
+	max-width: 100% !important;
+	box-sizing: border-box;
+}
+
+.entry-content pre {
+	max-width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	padding: 0.875rem 1rem;
+	border-radius: var(--ds-r, 2px);
+	border: 1px solid var(--ds-rule, #e2e8f0);
+	background-color: var(--ds-surface-alt, #f4f6f9);
+	font-family: var(--font-mono), ui-monospace, monospace;
+	font-size: 0.8125rem;
+	line-height: 1.5;
+}
+
+.entry-content code {
+	font-family: var(--font-mono), ui-monospace, monospace;
+	overflow-wrap: anywhere;
+}
+
+.entry-content table:not(.ficha-table) {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	border-collapse: collapse;
+}
+
+.entry-content .ficha table {
+	display: table;
+	width: 100%;
+	table-layout: fixed;
+}
+
+.entry-content .ficha td,
+.entry-content .ficha th {
+	overflow-wrap: break-word;
+	word-break: break-word;
+	vertical-align: top;
+}
+
+@media (max-width: 639px) {
+	body.single-post article.space-y-8 > :not([hidden]) ~ :not([hidden]) {
+		margin-top: 1.15rem;
+	}
+
+	body.single-post article > header h1 {
+		font-size: clamp(1.75rem, 7.2vw, 2.2rem);
+		line-height: 1.08;
+		letter-spacing: -0.01em;
+	}
+
+	.entry-content {
+		font-size: 1.03125rem;
+		line-height: 1.72;
+	}
+
+	.entry-content blockquote {
+		padding: 0.875rem 1rem;
+		margin: 1.25rem 0;
+	}
+
+	.entry-content .ficha {
+		padding: 1rem;
+		gap: 1rem;
+	}
+
+	.entry-content .ficha .capa img {
+		max-width: 148px;
+	}
+
+	.entry-content .gallery {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.5rem;
+	}
+
+	.tg-comment-list .comment-body {
+		padding: 0.875rem;
+	}
+
+	.tg-comment-list .children {
+		padding-left: 0.75rem;
+	}
+
+	.tg-comment-respond .submit {
+		width: 100%;
+		min-height: 44px;
+	}
+
+	#tg-search-modal {
+		padding: 0.75rem;
+		padding-top: max(1rem, env(safe-area-inset-top, 1rem));
+	}
+
+	#tg-instant-search-results {
+		max-height: 55dvh;
+	}
+
+	.tg-page-link a,
+	.tg-page-link span {
+		min-width: 2.5rem;
+		height: 2.5rem;
+		padding: 0 0.65rem;
+	}
+}
+
+/* ==========================================================================
+   6. Reels (page-reels.php) & Rodapé — Safe-Area iOS/Android
+   ========================================================================== */
+.tg-reels-mobile-bar {
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-x: contain;
+}
+
+@media (max-width: 639px) {
+	.tg-reels-mobile-bar {
+		padding-top: 0.45rem;
+		padding-bottom: 0.45rem;
+	}
+
+	.tg-reels-mobile-bar button {
+		min-height: 36px;
+	}
+
+	.tg-reel-bottom-bar {
+		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+	}
+
+	.tg-reel-headline {
+		font-size: clamp(1.25rem, 5.4vw, 1.6rem);
+		line-height: 1.12;
+	}
+
+	footer[data-chrome="dark"] {
+		padding-top: 2.25rem;
+	}
+
+	footer[data-chrome="dark"] > div > div:last-child {
+		padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+		text-align: center;
+	}
+}
+
+@media (max-width: 639px) and (max-height: 700px) {
+	.tg-reel-bottom-bar {
+		padding: 0.75rem;
+		padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+	}
+
+	.tg-reel-card [data-blade-panel="1"] li {
+		padding: 0.55rem 0.7rem;
+	}
+}
+
+@media (min-width: 640px) {
+	.sm\:h-\[310px\],
+	.sm\:h-\[340px\] {
+		aspect-ratio: auto;
+	}
+}
+
+/* ==========================================================================
+   7. Slots de Anúncios & Widgets (Empilhamento Vertical + Limite no Rodapé)
+   ========================================================================== */
+.tg-sidebar-widgets,
+.tg-widget-stack,
+.tg-ad-slot,
+.tg-ad-slot__inner {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.tg-sidebar-widgets,
+.tg-widget-stack {
+	text-align: left;
+}
+
+/* Oculta título interno caso um widget seja usado dentro de um slot real de anúncio */
+.tg-ad-slot--ad .tg-slot-widget-title {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.tg-widget-stack > .tgx-sidebar-card {
+	border: 1px solid var(--ds-rule, #e2e8f0);
+	border-radius: var(--ds-r, 2px);
+	background-color: var(--ds-surface, #ffffff);
+	padding: 1rem;
+}
+
+.tg-sidebar-widgets > section,
+.tg-ad-slot__inner > * {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.tg-sidebar-widgets .wp-block-search__inside-wrapper,
+.tg-ad-slot .wp-block-search__inside-wrapper {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 0.5rem;
+	width: 100%;
+	max-width: 100%;
+}
+
+.tg-sidebar-widgets .wp-block-search__input,
+.tg-ad-slot .wp-block-search__input {
+	min-width: 0;
+	flex: 1 1 auto;
+	border: 1px solid var(--ds-rule, #e2e8f0);
+	border-radius: var(--ds-r, 2px);
+	padding: 0.55rem 0.75rem;
+	background-color: var(--ds-surface-alt, #f4f6f9);
+	color: var(--tg-text);
+}
+
+.tg-sidebar-widgets .wp-block-search__button,
+.tg-ad-slot .wp-block-search__button {
+	flex-shrink: 0;
+	margin-left: 0;
+	min-height: 40px;
+	border: 1px solid #0b0f19;
+	border-radius: var(--ds-r, 2px);
+	background-color: var(--tg-accent);
+	color: #0b0f19;
+	font-family: var(--font-sans), system-ui, sans-serif;
+	font-size: 0.75rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	padding: 0.5rem 0.9rem;
+	cursor: pointer;
+}
+
+.tg-sidebar-widgets ul,
+.tg-widget-stack ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.55rem;
+	text-align: left;
+}
+
+.tg-sidebar-widgets li a,
+.tg-widget-stack li a {
+	display: block;
+	overflow-wrap: break-word;
+	word-break: break-word;
+	font-weight: 600;
+	line-height: 1.35;
+	color: var(--tg-text);
+}
+
+.tg-sidebar-widgets li a:hover,
+.tg-widget-stack li a:hover {
+	color: var(--accent-brand);
+}
+
+/* Protege as 3 colunas do rodapé contra listas gigantes de categorias/arquivos em tg-footer-widgets */
+.tg-footer-widgets-area {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.tg-footer-widget {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	font-size: 0.875rem;
+	color: var(--chrome-ink-muted);
+}
+
+.tg-footer-widget ul,
+.tg-footer-widget ol,
+.tg-footer-widgets-area ul,
+.tg-footer-widgets-area ol {
+	list-style: none;
+	margin: 0;
+	padding: 0 0.35rem 0 0;
+	max-height: 13.5rem;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.tg-footer-widget li {
+	line-height: 1.35;
+}
+
+.tg-footer-widget a {
+	color: var(--chrome-ink-muted);
+	transition: color 150ms ease;
+}
+
+.tg-footer-widget a:hover {
+	color: var(--tg-accent);
+}
+
+.tg-footer-widget select {
+	width: 100%;
+	max-width: 100%;
+	min-height: 40px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: var(--ds-r, 2px);
+	background-color: var(--chrome-surface);
+	color: var(--chrome-ink);
+	padding: 0.45rem 0.65rem;
+}

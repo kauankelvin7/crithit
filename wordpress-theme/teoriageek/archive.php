@@ -15,7 +15,7 @@ get_header();
 <main id="conteudo-principal" class="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8">
 	<?php teoriageek_breadcrumb(); ?>
 
-	<header class="mb-8 rounded-lg border-2 border-border-strong bg-surface p-6 shadow-hard">
+	<header class="mb-8 rounded-sm border border-border-subtle border-t-4 border-t-brand bg-surface p-4 sm:p-6">
 		<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
 			<?php esc_html_e( 'Arquivo Editorial', 'teoriageek' ); ?>
 		</p>
@@ -50,8 +50,11 @@ get_header();
 		</div>
 		<?php teoriageek_pagination(); ?>
 	<?php else : ?>
-		<div class="rounded-lg border-2 border-border-strong bg-surface p-10 text-center shadow-hard-sm">
+		<div class="rounded-sm border border-border-subtle bg-surface p-10 text-center">
 			<p class="font-reading text-base text-ink-secondary"><?php esc_html_e( 'Nenhuma matéria encontrada neste período.', 'teoriageek' ); ?></p>
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="tactile-btn mt-4 inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-4 py-2 font-sans text-xs font-extrabold uppercase text-ink-highlight">
+				<?php esc_html_e( 'Voltar para a capa', 'teoriageek' ); ?>
+			</a>
 		</div>
 	<?php endif; ?>
 </main>

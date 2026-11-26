@@ -19,7 +19,7 @@ $tg_term  = get_search_query();
 <main id="conteudo-principal" class="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8">
 	<?php teoriageek_breadcrumb(); ?>
 
-	<header class="mb-8 rounded-lg border-2 border-border-strong bg-surface p-5 shadow-hard sm:p-7">
+	<header class="mb-8 rounded-sm border border-border-subtle border-t-4 border-t-brand bg-surface p-4 sm:p-7">
 		<div class="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-4">
 			<div class="flex flex-wrap items-center gap-2.5">
 				<span class="text-brand"><?php echo teoriageek_icon( 'search', 'h-6 w-6' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
@@ -32,12 +32,12 @@ $tg_term  = get_search_query();
 					}
 					?>
 				</h1>
-				<span class="rounded border border-border-subtle bg-surface-alt px-2.5 py-0.5 font-mono text-xs font-bold text-ink-secondary">
+				<span class="rounded-sm border border-border-subtle bg-surface-alt px-2.5 py-0.5 font-mono text-xs font-bold text-ink-secondary">
 					<?php echo esc_html( number_format_i18n( $tg_total ) ); ?>
 				</span>
 			</div>
 
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="inline-flex items-center gap-1.5 rounded border-2 border-border-strong bg-surface-alt px-3 py-1.5 font-mono text-xs font-bold uppercase text-ink-primary hover:bg-highlight hover:text-ink-highlight">
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-alt px-3 py-1.5 font-sans text-xs font-bold uppercase text-ink-primary hover:bg-highlight hover:text-ink-highlight">
 				<?php echo teoriageek_icon( 'x', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<span><?php esc_html_e( 'Voltar à capa', 'teoriageek' ); ?></span>
 			</a>
@@ -54,10 +54,10 @@ $tg_term  = get_search_query();
 					value="<?php echo esc_attr( $tg_term ); ?>"
 					aria-label="<?php esc_attr_e( 'Refinar termo de busca', 'teoriageek' ); ?>"
 					placeholder="<?php esc_attr_e( 'Buscar por título, franquia, jogo, série ou crítica...', 'teoriageek' ); ?>"
-					class="w-full rounded border-2 border-border-strong bg-surface py-2.5 pl-10 pr-4 font-sans text-sm text-ink-primary placeholder:text-ink-placeholder focus:border-brand focus:outline-none"
+					class="min-h-[42px] w-full rounded-sm border border-border-subtle bg-surface-alt py-2.5 pl-10 pr-4 font-sans text-base text-ink-primary placeholder:text-ink-placeholder focus:border-brand focus:outline-none"
 				/>
 			</div>
-			<button type="submit" class="tactile-btn rounded border-2 border-border-strong bg-highlight px-5 py-2.5 font-mono text-xs font-bold uppercase text-ink-highlight shadow-hard-sm">
+			<button type="submit" class="tactile-btn min-h-[42px] rounded-sm border border-[#0B0F19] bg-highlight px-5 py-2.5 font-sans text-xs font-extrabold uppercase text-ink-highlight">
 				<?php esc_html_e( 'Pesquisar', 'teoriageek' ); ?>
 			</button>
 		</form>
@@ -81,7 +81,7 @@ $tg_term  = get_search_query();
 		</div>
 		<?php teoriageek_pagination(); ?>
 	<?php else : ?>
-		<div class="rounded-lg border-2 border-border-strong bg-surface p-10 text-center shadow-hard-sm">
+		<div class="rounded-sm border border-border-subtle bg-surface p-10 text-center">
 			<h2 class="font-headline text-2xl font-extrabold uppercase text-ink-primary">
 				<?php esc_html_e( 'Nenhuma matéria encontrada para este termo', 'teoriageek' ); ?>
 			</h2>

@@ -21,9 +21,9 @@ $tg_count      = count_user_posts( $tg_author_id, 'post', true );
 <main id="conteudo-principal" class="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8">
 	<?php teoriageek_breadcrumb(); ?>
 
-	<header class="mb-8 rounded-lg border-2 border-border-strong bg-surface p-6 shadow-hard sm:p-8">
+	<header class="mb-8 rounded-sm border border-border-subtle border-t-4 border-t-brand bg-surface p-4 sm:p-8">
 		<div class="flex flex-col gap-5 sm:flex-row sm:items-center">
-			<div class="h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-border-strong bg-brand-fill">
+			<div class="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border-subtle bg-brand-fill">
 				<?php if ( $tg_avatar ) : ?>
 					<img src="<?php echo esc_url( $tg_avatar ); ?>" alt="<?php echo esc_attr( $tg_name ); ?>" width="80" height="80" decoding="async" class="h-full w-full object-cover" />
 				<?php endif; ?>
@@ -67,8 +67,11 @@ $tg_count      = count_user_posts( $tg_author_id, 'post', true );
 		</div>
 		<?php teoriageek_pagination(); ?>
 	<?php else : ?>
-		<div class="rounded-lg border-2 border-border-strong bg-surface p-10 text-center shadow-hard-sm">
+		<div class="rounded-sm border border-border-subtle bg-surface p-10 text-center">
 			<p class="font-reading text-base text-ink-secondary"><?php esc_html_e( 'Este autor ainda não possui matérias publicadas.', 'teoriageek' ); ?></p>
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="tactile-btn mt-4 inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-4 py-2 font-sans text-xs font-extrabold uppercase text-ink-highlight">
+				<?php esc_html_e( 'Voltar para a capa', 'teoriageek' ); ?>
+			</a>
 		</div>
 	<?php endif; ?>
 </main>

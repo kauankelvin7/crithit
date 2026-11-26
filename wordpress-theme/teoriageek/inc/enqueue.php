@@ -41,7 +41,7 @@ add_action( 'wp_head', 'teoriageek_theme_init_script', 1 );
 function teoriageek_preload_critical_fonts() {
 	$critical = array(
 		'/assets/fonts/barlow-condensed-700-latin.woff2',
-		'/assets/fonts/space-grotesk-500-latin.woff2',
+		'/assets/fonts/plus-jakarta-sans-400-latin.woff2',
 	);
 	foreach ( $critical as $rel ) {
 		if ( file_exists( TEORIAGEEK_DIR . $rel ) ) {
@@ -73,6 +73,36 @@ function teoriageek_enqueue_assets() {
 		$css_ver
 	);
 
+	$resp_file = TEORIAGEEK_DIR . '/assets/css/responsive.css';
+	if ( file_exists( $resp_file ) ) {
+		wp_enqueue_style(
+			'teoriageek-responsive',
+			TEORIAGEEK_URI . '/assets/css/responsive.css',
+			array( 'teoriageek-main' ),
+			(string) filemtime( $resp_file )
+		);
+	}
+
+	$enh_css_file = TEORIAGEEK_DIR . '/assets/css/enhancements.css';
+	if ( file_exists( $enh_css_file ) ) {
+		wp_enqueue_style(
+			'teoriageek-enhancements',
+			TEORIAGEEK_URI . '/assets/css/enhancements.css',
+			array( 'teoriageek-responsive' ),
+			(string) filemtime( $enh_css_file )
+		);
+	}
+
+	$ds_css_file = TEORIAGEEK_DIR . '/assets/css/design-system.css';
+	if ( file_exists( $ds_css_file ) ) {
+		wp_enqueue_style(
+			'teoriageek-design-system',
+			TEORIAGEEK_URI . '/assets/css/design-system.css',
+			array( 'teoriageek-enhancements' ),
+			(string) filemtime( $ds_css_file )
+		);
+	}
+
 	$js_file = TEORIAGEEK_DIR . '/assets/js/main.js';
 	$js_ver  = file_exists( $js_file ) ? (string) filemtime( $js_file ) : TEORIAGEEK_VERSION;
 
@@ -86,6 +116,20 @@ function teoriageek_enqueue_assets() {
 			'strategy'  => 'defer',
 		)
 	);
+
+	$enh_js_file = TEORIAGEEK_DIR . '/assets/js/enhancements.js';
+	if ( file_exists( $enh_js_file ) ) {
+		wp_enqueue_script(
+			'teoriageek-enhancements',
+			TEORIAGEEK_URI . '/assets/js/enhancements.js',
+			array( 'teoriageek-main' ),
+			(string) filemtime( $enh_js_file ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+	}
 
 	wp_localize_script(
 		'teoriageek-main',

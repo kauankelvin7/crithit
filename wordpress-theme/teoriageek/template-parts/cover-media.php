@@ -22,6 +22,10 @@ $tg_cat_slug = $tg_cat ? $tg_cat->slug : 'noticias';
 $tg_title    = teoriageek_clean_title( get_the_title( $tg_post_id ) );
 $tg_thumb_id = (int) get_post_thumbnail_id( $tg_post_id );
 $tg_img_url  = $tg_thumb_id > 0 ? (string) get_the_post_thumbnail_url( $tg_post_id, $tg_size ) : '';
+$tg_srcset   = $tg_thumb_id > 0 ? (string) wp_get_attachment_image_srcset( $tg_thumb_id, $tg_size ) : '';
+$tg_sizes    = ( 'tg-hero' === $tg_size )
+	? '(max-width: 639px) 100vw, (max-width: 1023px) 92vw, 820px'
+	: ( ( 'tg-thumb' === $tg_size ) ? '160px' : '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 420px' );
 
 // Detecta capas antigas muito pequenas (< 520px de largura) para evitar pixelização em slots largos.
 $tg_is_small_legacy = false;
@@ -33,7 +37,7 @@ if ( $tg_thumb_id > 0 && 'tg-thumb' !== $tg_size ) {
 }
 $tg_pos_class = ( false !== strpos( $tg_aspect, 'absolute' ) ) ? '' : 'relative';
 ?>
-<div class="tg-cover-wrap <?php echo esc_attr( trim( $tg_pos_class . ' w-full overflow-hidden bg-chrome ' . $tg_aspect ) ); ?>">
+<div class="tg-cover-wrap tgx-skeleton-media <?php echo esc_attr( trim( $tg_pos_class . ' w-full overflow-hidden bg-chrome ' . $tg_aspect ) ); ?>">
 	<?php if ( '' !== $tg_img_url ) : ?>
 		<div class="tg-cover-fallback pointer-events-none absolute inset-0 hidden">
 			<?php echo teoriageek_render_fallback_art( $tg_cat_slug, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -50,6 +54,7 @@ $tg_pos_class = ( false !== strpos( $tg_aspect, 'absolute' ) ) ? '' : 'relative'
 		<?php endif; ?>
 		<img
 			src="<?php echo esc_url( $tg_img_url ); ?>"
+			<?php if ( '' !== $tg_srcset ) : ?>srcset="<?php echo esc_attr( $tg_srcset ); ?>" sizes="<?php echo esc_attr( $tg_sizes ); ?>"<?php endif; ?>
 			alt="<?php echo $tg_decorative ? '' : esc_attr( $tg_title ); ?>"
 			<?php echo $tg_decorative ? 'aria-hidden="true"' : ''; ?>
 			loading="<?php echo $tg_priority ? 'eager' : 'lazy'; ?>"

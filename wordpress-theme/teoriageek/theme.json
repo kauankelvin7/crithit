@@ -16,7 +16,7 @@
         { "slug": "tg-accent", "color": "#FACC15", "name": "Amarelo Destaque Teoria Geek" },
         { "slug": "tg-accent-strong", "color": "#EAB308", "name": "Amarelo Ouro" },
         { "slug": "tg-text", "color": "#0B0F19", "name": "Texto Escuro Alto Contraste" },
-        { "slug": "tg-bg", "color": "#F8FAFC", "name": "Fundo Base Claro" },
+        { "slug": "tg-bg", "color": "#FFFFFF", "name": "Fundo Base Claro" },
         { "slug": "tg-surface", "color": "#FFFFFF", "name": "Superfície Clara" }
       ]
     },
@@ -29,9 +29,9 @@
           "name": "Manchete (Barlow Condensed)"
         },
         {
-          "fontFamily": "'Space Grotesk', system-ui, sans-serif",
+          "fontFamily": "'Plus Jakarta Sans', system-ui, sans-serif",
           "slug": "sans",
-          "name": "Interface (Space Grotesk)"
+          "name": "Interface (Plus Jakarta Sans)"
         },
         {
           "fontFamily": "'Plus Jakarta Sans', system-ui, sans-serif",

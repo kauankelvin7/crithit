@@ -16,6 +16,7 @@ $tg_socials  = teoriageek_get_social_links();
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#0B0F19">
 	<link rel="profile" href="https://gmpg.org/xfn/11">
 	<?php wp_head(); ?>
 </head>
@@ -26,22 +27,16 @@ $tg_socials  = teoriageek_get_social_links();
 	<?php esc_html_e( 'Pular para o conteúdo principal', 'teoriageek' ); ?>
 </a>
 
-<?php if ( is_singular( 'post' ) ) : ?>
-	<div id="tg-reading-progress-wrap" aria-hidden="true" class="pointer-events-none fixed inset-x-0 top-0 z-[65] h-1 bg-transparent">
-		<div id="tg-reading-progress" class="h-full w-full origin-left scale-x-0 bg-highlight"></div>
-	</div>
-<?php endif; ?>
-
-<header data-chrome="dark" class="sticky top-0 z-50 w-full shrink-0 border-b-[3px] border-highlight bg-chrome text-chrome-ink">
-	<div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
+<header data-chrome="dark" class="tg-site-header sticky z-50 w-full shrink-0 bg-chrome text-chrome-ink <?php echo is_singular( 'post' ) ? 'border-b border-white/10 pb-[3px]' : 'border-b-[3px] border-highlight'; ?>">
+	<div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2.5 px-3.5 sm:gap-3 sm:px-4">
 		<div class="flex min-w-0 items-center gap-3.5">
 			<?php teoriageek_render_brand_logo(); ?>
-			<span class="hidden xl:inline-block border-l border-white/15 pl-3.5 font-mono text-xs text-chrome-muted">
+			<span class="hidden xl:inline-block border-l border-white/15 pl-3.5 font-sans text-xs text-chrome-muted">
 				<?php echo esc_html( teoriageek_strip_emojis( get_bloginfo( 'description' ) ?: __( 'O Importante é se divertir!', 'teoriageek' ) ) ); ?>
 			</span>
 		</div>
 
-		<div class="flex items-center gap-2 sm:gap-2.5">
+		<div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
 			<?php if ( ! $tg_is_reels ) : ?>
 				<form role="search" method="get" action="<?php echo esc_url( home_url( '/' ) ); ?>" class="relative hidden md:flex items-center">
 					<span class="pointer-events-none absolute left-3 text-chrome-muted">
@@ -53,36 +48,36 @@ $tg_socials  = teoriageek_get_social_links();
 						value="<?php echo esc_attr( get_search_query() ); ?>"
 						aria-label="<?php esc_attr_e( 'Buscar no Teoria Geek', 'teoriageek' ); ?>"
 						placeholder="<?php esc_attr_e( 'Buscar no Teoria Geek...', 'teoriageek' ); ?>"
-						class="w-64 lg:w-80 xl:w-96 rounded border border-white/20 bg-chrome-surface py-1.5 pl-9 pr-3 font-sans text-sm text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
+						class="h-10 w-60 lg:w-72 xl:w-[22rem] rounded-sm border border-white/20 bg-chrome-surface py-1.5 pl-9 pr-3 font-sans text-sm text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
 					/>
 				</form>
 
-				<button type="button" data-tg-search-open aria-label="<?php esc_attr_e( 'Abrir busca instantânea', 'teoriageek' ); ?>" title="<?php esc_attr_e( 'Busca instantânea (Ctrl+K)', 'teoriageek' ); ?>" class="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
+				<button type="button" data-tg-search-open aria-label="<?php esc_attr_e( 'Abrir busca instantânea', 'teoriageek' ); ?>" title="<?php esc_attr_e( 'Busca instantânea (Ctrl+K)', 'teoriageek' ); ?>" class="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight md:hidden">
 					<?php echo teoriageek_icon( 'search', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</button>
 			<?php endif; ?>
 
-			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" <?php echo $tg_is_reels ? 'aria-current="page"' : ''; ?> class="inline-flex h-9 items-center gap-1.5 rounded border-2 border-[#0B0F19] bg-highlight px-3 font-mono text-xs font-bold uppercase text-ink-highlight transition-transform hover:-translate-y-0.5">
+			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" <?php echo $tg_is_reels ? 'aria-current="page"' : ''; ?> class="tg-header-reels-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-2.5 sm:px-3.5 font-sans text-xs font-extrabold uppercase tracking-wider text-ink-highlight">
 				<?php echo teoriageek_icon( 'film', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<span>Reels</span>
 			</a>
 
-			<button type="button" data-tg-theme-toggle aria-label="<?php esc_attr_e( 'Alternar entre modo claro e escuro', 'teoriageek' ); ?>" aria-pressed="false" title="<?php esc_attr_e( 'Alternar tema claro/escuro', 'teoriageek' ); ?>" class="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
+			<button type="button" data-tg-theme-toggle aria-label="<?php esc_attr_e( 'Alternar entre modo claro e escuro', 'teoriageek' ); ?>" aria-pressed="false" title="<?php esc_attr_e( 'Alternar tema claro/escuro', 'teoriageek' ); ?>" class="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
 				<span data-tg-theme-icon="moon" class="inline-flex"><?php echo teoriageek_icon( 'moon', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 				<span data-tg-theme-icon="sun" class="hidden"><?php echo teoriageek_icon( 'sun', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 			</button>
 
 			<?php if ( ! empty( $tg_socials ) && ! $tg_is_reels ) : ?>
 				<div class="hidden xl:flex items-center gap-1 border-l border-white/15 pl-2">
-					<?php foreach ( array_slice( $tg_socials, 0, 3 ) as $tg_soc ) : ?>
-						<a href="<?php echo esc_url( $tg_soc['url'] ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( $tg_soc['label'] ); ?>" class="inline-flex h-8 w-8 items-center justify-center rounded text-chrome-muted transition-colors hover:bg-chrome-surface hover:text-highlight">
+					<?php foreach ( array_slice( $tg_socials, 0, 5 ) as $tg_soc ) : ?>
+						<a href="<?php echo esc_url( $tg_soc['url'] ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( $tg_soc['label'] ); ?>" class="inline-flex h-9 w-9 items-center justify-center rounded-sm text-chrome-muted transition-colors hover:bg-chrome-surface hover:text-highlight">
 							<?php echo teoriageek_icon( $tg_soc['icon'], 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						</a>
 					<?php endforeach; ?>
 				</div>
 			<?php endif; ?>
 
-			<button type="button" data-tg-drawer-open aria-label="<?php esc_attr_e( 'Abrir menu de editorias', 'teoriageek' ); ?>" aria-expanded="false" aria-controls="tg-mobile-drawer" class="inline-flex h-9 w-9 items-center justify-center rounded border border-white/25 bg-chrome-surface text-chrome-ink hover:border-highlight hover:text-highlight lg:hidden">
+			<button type="button" data-tg-drawer-open aria-label="<?php esc_attr_e( 'Abrir menu de editorias', 'teoriageek' ); ?>" aria-expanded="false" aria-controls="tg-mobile-drawer" class="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/25 bg-chrome-surface text-chrome-ink hover:border-highlight hover:text-highlight lg:hidden">
 				<?php echo teoriageek_icon( 'menu', 'h-5 w-5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</button>
 		</div>
@@ -90,9 +85,15 @@ $tg_socials  = teoriageek_get_social_links();
 
 	<?php if ( ! $tg_is_reels ) : ?>
 		<div class="hidden border-t border-white/10 bg-chrome-surface lg:block">
-			<nav aria-label="<?php esc_attr_e( 'Navegação principal de editorias', 'teoriageek' ); ?>" class="mx-auto max-w-7xl px-4 py-1.5">
-				<?php teoriageek_render_primary_nav( 'tg-primary-menu flex flex-wrap items-center gap-x-1 gap-y-1 font-sans text-xs font-bold uppercase tracking-wide' ); ?>
+			<nav aria-label="<?php esc_attr_e( 'Navegação principal de editorias', 'teoriageek' ); ?>" class="tgx-desktop-nav-scroll mx-auto max-w-7xl overflow-x-auto px-4 py-1">
+				<?php teoriageek_render_primary_nav( 'tg-primary-menu flex flex-nowrap items-center gap-x-1 whitespace-nowrap font-sans text-xs font-bold uppercase tracking-wide' ); ?>
 			</nav>
+		</div>
+		<?php teoriageek_render_mobile_cat_strip(); ?>
+	<?php endif; ?>
+	<?php if ( is_singular( 'post' ) ) : ?>
+		<div id="tg-reading-progress-wrap" aria-hidden="true" class="tgx-header-progress pointer-events-none absolute inset-x-0 bottom-0 z-[65] h-[3px] bg-chrome-surface">
+			<div id="tg-reading-progress" class="h-full w-full origin-left scale-x-0 bg-highlight"></div>
 		</div>
 	<?php endif; ?>
 </header>

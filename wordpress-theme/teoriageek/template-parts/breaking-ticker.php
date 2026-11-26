@@ -49,9 +49,9 @@ if ( empty( $tg_ticker_posts ) ) {
 	return;
 }
 ?>
-<section aria-label="<?php esc_attr_e( 'Plantão Geek — Últimas notícias', 'teoriageek' ); ?>" class="ticker-marquee relative z-10 w-full border-b border-border-subtle bg-surface-alt">
+<section aria-label="<?php esc_attr_e( 'Plantão Geek — Últimas notícias', 'teoriageek' ); ?>" class="ticker-marquee relative z-10 w-full overflow-hidden border-b border-border-subtle bg-surface-alt">
 	<div class="mx-auto flex w-full max-w-7xl items-stretch px-0 sm:px-4">
-		<div class="z-10 flex shrink-0 items-center gap-2 bg-brand-fill px-3.5 py-2 text-white sm:rounded-l-none sm:px-4">
+		<div class="tg-ticker-label z-10 flex shrink-0 items-center gap-2 bg-brand-fill px-3.5 py-2 text-white sm:rounded-l-none sm:px-4">
 			<?php echo teoriageek_icon( 'zap', 'h-3.5 w-3.5 shrink-0 text-highlight' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			<span class="font-display text-sm tracking-wider sm:text-base"><?php esc_html_e( 'PLANTÃO GEEK', 'teoriageek' ); ?></span>
 		</div>

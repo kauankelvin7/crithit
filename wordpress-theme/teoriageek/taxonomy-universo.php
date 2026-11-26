@@ -24,7 +24,7 @@ $tg_sub  = ( $tg_term instanceof WP_Term ) ? get_terms(
 <main id="conteudo-principal" class="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8">
 	<?php teoriageek_breadcrumb(); ?>
 
-	<header data-chrome="dark" class="mb-8 overflow-hidden rounded-lg border-2 border-border-strong bg-chrome p-6 text-chrome-ink shadow-hard sm:p-8">
+	<header data-chrome="dark" class="mb-8 overflow-hidden rounded-sm border border-white/15 border-t-4 border-t-highlight bg-chrome p-4 text-chrome-ink sm:p-8">
 		<div class="flex flex-wrap items-center justify-between gap-4">
 			<div class="space-y-2">
 				<span class="inline-block rounded bg-highlight px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-widest text-ink-highlight">
@@ -82,10 +82,13 @@ $tg_sub  = ( $tg_term instanceof WP_Term ) ? get_terms(
 		</div>
 		<?php teoriageek_pagination(); ?>
 	<?php else : ?>
-		<div class="rounded-lg border border-border-subtle bg-surface p-10 text-center shadow-sm">
+		<div class="rounded-sm border border-border-subtle bg-surface p-10 text-center">
 			<p class="font-reading text-base text-ink-secondary">
 				<?php esc_html_e( 'Nenhuma matéria publicada neste universo ainda.', 'teoriageek' ); ?>
 			</p>
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="tactile-btn mt-4 inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-4 py-2 font-sans text-xs font-extrabold uppercase text-ink-highlight">
+				<?php esc_html_e( 'Voltar para a capa', 'teoriageek' ); ?>
+			</a>
 		</div>
 	<?php endif; ?>
 </main>

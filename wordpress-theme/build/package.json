@@ -6,5 +6,8 @@
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.51.1",
     "tailwindcss": "^3.4.17"
+  },
+  "dependencies": {
+    "php-parser": "^3.7.0"
   }
 }

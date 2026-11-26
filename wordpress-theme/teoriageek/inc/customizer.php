@@ -114,7 +114,7 @@ function teoriageek_customize_register( $wp_customize ) {
 		),
 		'teoriageek_color_bg'      => array(
 			'label'   => __( 'Cor de Fundo da Página (--tg-bg)', 'teoriageek' ),
-			'default' => '#F8FAFC',
+			'default' => '#FFFFFF',
 		),
 		'teoriageek_color_surface' => array(
 			'label'   => __( 'Cor de Superfície / Cards (--tg-surface)', 'teoriageek' ),
@@ -462,14 +462,14 @@ add_action( 'customize_save_after', 'teoriageek_flush_premieres_cache' );
 function teoriageek_get_customizer_css() {
 	$tg_primary = sanitize_hex_color( get_theme_mod( 'teoriageek_color_primary', '#1D4ED8' ) ) ?: '#1D4ED8';
 	$tg_accent  = sanitize_hex_color( get_theme_mod( 'teoriageek_color_accent', '#FACC15' ) ) ?: '#FACC15';
-	$tg_bg      = sanitize_hex_color( get_theme_mod( 'teoriageek_color_bg', '#F8FAFC' ) ) ?: '#F8FAFC';
+	$tg_bg      = sanitize_hex_color( get_theme_mod( 'teoriageek_color_bg', '#FFFFFF' ) ) ?: '#FFFFFF';
 	$tg_surface = sanitize_hex_color( get_theme_mod( 'teoriageek_color_surface', '#FFFFFF' ) ) ?: '#FFFFFF';
 	$tg_text    = sanitize_hex_color( get_theme_mod( 'teoriageek_color_text', '#0B0F19' ) ) ?: '#0B0F19';
 
 	// Regra inegociável: fundo amarelo de destaque sempre força texto escuro #0B0F19 de alto contraste.
 	$tg_on_accent     = '#0B0F19';
 	$tg_accent_strong = teoriageek_adjust_hex( $tg_accent, -10 );
-	$tg_surface_alt   = teoriageek_adjust_hex( $tg_bg, -4 );
+	$tg_surface_alt   = ( '#FFFFFF' === strtoupper( $tg_bg ) ) ? '#F4F6F9' : teoriageek_adjust_hex( $tg_bg, -4 );
 
 	// Calibra versão textual de --tg-primary para >= 4.5:1 sobre superfícies claras e escuras.
 	$primary_text_light = $tg_primary;

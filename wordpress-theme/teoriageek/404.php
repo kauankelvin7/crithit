@@ -23,9 +23,9 @@ $tg_latest_404 = new WP_Query(
 ?>
 
 <main id="conteudo-principal" class="mx-auto w-full max-w-7xl px-4 py-10 sm:py-14">
-	<section class="mx-auto max-w-3xl rounded-lg border-2 border-border-strong bg-surface p-6 text-center shadow-hard sm:p-10">
-		<span class="inline-block -rotate-2 rounded border-2 border-[#111111] bg-highlight px-4 py-1 font-display text-4xl tracking-wider text-ink-highlight shadow-hard-sm sm:text-5xl">
-			404!
+	<section class="mx-auto max-w-3xl rounded-sm border border-border-subtle border-t-4 border-t-brand bg-surface p-6 text-center sm:p-10">
+		<span class="inline-block rounded-sm border border-[#0B0F19] bg-highlight px-4 py-1 font-display text-4xl tracking-wider text-ink-highlight sm:text-5xl">
+			404
 		</span>
 
 		<h1 class="mt-5 font-headline text-3xl font-extrabold uppercase tracking-tight text-ink-primary sm:text-5xl">
@@ -42,18 +42,18 @@ $tg_latest_404 = new WP_Query(
 				name="s"
 				aria-label="<?php esc_attr_e( 'Buscar matérias no portal', 'teoriageek' ); ?>"
 				placeholder="<?php esc_attr_e( 'Buscar no acervo do Teoria Geek...', 'teoriageek' ); ?>"
-				class="flex-1 rounded border-2 border-border-strong bg-surface px-4 py-2.5 font-sans text-sm text-ink-primary placeholder:text-ink-placeholder focus:border-brand focus:outline-none"
+				class="min-h-[42px] flex-1 rounded-sm border border-border-subtle bg-surface-alt px-4 py-2.5 font-sans text-base text-ink-primary placeholder:text-ink-placeholder focus:border-brand focus:outline-none"
 			/>
-			<button type="submit" class="tactile-btn rounded border-2 border-border-strong bg-brand-fill px-5 py-2.5 font-mono text-xs font-bold uppercase text-white shadow-hard-sm">
+			<button type="submit" class="tactile-btn min-h-[42px] rounded-sm bg-brand-fill px-5 py-2.5 font-sans text-xs font-extrabold uppercase text-white">
 				<?php esc_html_e( 'Buscar', 'teoriageek' ); ?>
 			</button>
 		</form>
 
 		<div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="tactile-btn inline-flex items-center gap-1.5 rounded border-2 border-border-strong bg-highlight px-4 py-2 font-mono text-xs font-bold uppercase text-ink-highlight shadow-hard-sm">
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="tactile-btn inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-4 py-2 font-sans text-xs font-extrabold uppercase text-ink-highlight">
 				<?php esc_html_e( 'Ir para a Capa', 'teoriageek' ); ?>
 			</a>
-			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="tactile-btn inline-flex items-center gap-1.5 rounded border-2 border-border-strong bg-surface-alt px-4 py-2 font-mono text-xs font-bold uppercase text-ink-primary">
+			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="tactile-btn inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-alt px-4 py-2 font-sans text-xs font-bold uppercase text-ink-primary">
 				<?php echo teoriageek_icon( 'film', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<span><?php esc_html_e( 'Explorar Reels', 'teoriageek' ); ?></span>
 			</a>

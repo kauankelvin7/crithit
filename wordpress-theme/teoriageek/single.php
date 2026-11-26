@@ -56,7 +56,7 @@ get_header();
 		<?php teoriageek_breadcrumb(); ?>
 
 		<article id="post-<?php the_ID(); ?>" <?php post_class( 'space-y-8' ); ?>>
-			<header class="rounded-lg border-2 border-border-strong bg-surface p-5 shadow-hard sm:p-8">
+			<header class="rounded-lg border-2 border-border-strong bg-surface p-4 shadow-hard sm:p-8">
 				<div class="mb-4 flex flex-wrap items-center gap-2.5">
 					<?php teoriageek_category_badge( $tg_cat, true, 'md', true ); ?>
 					<?php
@@ -96,7 +96,7 @@ get_header();
 					<?php endif; ?>
 				</div>
 
-				<h1 class="font-headline text-3xl font-extrabold leading-[1.1] tracking-[0.005em] text-ink-primary sm:text-5xl">
+				<h1 class="font-headline text-2xl font-extrabold leading-[1.12] tracking-[0.005em] text-ink-primary sm:text-5xl">
 					<?php echo esc_html( teoriageek_clean_title( get_the_title() ) ); ?>
 				</h1>
 
@@ -132,14 +132,26 @@ get_header();
 								<?php endif; ?>
 							</div>
 
-							<div class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-ink-muted">
+							<div class="flex flex-wrap items-center gap-x-3 gap-y-1 font-sans text-xs text-ink-muted">
 								<time datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>">
-									<?php echo esc_html( get_the_date( "d \d\e F \d\e Y \à\s H:i" ) ); ?>
+									<?php echo esc_html( get_the_date( 'd \d\e F \d\e Y \à\s H:i' ) ); ?>
 								</time>
+								<?php if ( ( (int) get_the_modified_time( 'U' ) - (int) get_the_time( 'U' ) ) > 3600 ) : ?>
+									<span aria-hidden="true">·</span>
+									<time datetime="<?php echo esc_attr( get_the_modified_date( DATE_W3C ) ); ?>" class="font-medium text-ink-secondary">
+										<?php echo esc_html( sprintf( __( 'Atualizado em %s', 'teoriageek' ), get_the_modified_date( 'd/m/Y \à\s H:i' ) ) ); ?>
+									</time>
+								<?php endif; ?>
 							</div>
 						</div>
 					</div>
 
+					<div class="flex items-center gap-2 overflow-x-auto">
+						<div class="tgx-font-controls inline-flex shrink-0 items-center rounded-sm border border-border-subtle bg-surface-alt p-0.5" role="group" aria-label="<?php esc_attr_e( 'Tamanho do texto', 'teoriageek' ); ?>">
+							<button type="button" data-tg-font-step="-1" aria-label="<?php esc_attr_e( 'Diminuir tamanho da fonte', 'teoriageek' ); ?>" class="tgx-font-btn">A-</button>
+							<button type="button" data-tg-font-reset aria-label="<?php esc_attr_e( 'Restaurar tamanho padrão da fonte', 'teoriageek' ); ?>" title="<?php esc_attr_e( 'Restaurar tamanho padrão (100%)', 'teoriageek' ); ?>" class="tgx-font-indicator">100%</button>
+							<button type="button" data-tg-font-step="1" aria-label="<?php esc_attr_e( 'Aumentar tamanho da fonte', 'teoriageek' ); ?>" class="tgx-font-btn">A+</button>
+						</div>
 					<?php
 					get_template_part(
 						'template-parts/share-buttons',
@@ -150,12 +162,13 @@ get_header();
 						)
 					);
 					?>
+					</div>
 				</div>
 			</header>
 
 			<div class="grid gap-8 lg:grid-cols-12">
 				<div class="min-w-0 space-y-6 lg:col-span-8">
-					<div id="tg-article-body" class="rounded-lg border-2 border-border-strong bg-surface p-5 shadow-hard sm:p-8">
+					<div id="tg-article-body" class="rounded-lg border-2 border-border-strong bg-surface p-4 shadow-hard sm:p-8">
 						<figure class="mb-6 overflow-hidden rounded border-2 border-border-strong bg-surface-alt">
 							<?php
 							get_template_part(
@@ -164,7 +177,7 @@ get_header();
 								array(
 									'post_id'      => $tg_pid,
 									'size'         => 'tg-hero',
-									'aspect_class' => 'w-full h-[220px] sm:h-[340px] lg:h-[390px]',
+									'aspect_class' => 'w-full aspect-[16/9] sm:h-[340px] lg:h-[390px]',
 									'priority'     => true,
 								)
 							);
@@ -178,7 +191,7 @@ get_header();
 						</figure>
 
 						<?php if ( ! empty( $tg_bullets ) ) : ?>
-							<section aria-labelledby="tg-pontos-chave" class="mb-6 rounded-r border border-border-subtle border-l-4 bg-surface-alt p-5" style="<?php echo esc_attr( 'border-left-color:' . $tg_cat_style['accent'] . ';' ); ?>">
+							<section aria-labelledby="tg-pontos-chave" class="mb-6 rounded-r border border-border-subtle border-l-4 bg-surface-alt p-4 sm:p-5" style="<?php echo esc_attr( 'border-left-color:' . $tg_cat_style['accent'] . ';' ); ?>">
 								<div class="mb-3 flex items-center gap-2">
 									<span style="<?php echo esc_attr( 'color:' . $tg_cat_style['accent'] . ';' ); ?>">
 										<?php echo teoriageek_icon( 'list-checks', 'h-5 w-5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -232,9 +245,20 @@ get_header();
 					</div>
 
 					<?php
+					// Fluxo editorial contínuo: Box do Autor -> Próxima Matéria -> Matérias Relacionadas -> Reels -> Canais -> Comentários.
 					get_template_part( 'template-parts/next-article' );
-					get_template_part( 'template-parts/community-cta' );
 					get_template_part( 'template-parts/related-posts' );
+					get_template_part(
+						'template-parts/reels-strip',
+						null,
+						array(
+							'columns'    => 3,
+							'auto_query' => true,
+							'exclude_id' => $tg_pid,
+							'heading_id' => 'tg-single-reels-heading',
+						)
+					);
+					get_template_part( 'template-parts/community-cta' );
 
 					if ( comments_open() || get_comments_number() ) {
 						comments_template();
@@ -242,7 +266,7 @@ get_header();
 					?>
 				</div>
 
-				<aside aria-label="<?php esc_attr_e( 'Ranking e conteúdo complementar', 'teoriageek' ); ?>" class="space-y-6 lg:sticky lg:top-[88px] lg:col-span-4 lg:self-start">
+				<aside aria-label="<?php esc_attr_e( 'Ranking e conteúdo complementar', 'teoriageek' ); ?>" class="min-w-0 space-y-6 lg:sticky lg:top-[88px] lg:col-span-4 lg:self-start">
 					<?php if ( ! empty( $tg_most_read ) ) : ?>
 						<section aria-labelledby="tg-sidebar-mais-lidas" class="rounded-lg border border-border-subtle bg-surface p-4 shadow-sm">
 							<div class="mb-3 flex items-center gap-2 border-b border-border-subtle pb-2.5">
@@ -287,7 +311,7 @@ get_header();
 					}
 					?>
 
-					<div data-chrome="dark" class="overflow-hidden rounded-lg border-2 border-border-strong bg-chrome text-chrome-ink shadow-hard">
+					<div data-chrome="dark" class="overflow-hidden rounded-sm border border-border-subtle bg-chrome text-chrome-ink">
 						<div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
 							<span class="inline-flex items-center gap-2 font-display text-lg tracking-wider text-highlight">
 								<?php echo teoriageek_icon( 'film', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -313,7 +337,7 @@ get_header();
 							<div class="absolute inset-0 z-20 flex flex-col justify-end p-4" style="background:linear-gradient(to top, rgba(8,11,18,0.95) 0%, rgba(8,11,18,0.75) 52%, rgba(8,11,18,0.18) 100%);">
 								<div class="mb-1.5 flex items-center justify-between">
 									<?php teoriageek_category_badge( $tg_cat, false, 'sm' ); ?>
-									<span class="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#0B0F19] bg-highlight text-ink-highlight transition-transform group-hover:scale-105">
+									<span class="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-[#0B0F19] bg-highlight text-ink-highlight">
 										<?php echo teoriageek_icon( 'play', 'h-3.5 w-3.5 fill-current' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 									</span>
 								</div>

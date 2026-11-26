@@ -75,11 +75,11 @@ function teoriageek_widgets_init() {
 		array(
 			'name'          => __( 'Topo / Banner (AdSense / Header)', 'teoriageek' ),
 			'id'            => 'tg-top-banner',
-			'description'   => __( 'Slot opcional abaixo do cabeçalho. Só ocupa espaço quando há widget ou código configurado.', 'teoriageek' ),
-			'before_widget' => '<div id="%1$s" class="tg-widget-banner %2$s">',
-			'after_widget'  => '</div>',
-			'before_title'  => '<span class="sr-only">',
-			'after_title'   => '</span>',
+			'description'   => __( 'Slot opcional abaixo da 1ª dobra. Empilha verticalmente e oculta o rótulo Publicidade quando usado para widgets comuns.', 'teoriageek' ),
+			'before_widget' => '<section id="%1$s" class="tg-widget-banner tgx-sidebar-card w-full min-w-0 %2$s">',
+			'after_widget'  => '</section>',
+			'before_title'  => '<h2 class="tg-slot-widget-title mb-3 border-b border-border-subtle pb-2 font-headline text-lg font-extrabold uppercase tracking-wide text-ink-primary">',
+			'after_title'   => '</h2>',
 		)
 	);
 
@@ -88,10 +88,10 @@ function teoriageek_widgets_init() {
 			'name'          => __( 'Meio do Artigo (AdSense In-Article)', 'teoriageek' ),
 			'id'            => 'tg-mid-article',
 			'description'   => __( 'Slot opcional inserido automaticamente após o 3º parágrafo das matérias.', 'teoriageek' ),
-			'before_widget' => '<div id="%1$s" class="tg-widget-mid-article %2$s">',
-			'after_widget'  => '</div>',
-			'before_title'  => '<span class="sr-only">',
-			'after_title'   => '</span>',
+			'before_widget' => '<section id="%1$s" class="tg-widget-mid-article tgx-sidebar-card w-full min-w-0 %2$s">',
+			'after_widget'  => '</section>',
+			'before_title'  => '<h2 class="tg-slot-widget-title mb-3 border-b border-border-subtle pb-2 font-headline text-lg font-extrabold uppercase tracking-wide text-ink-primary">',
+			'after_title'   => '</h2>',
 		)
 	);
 
@@ -100,9 +100,9 @@ function teoriageek_widgets_init() {
 			'name'          => __( 'Sidebar da Matéria & Arquivos', 'teoriageek' ),
 			'id'            => 'tg-single-sidebar',
 			'description'   => __( 'Exibida na lateral das matérias entre Mais Lidas e o card compacto de Reels.', 'teoriageek' ),
-			'before_widget' => '<section id="%1$s" class="rounded-lg border-2 border-border-strong bg-surface p-4 shadow-hard-sm %2$s">',
+			'before_widget' => '<section id="%1$s" class="tgx-sidebar-card w-full min-w-0 rounded-sm border border-border-subtle bg-surface p-4 %2$s">',
 			'after_widget'  => '</section>',
-			'before_title'  => '<h2 class="mb-3 border-b-2 border-border-strong pb-2 font-headline text-xl font-extrabold uppercase tracking-tight text-ink-primary">',
+			'before_title'  => '<h2 class="mb-3 border-b border-border-subtle pb-2 font-headline text-lg font-extrabold uppercase tracking-wide text-ink-primary">',
 			'after_title'   => '</h2>',
 		)
 	);
@@ -111,10 +111,10 @@ function teoriageek_widgets_init() {
 		array(
 			'name'          => __( 'Rodapé Institucional', 'teoriageek' ),
 			'id'            => 'tg-footer-widgets',
-			'description'   => __( 'Área opcional no rodapé para avisos, parceiros ou selos.', 'teoriageek' ),
-			'before_widget' => '<div id="%1$s" class="tg-footer-widget %2$s">',
+			'description'   => __( 'Área opcional no rodapé para avisos, parceiros ou selos (listas extensas recebem rolagem contida).', 'teoriageek' ),
+			'before_widget' => '<div id="%1$s" class="tg-footer-widget w-full min-w-0 %2$s">',
 			'after_widget'  => '</div>',
-			'before_title'  => '<h2 class="mb-2 font-headline text-lg font-bold uppercase tracking-wide text-highlight">',
+			'before_title'  => '<h2 class="mb-2 font-headline text-base font-bold uppercase tracking-wide text-highlight">',
 			'after_title'   => '</h2>',
 		)
 	);
@@ -207,3 +207,26 @@ function teoriageek_enable_conditional_webp( $formats ) {
 	return $formats;
 }
 add_filter( 'image_editor_output_format', 'teoriageek_enable_conditional_webp' );
+
+/**
+ * Remove scripts e estilos nativos de emoji do WordPress para economizar requisições HTTP.
+ */
+function teoriageek_disable_wp_emojis() {
+	remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+	remove_action( 'wp_print_styles', 'print_emoji_styles' );
+	remove_filter( 'the_content_feed', 'wp_staticize_emoji' );
+	remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );
+	add_filter( 'emoji_svg_url', '__return_false' );
+}
+add_action( 'init', 'teoriageek_disable_wp_emojis' );
+
+/**
+ * Aplica folha XSL editorial ao Feed RSS para exibir uma página limpa no navegador em vez de código XML cru.
+ */
+function teoriageek_style_rss_feed() {
+	if ( file_exists( TEORIAGEEK_DIR . '/assets/xsl/rss-style.xsl' ) ) {
+		echo '<?xml-stylesheet type="text/xsl" href="' . esc_url( TEORIAGEEK_URI . '/assets/xsl/rss-style.xsl' ) . '"?>' . "
+";
+	}
+}
+add_action( 'rss2_ns', 'teoriageek_style_rss_feed', 1 );

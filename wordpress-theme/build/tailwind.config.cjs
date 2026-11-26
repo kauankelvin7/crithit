@@ -2,10 +2,21 @@
 module.exports = {
   darkMode: ['selector', '[data-theme="dark"]'],
   content: [
-    'C:/Users/kelvi/Local Sites/teoriageek/app/public/wp-content/themes/teoriageek/**/*.php',
-    'C:/Users/kelvi/Local Sites/teoriageek/app/public/wp-content/themes/teoriageek/assets/js/**/*.js',
+    '../teoriageek/**/*.php',
+    '../teoriageek/assets/js/**/*.js',
   ],
   theme: {
+    borderRadius: {
+      none: '0px',
+      sm: '2px',
+      DEFAULT: '2px',
+      md: '2px',
+      lg: '2px',
+      xl: '2px',
+      '2xl': '2px',
+      '3xl': '2px',
+      full: '9999px',
+    },
     extend: {
       backgroundColor: {
         base: 'var(--tg-bg)',
@@ -51,16 +62,16 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Impact', 'sans-serif'],
+        display: ['var(--font-display)', 'Arial Narrow', 'sans-serif'],
         headline: ['var(--font-headline)', 'Arial Narrow', 'sans-serif'],
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         reading: ['var(--font-reading)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
-        'hard-sm': 'var(--shadow-hard-sm)',
-        hard: 'var(--shadow-hard)',
-        'hard-hover': 'var(--shadow-hard-hover)',
+        'hard-sm': 'none',
+        hard: 'none',
+        'hard-hover': 'none',
       },
     },
   },

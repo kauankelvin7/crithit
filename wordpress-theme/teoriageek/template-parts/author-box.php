@@ -14,10 +14,11 @@ $tg_author_name = get_the_author_meta( 'display_name', $tg_author_id );
 $tg_author_bio  = trim( (string) get_the_author_meta( 'description', $tg_author_id ) );
 $tg_author_url  = get_author_posts_url( $tg_author_id );
 $tg_avatar_url  = get_avatar_url( $tg_author_id, array( 'size' => 128 ) );
+$tg_author_web  = teoriageek_safe_http_url( (string) get_the_author_meta( 'user_url', $tg_author_id ) );
 ?>
-<section aria-label="<?php esc_attr_e( 'Sobre o autor', 'teoriageek' ); ?>" class="mt-8 rounded-lg border-2 border-border-strong bg-surface-alt p-5">
+<section aria-label="<?php esc_attr_e( 'Sobre o autor', 'teoriageek' ); ?>" class="mt-8 rounded-sm border border-border-subtle bg-surface-alt p-5">
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-		<a href="<?php echo esc_url( $tg_author_url ); ?>" class="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-border-strong bg-brand-fill">
+		<a href="<?php echo esc_url( $tg_author_url ); ?>" class="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-border-subtle bg-brand-fill">
 			<?php if ( $tg_avatar_url ) : ?>
 				<img src="<?php echo esc_url( $tg_avatar_url ); ?>" alt="<?php echo esc_attr( $tg_author_name ); ?>" width="64" height="64" loading="lazy" decoding="async" class="h-full w-full object-cover" />
 			<?php else : ?>
@@ -39,10 +40,18 @@ $tg_avatar_url  = get_avatar_url( $tg_author_id, array( 'size' => 128 ) );
 						</a>
 					</h2>
 				</div>
-				<a href="<?php echo esc_url( $tg_author_url ); ?>" class="inline-flex items-center gap-1.5 rounded border border-border-strong bg-surface px-3 py-1.5 font-mono text-xs font-bold text-ink-primary hover:bg-highlight hover:text-ink-highlight">
-					<span><?php esc_html_e( 'Ver matérias', 'teoriageek' ); ?></span>
-					<?php echo teoriageek_icon( 'arrow-right', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-				</a>
+				<div class="flex flex-wrap items-center gap-2">
+					<?php if ( '' !== $tg_author_web ) : ?>
+						<a href="<?php echo esc_url( $tg_author_web ); ?>" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-[40px] items-center gap-1 rounded-sm border border-border-subtle bg-surface px-3 py-1.5 font-sans text-xs font-bold text-ink-secondary hover:border-brand hover:text-brand">
+							<?php echo teoriageek_icon( 'external', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<span><?php esc_html_e( 'Perfil', 'teoriageek' ); ?></span>
+						</a>
+					<?php endif; ?>
+					<a href="<?php echo esc_url( $tg_author_url ); ?>" class="inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-border-subtle bg-surface px-3 py-1.5 font-sans text-xs font-bold text-ink-primary hover:border-brand hover:text-brand">
+						<span><?php esc_html_e( 'Ver matérias', 'teoriageek' ); ?></span>
+						<?php echo teoriageek_icon( 'arrow-right', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					</a>
+				</div>
 			</div>
 
 			<p class="font-reading text-sm leading-relaxed text-ink-secondary">

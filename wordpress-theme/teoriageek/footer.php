@@ -33,10 +33,32 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 <?php if ( ! $tg_is_reels ) : ?>
 	<footer data-chrome="dark" class="mt-auto pt-14">
 		<div class="border-t-4 border-highlight bg-chrome text-chrome-ink">
+			<div class="tgx-footer-community border-b border-white/10 bg-chrome-surface">
+				<div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-4 py-4 sm:flex-row sm:items-center">
+					<div class="min-w-0">
+						<p class="font-headline text-lg font-extrabold uppercase tracking-wide text-white">
+							<?php esc_html_e( 'Acompanhe o Teoria Geek onde você estiver', 'teoriageek' ); ?>
+						</p>
+						<p class="font-sans text-xs text-chrome-muted">
+							<?php esc_html_e( 'Notícias diárias, críticas sem enrolação e Reels direto nos nossos canais oficiais.', 'teoriageek' ); ?>
+						</p>
+					</div>
+					<div class="flex flex-wrap items-center gap-2">
+						<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="tactile-btn inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-3.5 py-2 font-sans text-xs font-bold uppercase text-ink-highlight">
+							<?php echo teoriageek_icon( 'film', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<span><?php esc_html_e( 'Reels', 'teoriageek' ); ?></span>
+						</a>
+						<a href="<?php echo esc_url( home_url( '/?s=' ) ); ?>" class="inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-white/20 bg-chrome px-3.5 py-2 font-sans text-xs font-bold text-chrome-ink hover:border-highlight hover:text-highlight">
+							<?php echo teoriageek_icon( 'search', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<span><?php esc_html_e( 'Explorar Acervo', 'teoriageek' ); ?></span>
+						</a>
+					</div>
+				</div>
+			</div>
 			<div class="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-12">
 				<div class="space-y-3.5 md:col-span-5">
 					<div class="flex flex-wrap items-center gap-3">
-						<?php $tg_footer_logo = teoriageek_get_brand_logo_url( 'header' ); ?>
+						<?php $tg_footer_logo = teoriageek_get_brand_logo_url( 'footer' ); ?>
 						<?php if ( '' !== $tg_footer_logo ) : ?>
 							<a href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( $tg_site_name ); ?>" class="inline-flex shrink-0">
 								<img src="<?php echo esc_url( $tg_footer_logo ); ?>" alt="<?php echo esc_attr( $tg_site_name ); ?>" width="300" height="190" loading="lazy" decoding="async" class="h-14 w-auto object-contain" />
@@ -61,13 +83,10 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 					<?php if ( ! empty( $tg_socials ) ) : ?>
 						<div class="flex flex-wrap items-center gap-2 pt-2">
 							<?php foreach ( $tg_socials as $tg_soc ) : ?>
-								<a href="<?php echo esc_url( $tg_soc['url'] ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( $tg_soc['label'] ); ?>" class="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
+								<a href="<?php echo esc_url( $tg_soc['url'] ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( $tg_soc['label'] ); ?>" class="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
 									<?php echo teoriageek_icon( $tg_soc['icon'], 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								</a>
 							<?php endforeach; ?>
-							<a href="<?php echo esc_url( get_bloginfo( 'rss2_url' ) ); ?>" aria-label="<?php esc_attr_e( 'Feed RSS do portal', 'teoriageek' ); ?>" class="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
-								<?php echo teoriageek_icon( 'rss', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-							</a>
 						</div>
 					<?php endif; ?>
 				</div>
@@ -114,6 +133,12 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 									<?php esc_html_e( 'Teoria Geek Reels', 'teoriageek' ); ?>
 								</a>
 							</li>
+							<li>
+								<a href="<?php echo esc_url( home_url( '/?s=' ) ); ?>" class="text-chrome-muted transition-colors hover:text-highlight">
+									<?php esc_html_e( 'Buscar no Acervo', 'teoriageek' ); ?>
+								</a>
+							</li>
+
 							<?php foreach ( $tg_inst_pages as $tg_inst ) : ?>
 								<li>
 									<a href="<?php echo esc_url( get_permalink( $tg_inst->ID ) ); ?>" class="text-chrome-muted transition-colors hover:text-highlight">
@@ -125,7 +150,7 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 					<?php endif; ?>
 
 					<?php if ( is_active_sidebar( 'tg-footer-widgets' ) ) : ?>
-						<div class="pt-3">
+						<div class="tg-footer-widgets-area mt-4 flex w-full min-w-0 flex-col gap-4 border-t border-white/10 pt-4">
 							<?php dynamic_sidebar( 'tg-footer-widgets' ); ?>
 						</div>
 					<?php endif; ?>
@@ -146,7 +171,16 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 						);
 						?>
 					</p>
-					<p><?php echo esc_html( teoriageek_strip_emojis( get_bloginfo( 'description' ) ?: 'O Importante é se divertir!' ) ); ?></p>
+					<div class="flex flex-wrap items-center justify-center gap-3">
+						<?php
+						$tg_priv_link = get_privacy_policy_url();
+						if ( '' !== $tg_priv_link ) :
+							?>
+							<a href="<?php echo esc_url( $tg_priv_link ); ?>" class="hover:text-highlight hover:underline"><?php esc_html_e( 'Privacidade', 'teoriageek' ); ?></a>
+						<?php endif; ?>
+						<a href="<?php echo esc_url( home_url( '/?s=' ) ); ?>" class="hover:text-highlight hover:underline"><?php esc_html_e( 'Busca', 'teoriageek' ); ?></a>
+						<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="hover:text-highlight hover:underline">Reels</a>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -156,6 +190,7 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 <?php
 get_template_part( 'template-parts/navigation-mobile' );
 get_template_part( 'template-parts/search-modal' );
+get_template_part( 'template-parts/cookie-banner' );
 ?>
 <?php if ( ! function_exists( 'wp_print_speculation_rules' ) ) : ?>
 <script type="speculationrules">

@@ -18,8 +18,8 @@ get_header();
 		the_post();
 		teoriageek_breadcrumb();
 		?>
-		<article id="post-<?php the_ID(); ?>" <?php post_class( 'rounded-lg border-2 border-border-strong bg-surface p-6 shadow-hard sm:p-10' ); ?>>
-			<header class="mb-6 border-b-2 border-border-strong pb-4">
+		<article id="post-<?php the_ID(); ?>" <?php post_class( 'rounded-sm border border-border-subtle border-t-4 border-t-brand bg-surface p-4 sm:p-10' ); ?>>
+			<header class="mb-6 border-b border-border-subtle pb-4">
 				<h1 class="font-headline text-3xl font-extrabold uppercase tracking-tight text-ink-primary sm:text-5xl">
 					<?php echo esc_html( teoriageek_clean_title( get_the_title() ) ); ?>
 				</h1>

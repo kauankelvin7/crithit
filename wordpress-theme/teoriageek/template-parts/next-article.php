@@ -23,8 +23,8 @@ $tg_np_url   = get_permalink( $tg_np_id );
 $tg_np_title = teoriageek_clean_title( get_the_title( $tg_np_id ) );
 ?>
 <nav aria-label="<?php esc_attr_e( 'Próxima matéria recomendada', 'teoriageek' ); ?>" class="mt-8">
-	<a href="<?php echo esc_url( $tg_np_url ); ?>" class="editorial-card editorial-card-soft group flex flex-col gap-4 overflow-hidden rounded-lg border border-border-subtle bg-surface p-4 shadow-sm sm:flex-row sm:items-center">
-		<div class="w-full shrink-0 overflow-hidden rounded border border-border-subtle sm:w-44">
+	<a href="<?php echo esc_url( $tg_np_url ); ?>" class="editorial-card editorial-card-soft group flex flex-col gap-4 overflow-hidden rounded-sm border border-border-subtle bg-surface p-4 sm:flex-row sm:items-center">
+		<div class="w-full shrink-0 overflow-hidden rounded-sm border border-border-subtle sm:w-44">
 			<?php
 			get_template_part(
 				'template-parts/cover-media',

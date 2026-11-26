@@ -2,8 +2,6 @@
    TEORIA GEEK — FONTES .WOFF2 AUTO-HOSPEDADAS (ZERO REQUISIÇÕES EXTERNAS)
    ========================================================================== */
 
-@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/bangers-400-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/bangers-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/barlow-condensed-600-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/barlow-condensed-600-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/barlow-condensed-700-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
@@ -14,8 +12,6 @@
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/jetbrains-mono-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'Plus Jakarta Sans'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('../fonts/plus-jakarta-sans-400-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: 'Plus Jakarta Sans'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('../fonts/plus-jakarta-sans-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/space-grotesk-500-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/space-grotesk-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 
 @tailwind base;
 @tailwind components;
@@ -29,9 +25,9 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --font-display: 'Bangers';
+  --font-display: 'Barlow Condensed';
   --font-headline: 'Barlow Condensed';
-  --font-sans: 'Space Grotesk';
+  --font-sans: 'Plus Jakarta Sans';
   --font-reading: 'Plus Jakarta Sans';
   --font-mono: 'JetBrains Mono';
 
@@ -41,15 +37,13 @@
   --tg-accent: #FACC15;
   --tg-accent-strong: #EAB308;
   --tg-on-accent: #0B0F19;
-  --tg-bg: #F8FAFC;
+  --tg-bg: #FFFFFF;
   --tg-surface: #FFFFFF;
-  --tg-surface-alt: #EEF2F7;
+  --tg-surface-alt: #F4F6F9;
   --tg-text: #0B0F19;
 
-  /* Camada 60% — Base */
+  /* Camada 60% — Base contínua limpa (zero halftone) */
   --bg-base: var(--tg-bg);
-  --halftone-dot: rgba(11, 15, 25, 0.045);
-  --halftone-size: 12px;
 
   /* Camada 30% — Superfícies */
   --bg-surface: var(--tg-surface);
@@ -71,16 +65,16 @@
   --ink-inverse: #FFFFFF;
   --ink-on-highlight: #0B0F19;
 
-  /* Bordas, Sombras & Foco */
+  /* Bordas & Foco (Geometria Reta Editorial) */
   --border-strong: #0B0F19;
   --border-input: #64748B;
-  --border-subtle: #CBD5E1;
+  --border-subtle: #E2E8F0;
   --focus-ring: var(--tg-primary);
   --focus-ring-dark: var(--tg-accent);
 
-  --shadow-hard-sm: 2px 2px 0px #0B0F19;
-  --shadow-hard: 4px 4px 0px #0B0F19;
-  --shadow-hard-hover: 6px 6px 0px #0B0F19;
+  --shadow-hard-sm: none;
+  --shadow-hard: none;
+  --shadow-hard-hover: none;
 
   /* Camada 10% — Marca Azul & Amarelo + Editorias */
   --highlight-comic: var(--tg-accent);
@@ -120,14 +114,12 @@
   color-scheme: dark;
 
   --tg-bg: #0B0F19;
-  --tg-surface: #131A2A;
-  --tg-surface-alt: #1B2438;
+  --tg-surface: #0F1524;
+  --tg-surface-alt: #161F33;
   --tg-text: #F1F5F9;
   --tg-on-accent: #0B0F19;
 
   --bg-base: var(--tg-bg);
-  --halftone-dot: rgba(248, 250, 252, 0.04);
-  --halftone-size: 14px;
 
   --bg-surface: var(--tg-surface);
   --bg-surface-alt: var(--tg-surface-alt);
@@ -146,15 +138,15 @@
   --ink-inverse: #0B0F19;
   --ink-on-highlight: #0B0F19;
 
-  --border-strong: #2D3A54;
+  --border-strong: #F8FAFC;
   --border-input: #64748B;
-  --border-subtle: #222D42;
+  --border-subtle: rgba(255, 255, 255, 0.11);
   --focus-ring: #60A5FA;
   --focus-ring-dark: var(--tg-accent);
 
-  --shadow-hard-sm: 2px 2px 0px #04060B;
-  --shadow-hard: 4px 4px 0px #04060B;
-  --shadow-hard-hover: 6px 6px 0px #000000;
+  --shadow-hard-sm: none;
+  --shadow-hard: none;
+  --shadow-hard-hover: none;
 
   --highlight-comic: var(--tg-accent);
 
@@ -198,8 +190,7 @@
   body {
     min-height: 100dvh;
     background-color: var(--tg-bg);
-    background-image: radial-gradient(var(--halftone-dot) 1.2px, transparent 1.2px);
-    background-size: var(--halftone-size) var(--halftone-size);
+    background-image: none;
     color: var(--tg-text);
     overflow-x: clip;
   }
@@ -827,8 +818,68 @@ body.admin-bar {
   }
 }
 
-.tg-reels-shell {
-  height: calc(100dvh - var(--tg-header-h, 67px) - var(--wp-admin-bar-h, 0px));
+@media (max-width: 600px) {
+  body.admin-bar:not(.tg-reels-page) {
+    --wp-admin-bar-h: 0px;
+  }
+}
+
+/* Impede o header sticky de ficar encoberto pela Admin Bar do WP quando logado (0px para visitantes) */
+.tg-site-header {
+  top: var(--wp-admin-bar-h, 0px);
+}
+
+/* Tela Reels travada exatamente no viewport abaixo da Admin Bar (sem rolagem externa nem recorte no topo) */
+html:has(body.tg-reels-page) {
+  background-color: #090A0F;
+  overflow: hidden;
+  height: 100%;
+}
+
+body.tg-reels-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  padding-top: var(--wp-admin-bar-h, 0px);
+  overflow: hidden;
+  background-color: #090A0F;
+}
+
+body.tg-reels-page .tg-site-header {
+  position: relative;
+  top: 0;
+  flex-shrink: 0;
+}
+
+body.tg-reels-page .tg-reels-shell {
+  flex: 1 1 0%;
+  min-height: 0;
+  height: auto;
+}
+
+/* Barras de rolagem escuras e discretas nas colunas laterais do Reels (elimina scrollbars brancas no Windows) */
+.tg-reels-aside-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.tg-reels-aside-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tg-reels-aside-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tg-reels-aside-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-radius: 2px;
+}
+
+.tg-reels-aside-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .tg-reels-mobile-bar {
@@ -854,15 +905,15 @@ body.admin-bar {
 @media (min-width: 640px) {
   .tg-reels-stage {
     width: auto;
-    max-width: 440px;
+    max-width: 480px;
   }
 
   .tg-reel-card {
-    aspect-ratio: 9 / 16;
-    height: min(100%, 760px);
-    max-height: calc(100dvh - var(--tg-header-h, 67px) - var(--wp-admin-bar-h, 0px) - 20px);
+    aspect-ratio: 10 / 16;
+    height: min(100%, 736px);
+    max-height: 100%;
     width: auto;
-    max-width: min(430px, calc((100dvh - var(--tg-header-h, 67px) - var(--wp-admin-bar-h, 0px) - 20px) * 9 / 16));
+    max-width: 460px;
   }
 }
 
@@ -877,8 +928,8 @@ body.admin-bar {
   aspect-ratio: 16 / 9;
   margin: 1.5rem 0;
   overflow: hidden;
-  border-radius: 0.5rem;
-  border: 2px solid var(--border-strong);
+  border-radius: 2px;
+  border: 1px solid var(--border-subtle);
   background-color: #080B12;
   cursor: pointer;
 }
@@ -895,7 +946,7 @@ body.admin-bar {
 }
 
 .entry-content .tg-yt-facade:hover .tg-yt-facade-thumb {
-  transform: scale(1.03);
+  transform: scale(1.02);
   opacity: 0.72;
 }
 
@@ -919,25 +970,24 @@ body.admin-bar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 9999px;
-  border: 2px solid #0B0F19;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 2px;
+  border: 1px solid #0B0F19;
   background-color: var(--tg-accent);
   color: #0B0F19;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
-  transition: transform 150ms ease;
+  transition: background-color 150ms ease;
 }
 
 .entry-content .tg-yt-facade:hover .tg-yt-facade-play {
-  transform: scale(1.08);
+  background-color: #FDE047;
 }
 
 .entry-content .tg-yt-facade-badge {
-  border-radius: 0.25rem;
-  background-color: rgba(11, 15, 25, 0.85);
+  border-radius: 2px;
+  background-color: rgba(11, 15, 25, 0.88);
   padding: 0.25rem 0.65rem;
-  font-family: var(--font-mono), monospace;
+  font-family: var(--font-sans), sans-serif;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -967,7 +1017,7 @@ body.admin-bar {
 }
 
 /* ==========================================================================
-   HOME REELS STRIP — WEB STORIES VERTICAIS 3:4 FULL-BLEED (5 COL / CARROSSEL)
+   HOME & SINGLE REELS STRIP — WEB STORIES VERTICAIS 3:4 FULL-BLEED
    ========================================================================== */
 
 .tg-story-grid {
@@ -990,11 +1040,11 @@ body.admin-bar {
   scroll-snap-align: start;
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  border-radius: 0.75rem;
-  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   background-color: #0B0F19;
   contain: layout style;
-  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 180ms ease, box-shadow 180ms ease;
+  transition: border-color 150ms ease;
 }
 
 @media (min-width: 640px) {
@@ -1012,6 +1062,10 @@ body.admin-bar {
     padding-bottom: 0;
   }
 
+  .tg-story-grid.tg-story-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .tg-story-card {
     flex: auto;
   }
@@ -1019,8 +1073,6 @@ body.admin-bar {
 
 .tg-story-card:hover {
   border-color: var(--tg-accent);
-  transform: translateY(-3px);
-  box-shadow: 0 14px 28px -12px rgba(0, 0, 0, 0.65);
 }
 
 .tg-story-img {
@@ -1031,11 +1083,11 @@ body.admin-bar {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transition: transform 340ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tg-story-card:hover .tg-story-img {
-  transform: scale(1.06);
+  transform: scale(1.04);
 }
 
 .tg-story-scrim {
@@ -1075,7 +1127,7 @@ body.admin-bar {
 .tg-story-bar {
   height: 3px;
   flex: 1;
-  border-radius: 9999px;
+  border-radius: 2px;
   background-color: rgba(255, 255, 255, 0.35);
 }
 
@@ -1090,16 +1142,10 @@ body.admin-bar {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  border: 2px solid #0B0F19;
+  border-radius: 2px;
+  border: 1px solid #0B0F19;
   background-color: var(--tg-accent);
   color: #0B0F19;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-  transition: transform 150ms ease;
-}
-
-.tg-story-card:hover .tg-story-play {
-  transform: scale(1.08);
 }
 
 .tg-story-footer {
@@ -1128,15 +1174,15 @@ body.admin-bar {
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
-    #000000 44px,
-    #000000 calc(100% - 44px),
+    #000000 24px,
+    #000000 calc(100% - 24px),
     transparent 100%
   );
   mask-image: linear-gradient(
     to right,
     transparent 0%,
-    #000000 44px,
-    #000000 calc(100% - 44px),
+    #000000 24px,
+    #000000 calc(100% - 24px),
     transparent 100%
   );
 }
@@ -1167,44 +1213,12 @@ body.admin-bar {
     will-change: transform;
   }
 
-  .editorial-card {
-    transition: transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      box-shadow 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      border-color 150ms ease;
-  }
-
-  .editorial-card:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: var(--shadow-hard-hover);
-  }
-
-  .editorial-card-soft:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px -12px rgba(11, 15, 25, 0.25);
-    border-color: var(--tg-primary);
-  }
-
-  .tactile-btn {
-    transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      box-shadow 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-      background-color 150ms ease,
-      color 150ms ease;
-  }
-
-  .tactile-btn:hover:not(:disabled) {
-    transform: translate(-1px, -1px);
-  }
-
   .editorial-cover-media {
-    transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .group:hover .editorial-cover-media {
-    transform: scale(1.04);
-  }
-
-  .live-dot-ping {
-    animation: tg-live-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+    transform: scale(1.03);
   }
 }
 

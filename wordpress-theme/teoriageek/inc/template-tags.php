@@ -22,32 +22,27 @@ function teoriageek_category_badge( $term, $linked = false, $size = 'sm', $skewe
 	if ( ! $term instanceof WP_Term ) {
 		return;
 	}
+	unset( $skewed );
 	$style      = teoriageek_get_category_style( $term->slug );
 	$size_class = ( 'md' === $size ) ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-[11px]';
-	$skew_outer = $skewed ? '-skew-x-6' : 'rounded-sm';
-	$skew_inner = $skewed ? 'skew-x-6 inline-block' : '';
 	$inline     = sprintf( 'background-color:%s;color:%s;', $style['fill'], $style['ink'] );
 	$label      = teoriageek_fix_mojibake( html_entity_decode( $term->name, ENT_QUOTES, 'UTF-8' ) );
 
 	if ( $linked ) {
 		printf(
-			'<a href="%1$s" title="%6$s" class="tg-cat-badge inline-flex max-w-full items-center overflow-hidden whitespace-nowrap font-mono %2$s %3$s font-bold uppercase tracking-wider leading-tight transition-opacity hover:opacity-90" style="%4$s"><span class="%5$s truncate">%6$s</span></a>',
+			'<a href="%1$s" title="%4$s" class="tg-cat-badge inline-flex max-w-full items-center overflow-hidden whitespace-nowrap rounded-sm font-headline %2$s font-bold uppercase tracking-wider leading-tight transition-opacity hover:opacity-90" style="%3$s"><span class="truncate">%4$s</span></a>',
 			esc_url( get_category_link( $term->term_id ) ),
 			esc_attr( $size_class ),
-			esc_attr( $skew_outer ),
 			esc_attr( $inline ),
-			esc_attr( $skew_inner ),
 			esc_html( $label )
 		);
 		return;
 	}
 
 	printf(
-		'<span title="%5$s" class="tg-cat-badge inline-flex max-w-full items-center overflow-hidden whitespace-nowrap font-mono %1$s %2$s font-bold uppercase tracking-wider leading-tight" style="%3$s"><span class="%4$s truncate">%5$s</span></span>',
+		'<span title="%3$s" class="tg-cat-badge inline-flex max-w-full items-center overflow-hidden whitespace-nowrap rounded-sm font-headline %1$s font-bold uppercase tracking-wider leading-tight" style="%2$s"><span class="truncate">%3$s</span></span>',
 		esc_attr( $size_class ),
-		esc_attr( $skew_outer ),
 		esc_attr( $inline ),
-		esc_attr( $skew_inner ),
 		esc_html( $label )
 	);
 }
@@ -212,13 +207,13 @@ function teoriageek_render_brand_logo() {
 	echo '<a href="' . esc_url( home_url( '/' ) ) . '" class="inline-flex shrink-0 items-center gap-2.5 group focus-visible:outline-highlight" aria-label="' . esc_attr( $site_name . ' — Ir para a capa' ) . '">';
 	if ( '' !== $logo_url ) {
 		printf(
-			'<img src="%1$s" alt="%2$s" width="300" height="190" class="tg-brand-logo h-12 w-auto max-w-[150px] object-contain transition-transform duration-150 group-hover:scale-105 sm:h-14" decoding="async" fetchpriority="high" />',
+			'<img src="%1$s" alt="%2$s" width="300" height="190" class="tg-brand-logo h-11 w-auto max-w-[144px] object-contain transition-opacity duration-150 group-hover:opacity-90 sm:h-12 sm:max-w-[156px]" decoding="async" fetchpriority="high" />',
 			esc_url( $logo_url ),
 			esc_attr( $site_name )
 		);
 	} else {
 		printf(
-			'<span class="inline-flex items-center rounded border-2 border-highlight bg-brand-fill px-3 py-1 font-display text-2xl leading-none tracking-wider text-white shadow-hard-sm transition-transform group-hover:-translate-y-0.5">%s</span>',
+			'<span class="inline-flex items-center rounded-sm border border-highlight bg-brand-fill px-3 py-1 font-headline text-2xl font-extrabold leading-none tracking-wider text-white transition-opacity group-hover:opacity-90">%s</span>',
 			esc_html( strtoupper( $site_name ) )
 		);
 	}
@@ -226,7 +221,25 @@ function teoriageek_render_brand_logo() {
 }
 
 /**
- * Obtém o HTML de um slot opcional de anúncio (Customizer ou Widget) com reserva de altura anti-CLS.
+ * Identifica se o HTML renderizado de uma sidebar corresponde a código real de anúncio/monetização
+ * (AdSense, Google Ad Manager, Taboola, Outbrain, etc.) em vez de widgets nativos comuns do WordPress.
+ *
+ * @param string $html HTML renderizado pelos widgets do slot.
+ * @return bool
+ */
+function teoriageek_is_ad_markup( $html ) {
+	if ( '' === trim( $html ) ) {
+		return false;
+	}
+	return (bool) preg_match(
+		'/(?:adsbygoogle|googlesyndication|doubleclick\.net|googletag|gpt-ad|data-ad-client|data-ad-slot|ad-inserter|adinserter|taboola|outbrain|mgid|amzn_assoc)/i',
+		$html
+	);
+}
+
+/**
+ * Obtém o HTML de um slot opcional de anúncio (Customizer ou Widget) com reserva de altura anti-CLS
+ * e empilhamento estritamente vertical. Suprime o rótulo "PUBLICIDADE" quando o slot exibe widgets comuns do WP.
  *
  * @param string $slot 'top', 'mid_article' ou 'sidebar'.
  * @return string
@@ -251,19 +264,42 @@ function teoriageek_get_ad_slot_markup( $slot ) {
 		return '';
 	}
 
+	$widget_html = '';
+	if ( '' === $custom_code && $has_widget ) {
+		ob_start();
+		dynamic_sidebar( $sidebar_id );
+		$widget_html = trim( (string) ob_get_clean() );
+		if ( '' === $widget_html ) {
+			return '';
+		}
+	}
+
+	$is_real_ad = ( '' !== $custom_code ) || teoriageek_is_ad_markup( $widget_html );
+
+	// Quando o slot contém widgets comuns do WordPress (ex.: Busca, Posts Recentes, Categorias),
+	// empilha verticalmente em coluna única e NÃO exibe o rótulo "PUBLICIDADE".
+	if ( ! $is_real_ad ) {
+		$margin_cls = ( 'sidebar' === $slot ) ? '' : 'my-6 ';
+		return sprintf(
+			'<div class="tg-sidebar-widgets tg-widget-stack %1$sflex w-full min-w-0 flex-col gap-5 text-left">%2$s</div>',
+			esc_attr( $margin_cls ),
+			$widget_html
+		);
+	}
+
 	ob_start();
 	$min_h = isset( $min_h_map[ $slot ] ) ? $min_h_map[ $slot ] : 'min-h-[90px]';
 	?>
-	<aside aria-label="<?php esc_attr_e( 'Publicidade', 'teoriageek' ); ?>" class="tg-ad-slot my-6 rounded border border-border-subtle bg-surface-alt p-3 text-center">
-		<span class="mb-1.5 block font-mono text-[11px] uppercase tracking-widest text-ink-muted">
+	<aside aria-label="<?php esc_attr_e( 'Publicidade', 'teoriageek' ); ?>" class="tg-ad-slot tg-ad-slot--ad my-6 flex w-full min-w-0 flex-col rounded-sm border border-border-subtle bg-surface-alt p-3 text-center">
+		<span class="mb-1.5 block font-sans text-[11px] font-semibold uppercase tracking-widest text-ink-muted">
 			<?php esc_html_e( 'Publicidade', 'teoriageek' ); ?>
 		</span>
-		<div class="mx-auto flex items-center justify-center overflow-hidden <?php echo esc_attr( $min_h ); ?>">
+		<div class="tg-ad-slot__inner mx-auto flex w-full min-w-0 flex-col items-stretch justify-center gap-4 overflow-hidden <?php echo esc_attr( $min_h ); ?>">
 			<?php
 			if ( '' !== $custom_code ) {
 				echo $custom_code; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitizado em teoriageek_sanitize_ad_code().
-			} elseif ( $has_widget ) {
-				dynamic_sidebar( $sidebar_id );
+			} else {
+				echo $widget_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Saída nativa de dynamic_sidebar().
 			}
 			?>
 		</div>
@@ -435,4 +471,79 @@ function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array(), $wi
 	}
 
 	return $posts;
+}
+
+
+/**
+ * Renderiza avatar circular + nome do autor nos cards editoriais (estilo Metrópoles).
+ *
+ * @param int  $author_id ID do autor.
+ * @param int  $size      Tamanho em px (18, 20 ou 24).
+ * @param bool $prefix    Se inclui o prefixo "Por ".
+ */
+function teoriageek_render_author_chip( $author_id, $size = 20, $prefix = false ) {
+	$author_id = (int) $author_id;
+	$name      = get_the_author_meta( 'display_name', $author_id );
+	if ( '' === $name ) {
+		return;
+	}
+	$size       = max( 16, min( 32, (int) $size ) );
+	$avatar_url = get_avatar_url( $author_id, array( 'size' => $size * 2 ) );
+	$initial    = mb_strtoupper( mb_substr( trim( $name ), 0, 1, 'UTF-8' ), 'UTF-8' );
+	$label      = $prefix ? sprintf( __( 'Por %s', 'teoriageek' ), $name ) : $name;
+	?>
+	<span class="tgx-author-chip inline-flex min-w-0 items-center gap-1.5">
+		<?php if ( $avatar_url ) : ?>
+			<img
+				src="<?php echo esc_url( $avatar_url ); ?>"
+				alt="<?php echo esc_attr( $name ); ?>"
+				width="<?php echo esc_attr( (string) $size ); ?>"
+				height="<?php echo esc_attr( (string) $size ); ?>"
+				loading="lazy"
+				decoding="async"
+				class="tgx-author-avatar shrink-0 rounded-full object-cover"
+				style="width:<?php echo esc_attr( (string) $size ); ?>px;height:<?php echo esc_attr( (string) $size ); ?>px;"
+			/>
+		<?php else : ?>
+			<span class="tgx-author-avatar-fallback inline-flex shrink-0 items-center justify-center rounded-full bg-brand-fill font-bold text-white" style="width:<?php echo esc_attr( (string) $size ); ?>px;height:<?php echo esc_attr( (string) $size ); ?>px;font-size:11px;" aria-hidden="true">
+				<?php echo esc_html( $initial ); ?>
+			</span>
+		<?php endif; ?>
+		<span class="truncate font-medium text-ink-secondary"><?php echo esc_html( $label ); ?></span>
+	</span>
+	<?php
+}
+
+/**
+ * Renderiza faixa horizontal rolável de editorias rápidas no mobile (< 1024px), estilo Metrópoles.
+ */
+function teoriageek_render_mobile_cat_strip() {
+	$slugs = array( 'noticias', 'games', 'filmes', 'series', 'animes-mangas', 'criticas', 'reviews', 'livros-hqs', 'especial-teoria-geek' );
+	$items = array();
+	foreach ( $slugs as $slug ) {
+		$term = get_category_by_slug( $slug );
+		if ( $term && ! is_wp_error( $term ) ) {
+			$items[] = $term;
+		}
+	}
+	if ( empty( $items ) ) {
+		return;
+	}
+	$current_cat_id = 0;
+	if ( is_category() ) {
+		$current_cat_id = (int) get_queried_object_id();
+	} elseif ( is_singular( 'post' ) ) {
+		$primary_cat    = teoriageek_get_primary_category( get_the_ID() );
+		$current_cat_id = ( $primary_cat instanceof WP_Term ) ? (int) $primary_cat->term_id : 0;
+	}
+	$is_home_active = is_front_page();
+
+	echo '<nav aria-label="' . esc_attr__( 'Acesso rápido às editorias', 'teoriageek' ) . '" class="tgx-mobile-cat-strip lg:hidden border-t border-white/10 bg-chrome-surface">';
+	echo '<div class="tgx-mobile-cat-scroll flex items-center gap-1 overflow-x-auto px-3">';
+	echo '<a href="' . esc_url( home_url( '/' ) ) . '"' . ( $is_home_active ? ' aria-current="page"' : '' ) . ' class="tgx-mobile-cat-pill' . ( $is_home_active ? ' is-active' : '' ) . '">' . esc_html__( 'Capa', 'teoriageek' ) . '</a>';
+	foreach ( $items as $term ) {
+		$is_curr = ( $current_cat_id === (int) $term->term_id );
+		echo '<a href="' . esc_url( get_category_link( $term->term_id ) ) . '"' . ( $is_curr ? ' aria-current="page"' : '' ) . ' class="tgx-mobile-cat-pill' . ( $is_curr ? ' is-active' : '' ) . '">' . esc_html( teoriageek_fix_mojibake( html_entity_decode( $term->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ) ) . '</a>';
+	}
+	echo '</div></nav>';
 }

@@ -27,7 +27,7 @@ $tg_socials = teoriageek_get_social_links();
 					<?php echo esc_html( strtoupper( $tg_drawer_name ) ); ?>
 				</span>
 			<?php endif; ?>
-			<button type="button" data-tg-drawer-close aria-label="<?php esc_attr_e( 'Fechar menu', 'teoriageek' ); ?>" class="inline-flex h-9 w-9 items-center justify-center rounded border border-white/20 bg-chrome-surface text-chrome-ink hover:border-highlight hover:text-highlight">
+			<button type="button" data-tg-drawer-close aria-label="<?php esc_attr_e( 'Fechar menu', 'teoriageek' ); ?>" class="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/20 bg-chrome-surface text-chrome-ink hover:border-highlight hover:text-highlight">
 				<?php echo teoriageek_icon( 'x', 'h-5 w-5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</button>
 		</div>
@@ -43,11 +43,11 @@ $tg_socials = teoriageek_get_social_links();
 					value="<?php echo esc_attr( get_search_query() ); ?>"
 					aria-label="<?php esc_attr_e( 'Buscar no portal', 'teoriageek' ); ?>"
 					placeholder="<?php esc_attr_e( 'Buscar matérias, críticas, jogos...', 'teoriageek' ); ?>"
-					class="w-full rounded border-2 border-[var(--border-input)] bg-chrome-surface py-2 pl-9 pr-3 font-sans text-sm text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
+					class="min-h-[42px] w-full rounded-sm border border-white/20 bg-chrome-surface py-2 pl-9 pr-3 font-sans text-base text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
 				/>
 			</form>
 
-			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="flex items-center justify-between rounded border-2 border-[#0B0F19] bg-highlight px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-ink-highlight">
+			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="flex min-h-[42px] items-center justify-between rounded-sm border border-[#0B0F19] bg-highlight px-4 py-2.5 font-sans text-xs font-extrabold uppercase tracking-wider text-ink-highlight">
 				<span class="inline-flex items-center gap-2">
 					<?php echo teoriageek_icon( 'film', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					<?php esc_html_e( 'Explorar Teoria Geek Reels', 'teoriageek' ); ?>
@@ -61,12 +61,12 @@ $tg_socials = teoriageek_get_social_links();
 
 			<?php if ( ! empty( $tg_socials ) ) : ?>
 				<div class="border-t border-white/10 pt-4">
-					<p class="mb-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-chrome-muted">
+					<p class="mb-2.5 font-sans text-[11px] font-bold uppercase tracking-wider text-chrome-muted">
 						<?php esc_html_e( 'Siga o Teoria Geek', 'teoriageek' ); ?>
 					</p>
 					<div class="flex flex-wrap items-center gap-2">
 						<?php foreach ( $tg_socials as $tg_soc ) : ?>
-							<a href="<?php echo esc_url( $tg_soc['url'] ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( $tg_soc['label'] ); ?>" class="inline-flex h-9 w-9 items-center justify-center rounded border border-white/15 bg-chrome-surface text-chrome-ink hover:border-highlight hover:text-highlight">
+							<a href="<?php echo esc_url( $tg_soc['url'] ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( $tg_soc['label'] ); ?>" class="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/15 bg-chrome-surface text-chrome-ink hover:border-highlight hover:text-highlight">
 								<?php echo teoriageek_icon( $tg_soc['icon'], 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</a>
 						<?php endforeach; ?>

@@ -88,6 +88,12 @@
       // Ignora bloqueio de storage
     }
     syncThemeButtons();
+    // Recarrega o esquema de cores do Disqus (pipDisqus) caso já esteja montado na página
+    if (window.DISQUS && typeof window.DISQUS.reset === 'function' && document.getElementById('disqus_thread')) {
+      try {
+        window.DISQUS.reset({ reload: true });
+      } catch (_e) {}
+    }
   }
 
   document.addEventListener('click', function (e) {
@@ -150,7 +156,7 @@
       var expBtn = document.createElement('button');
       expBtn.type = 'button';
       expBtn.className =
-        'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-white/15 bg-chrome-surface text-xs text-chrome-ink';
+        'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded border border-white/15 bg-chrome-surface text-xs text-chrome-ink';
       expBtn.setAttribute('aria-expanded', 'false');
       expBtn.setAttribute('aria-label', 'Expandir submenu');
       expBtn.innerHTML =
@@ -257,7 +263,11 @@
         controller = new AbortController();
 
         resultsBox.innerHTML =
-          '<p class="py-4 text-center font-mono text-xs text-ink-muted">Buscando no acervo...</p>';
+          '<div class="tgx-skel-list" aria-label="Carregando resultados">' +
+          '<div class="tgx-skel-row"><div class="tgx-skel-line w-24 h-3"></div><div class="tgx-skel-line w-full h-4"></div></div>' +
+          '<div class="tgx-skel-row"><div class="tgx-skel-line w-20 h-3"></div><div class="tgx-skel-line w-4/5 h-4"></div></div>' +
+          '<div class="tgx-skel-row"><div class="tgx-skel-line w-28 h-3"></div><div class="tgx-skel-line w-11/12 h-4"></div></div>' +
+          '</div>';
 
         fetch(cfg.restUrl + '/search?q=' + encodeURIComponent(term), {
           signal: controller.signal,
@@ -307,8 +317,12 @@
           })
           .catch(function (err) {
             if (err && err.name === 'AbortError') return;
+            var fallbackUrl = (cfg.homeUrl || '/') + '?s=' + encodeURIComponent(term);
             resultsBox.innerHTML =
-              '<p class="py-3 text-center font-mono text-xs text-ink-muted">Pressione Enter para ver a busca completa.</p>';
+              '<div class="py-4 text-center space-y-2.5">' +
+              '<p class="font-sans text-xs text-ink-muted">Não foi possível carregar os resultados instantâneos agora.</p>' +
+              '<a href="' + escapeHtml(fallbackUrl) + '" class="inline-flex min-h-[40px] items-center gap-1.5 rounded-sm bg-brand-fill px-4 py-2 font-sans text-xs font-bold text-white">Buscar "' + escapeHtml(term) + '" no portal</a>' +
+              '</div>';
           });
       }, 220);
     });
@@ -490,11 +504,231 @@
     }
   });
 
+  /* 10. Carrossel Editorial de Destaques (Hero) — Vanilla JS puro, 6s autoplay inteligente e swipe mobile */
+  function initHeroCarousel() {
+    var carousels = document.querySelectorAll('[data-tg-hero-carousel]');
+    if (!carousels.length) return;
+
+    var reducedMotionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+
+    carousels.forEach(function (root) {
+      var slides = Array.prototype.slice.call(root.querySelectorAll('[data-tg-hero-slide]'));
+      if (slides.length < 2) return;
+
+      var bars = Array.prototype.slice.call(root.querySelectorAll('[data-tg-hero-bar]'));
+      var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-tg-hero-tab]'));
+      var counter = root.querySelector('[data-tg-hero-counter]');
+      var prevBtn = root.querySelector('[data-tg-hero-prev]');
+      var nextBtn = root.querySelector('[data-tg-hero-next]');
+
+      var duration = parseInt(root.getAttribute('data-interval') || '6000', 10);
+      if (isNaN(duration) || duration < 2000) duration = 6000;
+      root.style.setProperty('--tg-hero-duration', duration + 'ms');
+
+      var current = 0;
+      var timerId = null;
+      var startedAt = 0;
+      var remaining = duration;
+      var hoverPaused = false;
+      var focusPaused = false;
+
+      function isReducedMotion() {
+        return !!(reducedMotionQuery && reducedMotionQuery.matches);
+      }
+
+      function isPaused() {
+        return hoverPaused || focusPaused || document.hidden || isReducedMotion();
+      }
+
+      function setSlideInteractivity(slide, active) {
+        slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+        if (active) {
+          slide.removeAttribute('inert');
+        } else {
+          slide.setAttribute('inert', '');
+        }
+        slide.querySelectorAll('a, button').forEach(function (el) {
+          el.setAttribute('tabindex', active ? '0' : '-1');
+        });
+      }
+
+      function restartAnimation(el) {
+        if (!el) return;
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = '';
+      }
+
+      function clearTimer() {
+        if (timerId !== null) {
+          clearTimeout(timerId);
+          timerId = null;
+        }
+      }
+
+      function scheduleNext() {
+        clearTimer();
+        var paused = isPaused();
+        root.classList.toggle('is-paused', paused);
+        if (paused) return;
+        startedAt = Date.now();
+        timerId = setTimeout(function () {
+          goTo(current + 1);
+        }, Math.max(120, remaining));
+      }
+
+      function pauseAutoplay() {
+        if (timerId !== null) {
+          var elapsed = Date.now() - startedAt;
+          remaining = Math.max(120, remaining - elapsed);
+          clearTimer();
+        }
+        root.classList.add('is-paused');
+      }
+
+      function syncPauseState() {
+        if (isPaused()) {
+          pauseAutoplay();
+        } else {
+          scheduleNext();
+        }
+      }
+
+      function goTo(index) {
+        var next = ((index % slides.length) + slides.length) % slides.length;
+        current = next;
+        remaining = duration;
+
+        slides.forEach(function (slide, idx) {
+          var active = idx === next;
+          slide.classList.toggle('is-active', active);
+          setSlideInteractivity(slide, active);
+          if (active) {
+            restartAnimation(slide.querySelector('.tg-cover-img'));
+          }
+        });
+
+        bars.forEach(function (bar, idx) {
+          var active = idx === next;
+          bar.classList.toggle('is-active', active);
+          bar.classList.toggle('is-done', idx < next);
+          bar.setAttribute('aria-selected', active ? 'true' : 'false');
+          bar.setAttribute('aria-current', active ? 'true' : 'false');
+          if (active) {
+            restartAnimation(bar.querySelector('.tg-hero-bar-fill'));
+          }
+        });
+
+        tabs.forEach(function (tab, idx) {
+          var active = idx === next;
+          tab.classList.toggle('is-active', active);
+          tab.setAttribute('aria-selected', active ? 'true' : 'false');
+          tab.setAttribute('aria-current', active ? 'true' : 'false');
+        });
+
+        if (counter) {
+          var currStr = (next + 1 < 10 ? '0' : '') + (next + 1);
+          var totStr = (slides.length < 10 ? '0' : '') + slides.length;
+          counter.textContent = currStr + ' / ' + totStr;
+        }
+
+        scheduleNext();
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+          goTo(current - 1);
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+          goTo(current + 1);
+        });
+      }
+
+      root.querySelectorAll('[data-tg-hero-go]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var targetIdx = parseInt(btn.getAttribute('data-tg-hero-go') || '0', 10);
+          if (!isNaN(targetIdx)) {
+            goTo(targetIdx);
+          }
+        });
+      });
+
+      root.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          goTo(current + 1);
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goTo(current - 1);
+        }
+      });
+
+      root.addEventListener('mouseenter', function () {
+        hoverPaused = true;
+        syncPauseState();
+      });
+      root.addEventListener('mouseleave', function () {
+        hoverPaused = false;
+        syncPauseState();
+      });
+
+      root.addEventListener('focusin', function () {
+        focusPaused = true;
+        syncPauseState();
+      });
+      root.addEventListener('focusout', function (e) {
+        if (!e.relatedTarget || !root.contains(e.relatedTarget)) {
+          focusPaused = false;
+          syncPauseState();
+        }
+      });
+
+      document.addEventListener('visibilitychange', syncPauseState);
+
+      /* Swipe horizontal mobile (limiar 45px, sem travar scroll vertical) */
+      var startX = 0;
+      var startY = 0;
+      var trackingTouch = false;
+      root.addEventListener(
+        'touchstart',
+        function (e) {
+          if (!e.touches || e.touches.length !== 1) return;
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          trackingTouch = true;
+        },
+        { passive: true }
+      );
+      root.addEventListener(
+        'touchend',
+        function (e) {
+          if (!trackingTouch || !e.changedTouches || !e.changedTouches.length) return;
+          trackingTouch = false;
+          var dx = e.changedTouches[0].clientX - startX;
+          var dy = e.changedTouches[0].clientY - startY;
+          if (Math.abs(dx) >= 45 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+            goTo(dx < 0 ? current + 1 : current - 1);
+          }
+        },
+        { passive: true }
+      );
+
+      /* Inicialização no Slide 0 sem re-ocultar LCP */
+      slides.forEach(function (slide, idx) {
+        setSlideInteractivity(slide, idx === 0);
+      });
+      scheduleNext();
+    });
+  }
+
   /* Boot */
   syncThemeButtons();
   initReadingProgress();
   initMobileDrawer();
   initInstantSearch();
+  initHeroCarousel();
   syncSavedButtons();
   scanBrokenCoverImages();
   window.addEventListener('load', scanBrokenCoverImages);
