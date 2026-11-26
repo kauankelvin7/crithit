@@ -123,6 +123,69 @@ add_filter( 'the_content', 'teoriageek_strip_orphan_legacy_shortcodes', 8 );
 add_filter( 'get_the_excerpt', 'teoriageek_strip_orphan_legacy_shortcodes', 8 );
 
 /**
+ * Repara mojibake UTF-8 e filtra Ficha Técnica de resumos em tempo de renderização.
+ */
+function teoriageek_filter_clean_text_output( $text ) {
+	if ( is_admin() ) {
+		return $text;
+	}
+	return teoriageek_fix_mojibake( (string) $text );
+}
+add_filter( 'the_title', 'teoriageek_filter_clean_text_output', 5 );
+add_filter( 'single_post_title', 'teoriageek_filter_clean_text_output', 5 );
+add_filter( 'the_content', 'teoriageek_filter_clean_text_output', 5 );
+
+function teoriageek_filter_clean_excerpt( $excerpt ) {
+	if ( is_admin() ) {
+		return $excerpt;
+	}
+	$clean = teoriageek_fix_mojibake( teoriageek_strip_ficha_tecnica( (string) $excerpt ) );
+	return trim( $clean );
+}
+add_filter( 'get_the_excerpt', 'teoriageek_filter_clean_excerpt', 5 );
+add_filter( 'the_excerpt', 'teoriageek_filter_clean_excerpt', 5 );
+
+/**
+ * Repara mojibake no título da aba do navegador (<title>).
+ *
+ * @param array<string, string> $parts Partes do título.
+ * @return array<string, string>
+ */
+function teoriageek_filter_document_title_mojibake( $parts ) {
+	foreach ( $parts as $k => $v ) {
+		if ( is_string( $v ) ) {
+			$parts[ $k ] = teoriageek_fix_mojibake( $v );
+		}
+	}
+	return $parts;
+}
+add_filter( 'document_title_parts', 'teoriageek_filter_document_title_mojibake', 20 );
+
+/**
+ * Shortcode nativo [spoiler titulo="..."]Conteúdo oculto[/spoiler] usando <details><summary> + CSS puro.
+ *
+ * @param array<string, string> $atts    Atributos.
+ * @param string|null           $content Conteúdo interno.
+ * @return string
+ */
+function teoriageek_spoiler_shortcode( $atts, $content = null ) {
+	$atts  = shortcode_atts(
+		array(
+			'titulo' => __( 'Alerta de Spoiler — Clique para revelar', 'teoriageek' ),
+		),
+		(array) $atts,
+		'spoiler'
+	);
+	$inner = do_shortcode( wp_kses_post( (string) $content ) );
+	return sprintf(
+		'<details class="tg-spoiler"><summary class="tg-spoiler-summary">%1$s</summary><div class="tg-spoiler-body">%2$s</div></details>',
+		esc_html( $atts['titulo'] ),
+		$inner
+	);
+}
+add_shortcode( 'spoiler', 'teoriageek_spoiler_shortcode' );
+
+/**
  * Pós-processa o HTML renderizado de matérias e páginas:
  * - Envolve iframes de vídeo/áudio órfãos em wrapper responsivo sem quebrar embeds já tratados;
  * - Adiciona lazy loading seguro em imagens internas abaixo da dobra;

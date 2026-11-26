@@ -156,7 +156,28 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 <?php
 get_template_part( 'template-parts/navigation-mobile' );
 get_template_part( 'template-parts/search-modal' );
-wp_footer();
 ?>
+<?php if ( ! function_exists( 'wp_print_speculation_rules' ) ) : ?>
+<script type="speculationrules">
+{
+  "prefetch": [
+    {
+      "source": "document",
+      "where": {
+        "and": [
+          { "href_matches": "/*" },
+          { "not": { "href_matches": "/wp-admin/*" } },
+          { "not": { "href_matches": "/wp-login.php*" } },
+          { "not": { "href_matches": "/*\\?s=*" } },
+          { "not": { "selector_matches": "[rel~='nofollow'], [data-no-prefetch]" } }
+        ]
+      },
+      "eagerness": "moderate"
+    }
+  ]
+}
+</script>
+<?php endif; ?>
+<?php wp_footer(); ?>
 </body>
 </html>

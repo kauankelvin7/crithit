@@ -20,7 +20,7 @@ get_header();
 			<?php esc_html_e( 'Arquivo Editorial', 'teoriageek' ); ?>
 		</p>
 		<h1 class="mt-1 font-headline text-3xl font-extrabold uppercase tracking-tight text-ink-primary sm:text-5xl">
-			<?php echo wp_kses_post( get_the_archive_title() ); ?>
+			<?php echo wp_kses_post( teoriageek_fix_mojibake( get_the_archive_title() ) ); ?>
 		</h1>
 		<?php
 		$tg_arch_desc = get_the_archive_description();

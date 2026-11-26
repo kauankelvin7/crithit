@@ -27,7 +27,7 @@ function teoriageek_category_badge( $term, $linked = false, $size = 'sm', $skewe
 	$skew_outer = $skewed ? '-skew-x-6' : 'rounded-sm';
 	$skew_inner = $skewed ? 'skew-x-6 inline-block' : '';
 	$inline     = sprintf( 'background-color:%s;color:%s;', $style['fill'], $style['ink'] );
-	$label      = html_entity_decode( $term->name, ENT_QUOTES, 'UTF-8' );
+	$label      = teoriageek_fix_mojibake( html_entity_decode( $term->name, ENT_QUOTES, 'UTF-8' ) );
 
 	if ( $linked ) {
 		printf(
@@ -79,17 +79,22 @@ function teoriageek_breadcrumb() {
 	} elseif ( is_category() ) {
 		$queried = get_queried_object();
 		if ( $queried instanceof WP_Term && $queried->parent > 0 ) {
-			$parent = get_Category( $queried->parent );
+			$parent = get_category( $queried->parent );
 			if ( $parent && ! is_wp_error( $parent ) ) {
 				echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
-				echo '<a href="' . esc_url( get_category_link( $parent->term_id ) ) . '" class="font-semibold hover:text-brand hover:underline">' . esc_html( html_entity_decode( $parent->name, ENT_QUOTES, 'UTF-8' ) ) . '</a>';
+				echo '<a href="' . esc_url( get_category_link( $parent->term_id ) ) . '" class="font-semibold hover:text-brand hover:underline">' . esc_html( teoriageek_fix_mojibake( html_entity_decode( $parent->name, ENT_QUOTES, 'UTF-8' ) ) ) . '</a>';
 			}
 		}
 		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
-		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( html_entity_decode( single_cat_title( '', false ), ENT_QUOTES, 'UTF-8' ) ) . '</span>';
+		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( teoriageek_fix_mojibake( html_entity_decode( single_cat_title( '', false ), ENT_QUOTES, 'UTF-8' ) ) ) . '</span>';
+	} elseif ( is_tax( 'universo' ) ) {
+		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
+		echo '<span class="font-semibold text-ink-secondary">' . esc_html__( 'Universo', 'teoriageek' ) . '</span>';
+		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
+		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( teoriageek_fix_mojibake( html_entity_decode( single_term_title( '', false ), ENT_QUOTES, 'UTF-8' ) ) ) . '</span>';
 	} elseif ( is_tag() ) {
 		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
-		echo '<span aria-current="page" class="font-bold text-ink-primary">#' . esc_html( html_entity_decode( single_tag_title( '', false ), ENT_QUOTES, 'UTF-8' ) ) . '</span>';
+		echo '<span aria-current="page" class="font-bold text-ink-primary">#' . esc_html( teoriageek_fix_mojibake( html_entity_decode( single_tag_title( '', false ), ENT_QUOTES, 'UTF-8' ) ) ) . '</span>';
 	} elseif ( is_author() ) {
 		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
 		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( get_the_author() ) . '</span>';
@@ -98,10 +103,10 @@ function teoriageek_breadcrumb() {
 		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html__( 'Busca', 'teoriageek' ) . '</span>';
 	} elseif ( is_page() ) {
 		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
-		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( get_the_title() ) . '</span>';
+		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( teoriageek_clean_title( get_the_title() ) ) . '</span>';
 	} elseif ( is_archive() ) {
 		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
-		echo '<span aria-current="page" class="font-bold text-ink-primary">' . wp_kses_post( get_the_archive_title() ) . '</span>';
+		echo '<span aria-current="page" class="font-bold text-ink-primary">' . wp_kses_post( teoriageek_fix_mojibake( get_the_archive_title() ) ) . '</span>';
 	}
 
 	echo '</nav>';
@@ -268,21 +273,52 @@ function teoriageek_get_ad_slot_markup( $slot ) {
 }
 
 /**
- * Consulta otimizada dos posts "Mais Lidas" lendo `wp_post_views` (com verificação segura da tabela,
- * uso estrito do índice primário `(type, period, id)`, cache transient de 15 min e fallback automático).
+ * Renderiza o selo editorial de "Oferecimento" quando configurado para a categoria alvo no Customizer.
  *
- * @param int   $limit       Quantidade desejada.
- * @param int[] $exclude_ids IDs a excluir opcionalmente.
+ * @param string $category_slug Slug da categoria atual.
+ */
+function teoriageek_render_sponsor_badge( $category_slug ) {
+	$target_slug  = sanitize_title( (string) get_theme_mod( 'teoriageek_sponsor_category', '' ) );
+	$sponsor_name = trim( (string) get_theme_mod( 'teoriageek_sponsor_name', '' ) );
+	if ( '' === $target_slug || '' === $sponsor_name || sanitize_title( (string) $category_slug ) !== $target_slug ) {
+		return;
+	}
+	$label = trim( (string) get_theme_mod( 'teoriageek_sponsor_label', 'Oferecimento' ) ) ?: 'Oferecimento';
+	$url   = teoriageek_safe_http_url( (string) get_theme_mod( 'teoriageek_sponsor_url', '' ) );
+	?>
+	<span class="inline-flex items-center gap-1.5 rounded border border-[#0B0F19]/25 bg-highlight px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-[#0B0F19]">
+		<span class="opacity-75"><?php echo esc_html( $label ); ?>:</span>
+		<?php if ( '' !== $url ) : ?>
+			<a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="sponsored noopener noreferrer" class="underline decoration-2 underline-offset-2">
+				<?php echo esc_html( $sponsor_name ); ?>
+			</a>
+		<?php else : ?>
+			<span><?php echo esc_html( $sponsor_name ); ?></span>
+		<?php endif; ?>
+	</span>
+	<?php
+}
+
+/**
+ * Consulta otimizada dos posts "Mais Lidas" lendo `wp_post_views` em janela 24h ou 7d,
+ * com verificação segura da tabela, uso estrito do índice primário `(type, period, id)`,
+ * cache transient de 15 min e fallback automático.
+ *
+ * @param int    $limit       Quantidade desejada.
+ * @param int[]  $exclude_ids IDs a excluir opcionalmente.
+ * @param string $window      Janela temporal: '7d' (padrão) ou '24h'.
  * @return WP_Post[]
  */
-function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array() ) {
+function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array(), $window = '7d' ) {
 	$limit       = max( 1, (int) $limit );
 	$exclude_ids = array_values( array_filter( array_map( 'intval', (array) $exclude_ids ) ) );
+	$window      = ( '24h' === $window ) ? '24h' : '7d';
 	$posts       = array();
 
-	// 1. Tenta consultar a tabela real `wp_post_views` (Post Views Counter) com cache em transient.
+	// 1. Tenta consultar a tabela real `wp_post_views` (Post Views Counter) com cache em transient (15 min).
 	if ( teoriageek_has_post_views_table() ) {
-		$top_rows = get_transient( 'teoriageek_most_read_pvc_v1' );
+		$transient_key = 'teoriageek_most_read_pvc_' . $window . '_v2';
+		$top_rows      = get_transient( $transient_key );
 
 		if ( ! is_array( $top_rows ) ) {
 			global $wpdb;
@@ -294,7 +330,8 @@ function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array() ) {
 
 			if ( is_string( $max_period ) && preg_match( '/^\d{8}$/', $max_period ) ) {
 				$max_dt     = DateTimeImmutable::createFromFormat( 'Ymd', $max_period, wp_timezone() );
-				$min_period = $max_dt ? $max_dt->modify( '-21 days' )->format( 'Ymd' ) : $max_period;
+				$days_back  = ( '24h' === $window ) ? '-1 days' : '-7 days';
+				$min_period = $max_dt ? $max_dt->modify( $days_back )->format( 'Ymd' ) : $max_period;
 
 				$results = $wpdb->get_results(
 					$wpdb->prepare(
@@ -319,7 +356,7 @@ function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array() ) {
 				}
 			}
 
-			set_transient( 'teoriageek_most_read_pvc_v1', $top_rows, 15 * MINUTE_IN_SECONDS );
+			set_transient( $transient_key, $top_rows, 15 * MINUTE_IN_SECONDS );
 		}
 
 		if ( ! empty( $top_rows ) ) {

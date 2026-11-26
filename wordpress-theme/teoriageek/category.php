@@ -31,15 +31,18 @@ $tg_sub   = ( $tg_term instanceof WP_Term ) ? get_categories(
 				<span class="font-mono text-xs font-bold uppercase tracking-widest opacity-90">
 					<?php esc_html_e( 'Editoria Oficial', 'teoriageek' ); ?>
 				</span>
-				<h1 class="mt-0.5 font-headline text-3xl font-extrabold uppercase tracking-tight sm:text-5xl">
-					<?php echo esc_html( html_entity_decode( single_cat_title( '', false ), ENT_QUOTES, 'UTF-8' ) ); ?>
+				<h1 class="mt-0.5 font-headline text-3xl font-extrabold uppercase tracking-[0.005em] sm:text-5xl">
+					<?php echo esc_html( teoriageek_clean_title( single_cat_title( '', false ) ) ); ?>
 				</h1>
 			</div>
-			<?php if ( $tg_term instanceof WP_Term ) : ?>
-				<span class="rounded border-2 border-current/30 bg-black/20 px-3 py-1 font-mono text-xs font-bold uppercase">
-					<?php echo esc_html( sprintf( _n( '%s matéria', '%s matérias', (int) $tg_term->count, 'teoriageek' ), number_format_i18n( (int) $tg_term->count ) ) ); ?>
-				</span>
-			<?php endif; ?>
+			<div class="flex flex-wrap items-center gap-2.5">
+				<?php teoriageek_render_sponsor_badge( $tg_slug ); ?>
+				<?php if ( $tg_term instanceof WP_Term ) : ?>
+					<span class="rounded border-2 border-current/30 bg-black/15 px-3 py-1 font-mono text-xs font-bold uppercase">
+						<?php echo esc_html( sprintf( _n( '%s matéria', '%s matérias', (int) $tg_term->count, 'teoriageek' ), number_format_i18n( (int) $tg_term->count ) ) ); ?>
+					</span>
+				<?php endif; ?>
+			</div>
 		</div>
 
 		<?php

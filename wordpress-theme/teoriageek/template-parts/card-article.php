@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Part: Card de Matéria reutilizável (variantes: default, review, search).
+ * Template Part: Card de Matéria reutilizável com bordas suaves e contain: layout style.
  *
  * @package TeoriaGeek
  * @var array $args { post?: WP_Post, variant?: string, heading_tag?: string }
@@ -23,14 +23,14 @@ $tg_cat         = teoriageek_get_primary_category( $tg_pid );
 $tg_format      = teoriageek_get_post_format_badge( $tg_pid );
 $tg_score       = teoriageek_get_post_score( $tg_pid );
 $tg_permalink   = get_permalink( $tg_pid );
-$tg_title       = html_entity_decode( get_the_title( $tg_pid ), ENT_QUOTES, 'UTF-8' );
-$tg_lead        = teoriageek_get_post_lead( $tg_pid, 150 );
+$tg_title       = teoriageek_clean_title( get_the_title( $tg_pid ) );
+$tg_lead        = teoriageek_get_post_lead( $tg_pid, 145 );
 $tg_author_id   = (int) $tg_card_post->post_author;
 $tg_author_name = get_the_author_meta( 'display_name', $tg_author_id );
 $tg_read_mins   = teoriageek_get_reading_time( $tg_pid );
 $tg_rel_date    = teoriageek_get_relative_date( $tg_pid );
 ?>
-<article class="editorial-card group flex flex-col overflow-hidden rounded border-2 border-border-strong bg-surface shadow-hard-sm">
+<article class="editorial-card editorial-card-soft group flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface shadow-sm">
 	<div class="relative overflow-hidden">
 		<a href="<?php echo esc_url( $tg_permalink ); ?>" class="block overflow-hidden" tabindex="-1" aria-hidden="true">
 			<?php
@@ -70,7 +70,7 @@ $tg_rel_date    = teoriageek_get_relative_date( $tg_pid );
 			</span>
 		</div>
 
-		<<?php echo esc_attr( $tg_heading_tag ); ?> class="font-sans text-base font-bold leading-snug text-ink-primary group-hover:text-brand">
+		<<?php echo esc_attr( $tg_heading_tag ); ?> class="font-sans text-[15px] font-bold leading-snug text-ink-primary group-hover:text-brand">
 			<a href="<?php echo esc_url( $tg_permalink ); ?>" class="hover:underline decoration-2 underline-offset-2">
 				<?php echo esc_html( $tg_title ); ?>
 			</a>
@@ -86,10 +86,7 @@ $tg_rel_date    = teoriageek_get_relative_date( $tg_pid );
 			<span class="truncate font-medium text-ink-secondary">
 				<?php echo esc_html( sprintf( __( 'Por %s', 'teoriageek' ), $tg_author_name ) ); ?>
 			</span>
-			<span class="inline-flex shrink-0 items-center gap-1">
-				<?php echo teoriageek_icon( 'clock', 'h-3 w-3' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-				<?php echo esc_html( sprintf( '%d min', $tg_read_mins ) ); ?>
-			</span>
+			<span class="shrink-0"><?php echo esc_html( sprintf( '%d min', $tg_read_mins ) ); ?></span>
 		</div>
 	</div>
 </article>

@@ -39,35 +39,16 @@ get_header();
 		$tg_td_settings = teoriageek_get_legacy_td_settings( $tg_pid );
 		$tg_header_lead = '';
 		if ( '' !== $tg_raw_excerpt ) {
-			$tg_header_lead = teoriageek_strip_emojis( html_entity_decode( wp_strip_all_tags( strip_shortcodes( $tg_raw_excerpt ) ), ENT_QUOTES, 'UTF-8' ) );
+			$tg_header_lead = teoriageek_strip_emojis( html_entity_decode( teoriageek_fix_mojibake( wp_strip_all_tags( strip_shortcodes( teoriageek_strip_ficha_tecnica( $tg_raw_excerpt ) ) ) ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
 		} elseif ( ! empty( $tg_td_settings['td_subtitle'] ) && is_string( $tg_td_settings['td_subtitle'] ) ) {
-			$tg_header_lead = teoriageek_strip_emojis( html_entity_decode( wp_strip_all_tags( $tg_td_settings['td_subtitle'] ), ENT_QUOTES, 'UTF-8' ) );
+			$tg_header_lead = teoriageek_strip_emojis( html_entity_decode( teoriageek_fix_mojibake( wp_strip_all_tags( $tg_td_settings['td_subtitle'] ) ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
 		}
 
-		// JSON-LD NewsArticle apenas quando Yoast SEO não está ativo para evitar duplicidade.
-		if ( ! defined( 'WPSEO_VERSION' ) ) :
-			$tg_thumb_ld = get_the_post_thumbnail_url( $tg_pid, 'full' );
-			$tg_schema   = array(
-				'@context'         => 'https://schema.org',
-				'@type'            => 'NewsArticle',
-				'headline'         => html_entity_decode( get_the_title( $tg_pid ), ENT_QUOTES, 'UTF-8' ),
-				'datePublished'    => get_the_date( DATE_W3C, $tg_pid ),
-				'dateModified'     => get_the_modified_date( DATE_W3C, $tg_pid ),
-				'mainEntityOfPage' => get_permalink( $tg_pid ),
-				'author'           => array(
-					'@type' => 'Person',
-					'name'  => $tg_author,
-					'url'   => $tg_author_url,
-				),
-				'publisher'        => array(
-					'@type' => 'Organization',
-					'name'  => get_bloginfo( 'name' ) ?: 'Teoria Geek',
-					'url'   => home_url( '/' ),
-				),
-			);
-			if ( $tg_thumb_ld ) {
-				$tg_schema['image'] = array( $tg_thumb_ld );
-			}
+		$tg_universos = get_the_terms( $tg_pid, 'universo' );
+
+		// JSON-LD NewsArticle / Review (com reviewRating) suprimido automaticamente quando plugin de SEO está ativo.
+		if ( ! teoriageek_has_seo_plugin() ) :
+			$tg_schema = teoriageek_build_single_schema( $tg_pid );
 			?>
 			<script type="application/ld+json"><?php echo wp_json_encode( $tg_schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ); ?></script>
 		<?php endif; ?>
@@ -78,12 +59,25 @@ get_header();
 			<header class="rounded-lg border-2 border-border-strong bg-surface p-5 shadow-hard sm:p-8">
 				<div class="mb-4 flex flex-wrap items-center gap-2.5">
 					<?php teoriageek_category_badge( $tg_cat, true, 'md', true ); ?>
+					<?php
+					if ( $tg_cat ) {
+						teoriageek_render_sponsor_badge( $tg_cat->slug );
+					}
+					?>
 					<span class="rounded border border-border-subtle bg-surface-alt px-2.5 py-1 font-mono text-xs font-bold uppercase text-ink-secondary">
 						<?php echo esc_html( $tg_fmt['label'] ); ?>
 					</span>
 
+					<?php if ( ! empty( $tg_universos ) && ! is_wp_error( $tg_universos ) ) : ?>
+						<?php foreach ( array_slice( $tg_universos, 0, 2 ) as $tg_u_term ) : ?>
+							<a href="<?php echo esc_url( get_term_link( $tg_u_term ) ); ?>" class="rounded border border-brand/40 bg-brand-soft px-2.5 py-0.5 font-mono text-xs font-bold uppercase text-brand hover:bg-brand-fill hover:text-white">
+								<?php echo esc_html( $tg_u_term->name ); ?>
+							</a>
+						<?php endforeach; ?>
+					<?php endif; ?>
+
 					<?php if ( null !== $tg_score ) : ?>
-						<span class="inline-flex items-center gap-1 rounded border-2 border-[#111111] bg-highlight px-2.5 py-0.5 font-mono text-xs font-bold text-ink-highlight">
+						<span class="inline-flex items-center gap-1 rounded border-2 border-[#0B0F19] bg-highlight px-2.5 py-0.5 font-mono text-xs font-bold text-ink-highlight">
 							<?php echo teoriageek_icon( 'star', 'h-3.5 w-3.5 fill-current' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<?php echo esc_html( sprintf( __( 'Nota %s/10', 'teoriageek' ), $tg_score ) ); ?>
 						</span>
@@ -102,8 +96,8 @@ get_header();
 					<?php endif; ?>
 				</div>
 
-				<h1 class="font-headline text-3xl font-extrabold leading-[1.06] tracking-tight text-ink-primary sm:text-5xl">
-					<?php echo esc_html( html_entity_decode( get_the_title(), ENT_QUOTES, 'UTF-8' ) ); ?>
+				<h1 class="font-headline text-3xl font-extrabold leading-[1.1] tracking-[0.005em] text-ink-primary sm:text-5xl">
+					<?php echo esc_html( teoriageek_clean_title( get_the_title() ) ); ?>
 				</h1>
 
 				<?php if ( '' !== $tg_header_lead ) : ?>
@@ -237,9 +231,11 @@ get_header();
 						<?php get_template_part( 'template-parts/author-box' ); ?>
 					</div>
 
-					<?php get_template_part( 'template-parts/related-posts' ); ?>
-
 					<?php
+					get_template_part( 'template-parts/next-article' );
+					get_template_part( 'template-parts/community-cta' );
+					get_template_part( 'template-parts/related-posts' );
+
 					if ( comments_open() || get_comments_number() ) {
 						comments_template();
 					}
@@ -248,10 +244,10 @@ get_header();
 
 				<aside aria-label="<?php esc_attr_e( 'Ranking e conteúdo complementar', 'teoriageek' ); ?>" class="space-y-6 lg:sticky lg:top-28 lg:col-span-4 lg:self-start">
 					<?php if ( ! empty( $tg_most_read ) ) : ?>
-						<section aria-labelledby="tg-sidebar-mais-lidas" class="rounded-lg border-2 border-border-strong bg-surface p-4 shadow-hard-sm">
-							<div class="mb-3 flex items-center gap-2 border-b-2 border-border-strong pb-2.5">
+						<section aria-labelledby="tg-sidebar-mais-lidas" class="rounded-lg border border-border-subtle bg-surface p-4 shadow-sm">
+							<div class="mb-3 flex items-center gap-2 border-b border-border-subtle pb-2.5">
 								<span class="text-brand"><?php echo teoriageek_icon( 'flame', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-								<h2 id="tg-sidebar-mais-lidas" class="font-headline text-xl font-extrabold uppercase tracking-tight text-ink-primary">
+								<h2 id="tg-sidebar-mais-lidas" class="font-headline text-xl font-extrabold uppercase tracking-[0.005em] text-ink-primary">
 									<?php esc_html_e( 'Mais Lidas Agora', 'teoriageek' ); ?>
 								</h2>
 							</div>
@@ -276,7 +272,7 @@ get_header();
 												<?php endif; ?>
 											</div>
 											<a href="<?php echo esc_url( get_permalink( $tg_mi_id ) ); ?>" class="line-clamp-2 block font-sans text-sm font-bold leading-snug text-ink-primary hover:text-brand">
-												<?php echo esc_html( html_entity_decode( get_the_title( $tg_mi_id ), ENT_QUOTES, 'UTF-8' ) ); ?>
+												<?php echo esc_html( teoriageek_clean_title( get_the_title( $tg_mi_id ) ) ); ?>
 											</a>
 										</div>
 									</li>
@@ -314,7 +310,7 @@ get_header();
 								)
 							);
 							?>
-							<div class="absolute inset-0 z-20 flex flex-col justify-end p-4" style="background:linear-gradient(to top, rgba(9,10,15,0.95) 0%, rgba(9,10,15,0.75) 52%, rgba(9,10,15,0.18) 100%);">
+							<div class="absolute inset-0 z-20 flex flex-col justify-end p-4" style="background:linear-gradient(to top, rgba(8,11,18,0.95) 0%, rgba(8,11,18,0.75) 52%, rgba(8,11,18,0.18) 100%);">
 								<div class="mb-1.5 flex items-center justify-between">
 									<?php teoriageek_category_badge( $tg_cat, false, 'sm' ); ?>
 									<span class="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#0B0F19] bg-highlight text-ink-highlight transition-transform group-hover:scale-105">
@@ -322,7 +318,7 @@ get_header();
 									</span>
 								</div>
 								<p class="line-clamp-2 font-headline text-lg font-bold leading-tight text-white group-hover:text-highlight">
-									<?php echo esc_html( html_entity_decode( get_the_title( $tg_pid ), ENT_QUOTES, 'UTF-8' ) ); ?>
+									<?php echo esc_html( teoriageek_clean_title( get_the_title( $tg_pid ) ) ); ?>
 								</p>
 							</div>
 						</a>

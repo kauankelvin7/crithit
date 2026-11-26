@@ -1,6 +1,7 @@
 <?php
 /**
- * Teoria Geek — Enfileiramento de CSS/JS autossuficiente e inicialização anti-FOUC.
+ * Teoria Geek — Enfileiramento autossuficiente (fontes .woff2 locais sem Google Fonts externo)
+ * e inicialização anti-FOUC.
  *
  * @package TeoriaGeek
  */
@@ -35,37 +36,25 @@ function teoriageek_theme_init_script() {
 add_action( 'wp_head', 'teoriageek_theme_init_script', 1 );
 
 /**
- * Preconnect para Google Fonts no <head>.
- *
- * @param array  $urls          Lista de URLs.
- * @param string $relation_type Tipo de relação.
- * @return array
+ * Preload seletivo das duas fontes principais (manchete + interface) para zero atraso no LCP.
  */
-function teoriageek_resource_hints( $urls, $relation_type ) {
-	if ( 'preconnect' === $relation_type ) {
-		$urls[] = array(
-			'href' => 'https://fonts.googleapis.com',
-		);
-		$urls[] = array(
-			'href'        => 'https://fonts.gstatic.com',
-			'crossorigin' => 'anonymous',
-		);
+function teoriageek_preload_critical_fonts() {
+	$critical = array(
+		'/assets/fonts/barlow-condensed-700-latin.woff2',
+		'/assets/fonts/space-grotesk-500-latin.woff2',
+	);
+	foreach ( $critical as $rel ) {
+		if ( file_exists( TEORIAGEEK_DIR . $rel ) ) {
+			echo '<link rel="preload" href="' . esc_url( TEORIAGEEK_URI . $rel ) . '" as="font" type="font/woff2" crossorigin />' . "\n";
+		}
 	}
-	return $urls;
 }
-add_filter( 'wp_resource_hints', 'teoriageek_resource_hints', 10, 2 );
+add_action( 'wp_head', 'teoriageek_preload_critical_fonts', 2 );
 
 /**
- * Enfileira fontes, CSS compilado e Vanilla JS com versionamento automático via filemtime().
+ * Enfileira CSS compilado (com fontes .woff2 auto-hospedadas) e Vanilla JS com cache-busting via filemtime().
  */
 function teoriageek_enqueue_assets() {
-	wp_enqueue_style(
-		'teoriageek-fonts',
-		'https://fonts.googleapis.com/css2?family=Bangers&family=Barlow+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap',
-		array(),
-		null
-	);
-
 	$style_header = TEORIAGEEK_DIR . '/style.css';
 	wp_enqueue_style(
 		'teoriageek-style',
@@ -80,7 +69,7 @@ function teoriageek_enqueue_assets() {
 	wp_enqueue_style(
 		'teoriageek-main',
 		TEORIAGEEK_URI . '/assets/css/main.css',
-		array( 'teoriageek-fonts', 'teoriageek-style' ),
+		array( 'teoriageek-style' ),
 		$css_ver
 	);
 

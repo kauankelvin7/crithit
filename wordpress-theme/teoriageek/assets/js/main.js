@@ -353,6 +353,104 @@
           }
         });
       }
+      return;
+    }
+
+    var nativeShareBtn = e.target.closest('[data-tg-native-share]');
+    if (nativeShareBtn) {
+      e.preventDefault();
+      var sTitle = nativeShareBtn.getAttribute('data-share-title') || document.title;
+      var sUrl = nativeShareBtn.getAttribute('data-share-url') || window.location.href;
+      var sLbl = nativeShareBtn.querySelector('[data-tg-share-label]');
+      if (navigator.share) {
+        navigator.share({ title: sTitle, url: sUrl }).catch(function () {});
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(sUrl).then(function () {
+          if (sLbl) {
+            var old = sLbl.textContent;
+            sLbl.textContent = 'Copiado!';
+            setTimeout(function () {
+              sLbl.textContent = old;
+            }, 1800);
+          }
+        });
+      }
+      return;
+    }
+
+    /* 7. Abas Mais Lidas (7 dias / 24h) */
+    var mrTab = e.target.closest('[data-tg-mr-tab]');
+    if (mrTab) {
+      e.preventDefault();
+      var targetWin = mrTab.getAttribute('data-tg-mr-tab');
+      document.querySelectorAll('[data-tg-mr-tab]').forEach(function (btn) {
+        var active = btn.getAttribute('data-tg-mr-tab') === targetWin;
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.classList.toggle('bg-brand-fill', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-ink-secondary', !active);
+      });
+      document.querySelectorAll('[data-tg-mr-panel]').forEach(function (panel) {
+        panel.classList.toggle('hidden', panel.getAttribute('data-tg-mr-panel') !== targetWin);
+      });
+      return;
+    }
+
+    /* 8. Facade Pattern do card Reels em Destaque na Home (carregamento sob demanda) */
+    var facadePlay = e.target.closest('[data-tg-reel-facade-play]');
+    if (facadePlay) {
+      e.preventDefault();
+      var box = facadePlay.closest('.tg-reel-facade');
+      if (!box || !cfg.restUrl) return;
+      var rSlug = box.getAttribute('data-tg-reel-slug') || '';
+      var fullUrl = box.getAttribute('data-tg-reel-full-url') || cfg.reelsUrl || '/reels/';
+      facadePlay.disabled = true;
+
+      fetch(cfg.restUrl + '/reels?per_page=1&post=' + encodeURIComponent(rSlug))
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (data) {
+          var item = data && data.items && data.items[0];
+          if (!item) {
+            window.location.href = fullUrl;
+            return;
+          }
+          function esc(v) {
+            return String(v || '')
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+          }
+          var bullets = (item.bullets || [])
+            .slice(0, 3)
+            .map(function (b) {
+              return '<li class="rounded border border-white/15 bg-black/60 px-3 py-2 font-reading text-xs leading-snug text-white">' + esc(b) + '</li>';
+            })
+            .join('');
+          var overlay = box.querySelector('.tg-reel-facade-overlay');
+          if (overlay) {
+            overlay.innerHTML =
+              '<div class="flex h-full flex-col justify-between">' +
+              '<div class="flex items-center justify-between">' +
+              '<span class="rounded bg-highlight px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-ink-highlight">Resumo em 10s</span>' +
+              '<a href="' +
+              esc(fullUrl) +
+              '" class="font-mono text-[11px] font-bold uppercase text-highlight underline">Tela cheia</a>' +
+              '</div>' +
+              '<ul class="my-auto space-y-2 py-3">' +
+              bullets +
+              '</ul>' +
+              '<a href="' +
+              esc(item.url) +
+              '" class="inline-flex w-full items-center justify-center rounded border-2 border-[#0B0F19] bg-highlight px-3 py-2 font-mono text-xs font-bold uppercase text-ink-highlight">Ler matéria completa</a>' +
+              '</div>';
+          }
+        })
+        .catch(function () {
+          window.location.href = fullUrl;
+        });
     }
   });
 

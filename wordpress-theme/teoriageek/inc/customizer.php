@@ -282,8 +282,176 @@ function teoriageek_customize_register( $wp_customize ) {
 			)
 		);
 	}
+
+	// Selo "Oferecimento" patrocinado por Editoria.
+	$wp_customize->add_setting(
+		'teoriageek_sponsor_category',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'sanitize_title',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_sponsor_category',
+		array(
+			'label'   => __( 'Selo "Oferecimento" — Editoria Patrocinada', 'teoriageek' ),
+			'section' => 'teoriageek_monetization',
+			'type'    => 'select',
+			'choices' => $choices,
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_sponsor_label',
+		array(
+			'default'           => 'Oferecimento',
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_sponsor_label',
+		array(
+			'label'   => __( 'Selo "Oferecimento" — Rótulo', 'teoriageek' ),
+			'section' => 'teoriageek_monetization',
+			'type'    => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_sponsor_name',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_sponsor_name',
+		array(
+			'label'       => __( 'Selo "Oferecimento" — Nome do Parceiro', 'teoriageek' ),
+			'description' => __( 'Exibido no cabeçalho da editoria selecionada quando preenchido.', 'teoriageek' ),
+			'section'     => 'teoriageek_monetization',
+			'type'        => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_sponsor_url',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_sponsor_url',
+		array(
+			'label'   => __( 'Selo "Oferecimento" — Link do Parceiro (Opcional)', 'teoriageek' ),
+			'section' => 'teoriageek_monetization',
+			'type'    => 'url',
+		)
+	);
+
+	// =========================================================================
+	// 5. RECURSOS EDITORIAIS: ESTREIAS DA SEMANA & CANAIS WHATSAPP / TELEGRAM
+	// =========================================================================
+	$wp_customize->add_section(
+		'teoriageek_editorial_extras',
+		array(
+			'title'       => __( 'Estreias & Canais — Teoria Geek', 'teoriageek' ),
+			'description' => __( 'Configure a agenda de Estreias da Semana (cache 30 min) e o convite para os canais oficiais de WhatsApp e Telegram.', 'teoriageek' ),
+			'priority'    => 38,
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_premieres_list',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'sanitize_textarea_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_premieres_list',
+		array(
+			'label'       => __( 'Estreias da Semana (1 por linha)', 'teoriageek' ),
+			'description' => __( 'Formato: Título | Plataforma ou Mídia | Data (ex.: Vingadores: Doutor Destino | Cinemas | 16 Dez). Deixe vazio para ocultar.', 'teoriageek' ),
+			'section'     => 'teoriageek_editorial_extras',
+			'type'        => 'textarea',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_channel_title',
+		array(
+			'default'           => 'Entre na Comunidade Teoria Geek',
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_channel_title',
+		array(
+			'label'   => __( 'Título do Bloco de Canais (WhatsApp / Telegram)', 'teoriageek' ),
+			'section' => 'teoriageek_editorial_extras',
+			'type'    => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_channel_subtitle',
+		array(
+			'default'           => 'Receba notícias de games, cinema, séries e críticas direto no celular, sem spam.',
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_channel_subtitle',
+		array(
+			'label'   => __( 'Descrição do Bloco de Canais', 'teoriageek' ),
+			'section' => 'teoriageek_editorial_extras',
+			'type'    => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_channel_whatsapp',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_channel_whatsapp',
+		array(
+			'label'   => __( 'Link do Canal WhatsApp (https://whatsapp.com/channel/...)', 'teoriageek' ),
+			'section' => 'teoriageek_editorial_extras',
+			'type'    => 'url',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_channel_telegram',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_channel_telegram',
+		array(
+			'label'   => __( 'Link do Canal Telegram (https://t.me/...)', 'teoriageek' ),
+			'section' => 'teoriageek_editorial_extras',
+			'type'    => 'url',
+		)
+	);
 }
 add_action( 'customize_register', 'teoriageek_customize_register' );
+
+/**
+ * Limpa transient de Estreias da Semana quando o Personalizador é salvo.
+ */
+function teoriageek_flush_premieres_cache() {
+	delete_transient( 'teoriageek_weekly_premieres_v1' );
+}
+add_action( 'customize_save_after', 'teoriageek_flush_premieres_cache' );
 
 /**
  * Monta o CSS dinâmico das variáveis :root (--tg-primary, --tg-accent, --tg-bg, --tg-surface, --tg-text)

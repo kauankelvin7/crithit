@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Part: Card horizontal compacto (Giro Geek & Urgente na Redação).
+ * Template Part: Card horizontal compacto com borda suavizada (Giro Geek & Radar).
  *
  * @package TeoriaGeek
  * @var array $args { post?: WP_Post, surface?: string }
@@ -19,13 +19,13 @@ $tg_pid       = (int) $tg_cpost->ID;
 $tg_surface   = isset( $args['surface'] ) && 'alt' === $args['surface'] ? 'bg-surface-alt hover:bg-surface-hover' : 'bg-surface';
 $tg_cat       = teoriageek_get_primary_category( $tg_pid );
 $tg_permalink = get_permalink( $tg_pid );
-$tg_title     = html_entity_decode( get_the_title( $tg_pid ), ENT_QUOTES, 'UTF-8' );
+$tg_title     = teoriageek_clean_title( get_the_title( $tg_pid ) );
 $tg_author    = get_the_author_meta( 'display_name', (int) $tg_cpost->post_author );
 $tg_read_mins = teoriageek_get_reading_time( $tg_pid );
 ?>
-<article class="editorial-card group flex flex-col justify-between rounded border-2 border-border-strong p-3.5 shadow-hard-sm <?php echo esc_attr( $tg_surface ); ?>">
+<article class="editorial-card editorial-card-soft group flex flex-col justify-between rounded-lg border border-border-subtle p-3.5 shadow-sm <?php echo esc_attr( $tg_surface ); ?>">
 	<div class="flex items-start gap-3">
-		<a href="<?php echo esc_url( $tg_permalink ); ?>" tabindex="-1" aria-hidden="true" class="h-16 w-16 shrink-0 overflow-hidden rounded border-2 border-border-strong">
+		<a href="<?php echo esc_url( $tg_permalink ); ?>" tabindex="-1" aria-hidden="true" class="h-16 w-16 shrink-0 overflow-hidden rounded border border-border-subtle">
 			<?php
 			get_template_part(
 				'template-parts/cover-media',

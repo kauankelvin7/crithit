@@ -1,3 +1,22 @@
+/* ==========================================================================
+   TEORIA GEEK — FONTES .WOFF2 AUTO-HOSPEDADAS (ZERO REQUISIÇÕES EXTERNAS)
+   ========================================================================== */
+
+@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/bangers-400-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Bangers'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/bangers-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/barlow-condensed-600-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/barlow-condensed-600-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/barlow-condensed-700-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/barlow-condensed-700-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 800; font-display: swap; src: url('../fonts/barlow-condensed-800-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 800; font-display: swap; src: url('../fonts/barlow-condensed-800-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/jetbrains-mono-500-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/jetbrains-mono-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Plus Jakarta Sans'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('../fonts/plus-jakarta-sans-400-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Plus Jakarta Sans'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('../fonts/plus-jakarta-sans-400-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/space-grotesk-500-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('../fonts/space-grotesk-500-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -370,21 +389,91 @@
   font-size: 1.1875rem;
 }
 
-.entry-content a {
+.entry-content a:not(.tactile-btn):not(.bg-highlight) {
   color: var(--accent-brand);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.entry-content a:hover {
+.entry-content a.bg-highlight,
+.entry-content a.tactile-btn.bg-highlight {
+  color: #0B0F19 !important;
+  text-decoration: none;
+}
+
+.entry-content a:not(.tactile-btn):not(.bg-highlight):hover {
   opacity: 0.85;
 }
 
+/* Protege contraste de spans legados com cores apagadas ou pretas coladas do Word no Modo Escuro */
 .entry-content span[style*="#999"],
 .entry-content span[style*="#888"],
 .entry-content span[style*="rgb(153"] {
   color: var(--ink-secondary) !important;
+}
+
+[data-theme="dark"] .entry-content span[style*="#000"],
+[data-theme="dark"] .entry-content span[style*="#111"],
+[data-theme="dark"] .entry-content span[style*="#222"],
+[data-theme="dark"] .entry-content span[style*="#333"],
+[data-theme="dark"] .entry-content p[style*="#000"],
+[data-theme="dark"] .entry-content span[style*="rgb(0, 0, 0)"] {
+  color: var(--tg-text) !important;
+}
+
+[data-theme="dark"] .entry-content span[style*="#3366ff" i],
+[data-theme="dark"] .entry-content span[style*="#0000ff" i],
+[data-theme="dark"] .entry-content span[style*="#0066cc" i],
+[data-theme="dark"] .entry-content span[style*="#1155cc" i],
+[data-theme="dark"] .entry-content span[style*="#0563c1" i],
+[data-theme="dark"] .entry-content span[style*="rgb(51, 102, 255)"] {
+  color: var(--brand-primary) !important;
+}
+
+/* Alerta de Spoiler Nativo (<details class="tg-spoiler"> + CSS puro, zero JS) */
+.entry-content details.tg-spoiler {
+  margin: 1.5rem 0;
+  border: 2px solid #0B0F19;
+  border-radius: 0.5rem;
+  background-color: var(--bg-surface-alt);
+  overflow: hidden;
+}
+
+.entry-content details.tg-spoiler > summary.tg-spoiler-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+  list-style: none;
+  background-color: var(--tg-accent);
+  color: #0B0F19;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.entry-content details.tg-spoiler > summary.tg-spoiler-summary::-webkit-details-marker {
+  display: none;
+}
+
+.entry-content details.tg-spoiler > summary.tg-spoiler-summary::after {
+  content: '+';
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.entry-content details.tg-spoiler[open] > summary.tg-spoiler-summary::after {
+  content: '−';
+}
+
+.entry-content details.tg-spoiler > .tg-spoiler-body {
+  padding: 1rem 1.25rem;
+  border-top: 2px solid #0B0F19;
 }
 
 .entry-content ul,
@@ -723,17 +812,21 @@
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
-    #000000 28px,
-    #000000 calc(100% - 28px),
+    #000000 44px,
+    #000000 calc(100% - 44px),
     transparent 100%
   );
   mask-image: linear-gradient(
     to right,
     transparent 0%,
-    #000000 28px,
-    #000000 calc(100% - 28px),
+    #000000 44px,
+    #000000 calc(100% - 44px),
     transparent 100%
   );
+}
+
+.editorial-card {
+  contain: layout style;
 }
 
 .ticker-track {
@@ -767,6 +860,12 @@
   .editorial-card:hover {
     transform: translate(-2px, -2px);
     box-shadow: var(--shadow-hard-hover);
+  }
+
+  .editorial-card-soft:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -12px rgba(11, 15, 25, 0.25);
+    border-color: var(--tg-primary);
   }
 
   .tactile-btn {

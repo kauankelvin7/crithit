@@ -192,3 +192,18 @@ function teoriageek_refine_search_query( $query ) {
 	}
 }
 add_action( 'pre_get_posts', 'teoriageek_refine_search_query' );
+
+/**
+ * Habilita saída condicional em WebP para novos uploads (JPEG/PNG) quando GD ou Imagick suportar.
+ *
+ * @param array<string, string> $formats Mapa de formatos de saída.
+ * @return array<string, string>
+ */
+function teoriageek_enable_conditional_webp( $formats ) {
+	if ( function_exists( 'wp_image_editor_supports' ) && wp_image_editor_supports( array( 'mime_type' => 'image/webp' ) ) ) {
+		$formats['image/jpeg'] = 'image/webp';
+		$formats['image/png']  = 'image/webp';
+	}
+	return $formats;
+}
+add_filter( 'image_editor_output_format', 'teoriageek_enable_conditional_webp' );

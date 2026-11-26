@@ -82,27 +82,12 @@ Todas as **5 fases planejadas** do monorepo, a **evolução completa de UX/UI De
 
 ---
 
-## 4. Nova Frente em Andamento — Tema WordPress Nativo `teoriageek` (`/wordpress-theme/teoriageek/`)
+## 4. Frente Concluída — Tema WordPress Nativo `teoriageek` (`v1.2.0`)
 
-Checkpoint detalhado em [wordpress-theme/teoriageek/PROGRESSO.md](../wordpress-theme/teoriageek/PROGRESSO.md) e levantamento completo em [wordpress-theme/teoriageek/MIGRATION_AUDIT.md](../wordpress-theme/teoriageek/MIGRATION_AUDIT.md).
+Documentação completa em [wordpress-theme/teoriageek/README.md](../wordpress-theme/teoriageek/README.md), checkpoint em [wordpress-theme/teoriageek/PROGRESSO.md](../wordpress-theme/teoriageek/PROGRESSO.md) e levantamento do acervo legado em [wordpress-theme/teoriageek/MIGRATION_AUDIT.md](../wordpress-theme/teoriageek/MIGRATION_AUDIT.md).
 
-### O que já foi concluído (sem alterar `/apps/web` ou `/apps/api`):
-1. **Reconhecimento somente leitura do `teoriageek.com.br` (`MIGRATION_AUDIT.md`):**
-   - 25 categorias reais mapeadas (destaque para slugs reais `animes-mangas`, `livros-hqs`, `especial-teoria-geek`, `destaque`, `noticias`, `criticas`, `reviews`, `games`, `filmes`, `series`).
-   - Paleta real (`#116EBF`, `#E29C04`/`#FFD600`, `#BE123C`), logos (`300x190` e `120x120`) e links das 6 redes sociais.
-   - Mapeamento do HTML legado de posts antigos (`.ficha`, `.rev-series`, `.rev-games`, `.capa`, `.col`, `.tit`, `.sinop`, `span[style*="#999"]`, `.div-selo`, `.selo`, `.youtube-embed`, `p.v1MsoNormal`).
-2. **Base PHP & Painel Sem Código criados em `/wordpress-theme/teoriageek/`:**
-   - `style.css`, `theme.json`, `functions.php` (anti-FOUC Claro/Escuro no `<head>`, menus, 3 áreas de widgets opcionais, enqueue).
-   - `inc/helpers.php` (paleta das 25 categorias, cálculo de contraste WCAG, extrator automático de 3 pontos-chave para posts antigos, ícones SVG inline sem emojis, arte Pop-Art fallback, views/likes).
-   - `inc/customizer.php` (`Aparência > Personalizar`: logos, cores em 1 clique, mapeamento dinâmico de categorias da capa, 6 redes sociais e texto do selo Reels).
-   - `inc/meta-boxes.php` (Meta Box nativa **"Ficha Editorial"** no editor de posts sem ACF: Manchete Principal, Plantão, Formato, Nota `0–10`, 3 Pontos-Chave e Fonte externa opcional).
-   - `inc/template-tags.php` (badges, breadcrumb, menu fallback, paginação, logo e ranking Mais Lidas).
-
-### O que falta fazer na retomada:
-1. **Backend Reels & REST API (`inc/reels-api.php`):** rewrite `/reels/`, `template_include` para `page-reels.php` e namespace `teoriageek/v1` (`GET /reels`, `POST /posts/{id}/like`, `POST /posts/{id}/view`, `POST /posts/{id}/comment`).
-2. **Templates Públicos & Template Parts:**
-   - `template-parts/{cover-media,breaking-ticker,card-article,card-compact}.php`
-   - `header.php`, `footer.php`, `front-page.php` (1ª dobra sem repetição via `$used_post_ids`), `single.php`, `page.php`, `archive.php`, `search.php`, `index.php`, `404.php` e `comments.php`.
-3. **Reels 2.0 Nativo:** `page-reels.php` + Vanilla JS (`assets/js/main.js` e `assets/js/reels.js`) com 3 zonas desktop, 3 lâminas Micro-Stories, atalhos `↑↓←→LC`, double-tap Pop-Art e mobile tela cheia + drawer escuro.
-4. **Build Tailwind CSS & Empacotamento `.zip`:** `src/css/input.css` (incluindo estilização do HTML legado `.ficha`/`.div-selo`/`.youtube-embed`), `tailwind.config.cjs`, `package.json`, compilação de `assets/css/main.css` e `scripts/package-theme.mjs` gerando `/dist/teoriageek-theme.zip` (`teoriageek/style.css` na raiz).
-5. **Auditoria final:** validação sintática PHP/JS/CSS, integridade do `.zip` e entrega do checklist de 5 passos para instalação no LocalWP.
+### Entregas validadas (sem alterar `/apps/web` ou `/apps/api`):
+1. **Identidade & Polimento Visual:** paleta Azul (`#1D4ED8`) e Amarelo (`#FACC15` com texto escuro `#0B0F19`) controlada por variáveis CSS `:root` via Customizer (`5` seções / `36` controles), logo clássica oficial do Teoria Geek embutida, busca ampla, botão Claro/Escuro compacto por ícone, ticker *Plantão Geek* com fade lateral, hierarquia de bordas refinada e Reels Facade `3:4` na Home.
+2. **Performance & SEO Nativo (Zero Bloat):** 14 fontes `.woff2` auto-hospedadas (`assets/fonts/`, zero Google Fonts no frame principal), `fetchpriority="high"` no Hero + `loading="lazy"` nos cards, `contain: layout style`, WebP condicional no upload, `<script type="speculationrules">` sem duplicação no WP 6.8+, OpenGraph/Twitter Cards e JSON-LD dinâmico (`Review`/`NewsArticle`) em `inc/seo.php`.
+3. **Recursos Editoriais & Compatibilidade com Legado:** reparo UTF-8 de mojibake em tempo de renderização, sanitização de shortcodes Newspaper/tagDiv (`[vc_*]`/`[td_*]`/`[tdc_*]`), estilização de `.ficha`/`.div-selo`/`.youtube-embed`, *Mais Lidas* `24h`/`7d` via `wp_post_views` + Transients API (`15 min`), *Estreias da Semana*, taxonomia nativa `universo` (`/universo/`), shortcode `[spoiler]` (`<details>`), card *Próxima Matéria*, selo *Oferecimento* por categoria, canais WhatsApp/Telegram e Reels 2.0 (`/reels/` + REST `teoriageek/v1`).
+4. **Validação & Entrega:** `40/40` arquivos `.php` sem erros no PHP `8.3.37`, `0` avisos na auditoria de gestor (`admin-audit.php`), `20/20` testes Playwright aprovados (`desktop-1440x900` e `mobile-390x844`, `0` violações WCAG 2.1 AA em Claro e Escuro) e pacote pronto para upload na Locaweb em `dist/teoriageek-theme.zip` (`teoriageek/style.css` na raiz).

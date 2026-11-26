@@ -15,9 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function teoriageek_register_reels_rewrite() {
 	add_rewrite_rule( '^reels/?$', 'index.php?teoriageek_reels=1', 'top' );
-	if ( '1' !== get_option( 'teoriageek_rewrite_version' ) ) {
+	if ( '2' !== get_option( 'teoriageek_rewrite_version' ) ) {
 		flush_rewrite_rules( false );
-		update_option( 'teoriageek_rewrite_version', '1', true );
+		update_option( 'teoriageek_rewrite_version', '2', true );
 	}
 }
 add_action( 'init', 'teoriageek_register_reels_rewrite' );
@@ -86,7 +86,7 @@ function teoriageek_serialize_post_card( $post ) {
 	return array(
 		'id'           => $pid,
 		'slug'         => $post->post_name,
-		'title'        => html_entity_decode( get_the_title( $pid ), ENT_QUOTES, 'UTF-8' ),
+		'title'        => teoriageek_clean_title( get_the_title( $pid ) ),
 		'url'          => get_permalink( $pid ),
 		'reelsUrl'     => teoriageek_get_reels_url( $post->post_name ),
 		'summary'      => teoriageek_get_reels_summary( $pid ),
@@ -153,7 +153,7 @@ function teoriageek_register_rest_routes() {
 					$style = teoriageek_get_category_style( $cat ? $cat->slug : 'noticias' );
 					$items[] = array(
 						'id'           => $pid,
-						'title'        => html_entity_decode( get_the_title( $pid ), ENT_QUOTES, 'UTF-8' ),
+						'title'        => teoriageek_clean_title( get_the_title( $pid ) ),
 						'url'          => get_permalink( $pid ),
 						'categoryName' => $cat ? html_entity_decode( $cat->name, ENT_QUOTES, 'UTF-8' ) : 'GEEK',
 						'fillColor'    => $style['fill'],

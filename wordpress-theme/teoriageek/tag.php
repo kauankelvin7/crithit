@@ -27,7 +27,7 @@ $tg_tag_obj = get_queried_object();
 						<?php esc_html_e( 'Tópico & Tag', 'teoriageek' ); ?>
 					</p>
 					<h1 class="font-headline text-3xl font-extrabold uppercase tracking-tight text-ink-primary sm:text-4xl">
-						#<?php echo esc_html( html_entity_decode( single_tag_title( '', false ), ENT_QUOTES, 'UTF-8' ) ); ?>
+						#<?php echo esc_html( teoriageek_fix_mojibake( html_entity_decode( single_tag_title( '', false ), ENT_QUOTES, 'UTF-8' ) ) ); ?>
 					</h1>
 				</div>
 			</div>

@@ -11,6 +11,165 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Repara sequências mojibake de importações Windows CP850/CP437 (ex.: J├í -> Já, An├®is -> Anéis,
+ * espa├ºo -> espaço, p├┤ster -> pôster) apenas em tempo de renderização, sem alterar o banco.
+ * Textos UTF-8 limpos retornam imediatamente no fast-path em O(1).
+ *
+ * @param string $text Texto de entrada.
+ * @return string
+ */
+function teoriageek_fix_mojibake( $text ) {
+	$text = (string) $text;
+	if ( '' === $text ) {
+		return '';
+	}
+
+	// Fast-path zero custo para strings UTF-8 limpas (produção).
+	if (
+		false === strpos( $text, "\xE2\x94\x9C" ) && // ├ (0xC3 em CP850)
+		false === strpos( $text, "\xE2\x94\xAC" ) && // ┬ (0xC2 em CP850)
+		false === strpos( $text, "\xC3\x94\xC3\x87" ) // ÔÇ (0xE2 0x80 em CP850)
+	) {
+		return $text;
+	}
+
+	static $cp850_to_byte = null;
+	if ( null === $cp850_to_byte ) {
+		// Tabela oficial completa IBM CP850 (0x80 a 0xFF) -> byte original.
+		$cp850_chars = array(
+			0x80 => "\u{00C7}", 0x81 => "\u{00FC}", 0x82 => "\u{00E9}", 0x83 => "\u{00E2}",
+			0x84 => "\u{00E4}", 0x85 => "\u{00E0}", 0x86 => "\u{00E5}", 0x87 => "\u{00E7}",
+			0x88 => "\u{00EA}", 0x89 => "\u{00EB}", 0x8A => "\u{00E8}", 0x8B => "\u{00EF}",
+			0x8C => "\u{00EE}", 0x8D => "\u{00EC}", 0x8E => "\u{00C4}", 0x8F => "\u{00C5}",
+			0x90 => "\u{00C9}", 0x91 => "\u{00E6}", 0x92 => "\u{00C6}", 0x93 => "\u{00F4}",
+			0x94 => "\u{00F6}", 0x95 => "\u{00F2}", 0x96 => "\u{00FB}", 0x97 => "\u{00F9}",
+			0x98 => "\u{00FF}", 0x99 => "\u{00D6}", 0x9A => "\u{00DC}", 0x9B => "\u{00F8}",
+			0x9C => "\u{00A3}", 0x9D => "\u{00D8}", 0x9E => "\u{00D7}", 0x9F => "\u{0192}",
+			0xA0 => "\u{00E1}", 0xA1 => "\u{00ED}", 0xA2 => "\u{00F3}", 0xA3 => "\u{00FA}",
+			0xA4 => "\u{00F1}", 0xA5 => "\u{00D1}", 0xA6 => "\u{00AA}", 0xA7 => "\u{00BA}",
+			0xA8 => "\u{00BF}", 0xA9 => "\u{00AE}", 0xAA => "\u{00AC}", 0xAB => "\u{00BD}",
+			0xAC => "\u{00BC}", 0xAD => "\u{00A1}", 0xAE => "\u{00AB}", 0xAF => "\u{00BB}",
+			0xB0 => "\u{2591}", 0xB1 => "\u{2592}", 0xB2 => "\u{2593}", 0xB3 => "\u{2502}",
+			0xB4 => "\u{2524}", 0xB5 => "\u{00C1}", 0xB6 => "\u{00C2}", 0xB7 => "\u{00C0}",
+			0xB8 => "\u{00A9}", 0xB9 => "\u{2563}", 0xBA => "\u{2551}", 0xBB => "\u{2557}",
+			0xBC => "\u{255D}", 0xBD => "\u{00A2}", 0xBE => "\u{00A5}", 0xBF => "\u{2510}",
+			0xC0 => "\u{2514}", 0xC1 => "\u{2534}", 0xC2 => "\u{252C}", 0xC3 => "\u{251C}",
+			0xC4 => "\u{2500}", 0xC5 => "\u{253C}", 0xC6 => "\u{00E3}", 0xC7 => "\u{00C3}",
+			0xC8 => "\u{255A}", 0xC9 => "\u{2554}", 0xCA => "\u{2569}", 0xCB => "\u{2566}",
+			0xCC => "\u{2560}", 0xCD => "\u{2550}", 0xCE => "\u{256C}", 0xCF => "\u{00A4}",
+			0xD0 => "\u{00F0}", 0xD1 => "\u{00D0}", 0xD2 => "\u{00CA}", 0xD3 => "\u{00CB}",
+			0xD4 => "\u{00C8}", 0xD5 => "\u{0131}", 0xD6 => "\u{00CD}", 0xD7 => "\u{00CE}",
+			0xD8 => "\u{00CF}", 0xD9 => "\u{2518}", 0xDA => "\u{250C}", 0xDB => "\u{2588}",
+			0xDC => "\u{2584}", 0xDD => "\u{00A6}", 0xDE => "\u{00CC}", 0xDF => "\u{2580}",
+			0xE0 => "\u{00D3}", 0xE1 => "\u{00DF}", 0xE2 => "\u{00D4}", 0xE3 => "\u{00D2}",
+			0xE4 => "\u{00F5}", 0xE5 => "\u{00D5}", 0xE6 => "\u{00B5}", 0xE7 => "\u{00FE}",
+			0xE8 => "\u{00DE}", 0xE9 => "\u{00DA}", 0xEA => "\u{00DB}", 0xEB => "\u{00D9}",
+			0xEC => "\u{00FD}", 0xED => "\u{00DD}", 0xEE => "\u{00AF}", 0xEF => "\u{00B4}",
+			0xF0 => "\u{00AD}", 0xF1 => "\u{00B1}", 0xF2 => "\u{2017}", 0xF3 => "\u{00BE}",
+			0xF4 => "\u{00B6}", 0xF5 => "\u{00A7}", 0xF6 => "\u{00F7}", 0xF7 => "\u{00B8}",
+			0xF8 => "\u{00B0}", 0xF9 => "\u{00A8}", 0xFA => "\u{00B7}", 0xFB => "\u{00B9}",
+			0xFC => "\u{00B3}", 0xFD => "\u{00B2}", 0xFE => "\u{25A0}", 0xFF => "\u{00A0}",
+		);
+		$cp850_to_byte = array();
+		foreach ( $cp850_chars as $byte_val => $utf8_char ) {
+			$cp850_to_byte[ $utf8_char ] = chr( $byte_val );
+		}
+	}
+
+	return (string) preg_replace_callback(
+		'/(?:\x{251C}.|\x{252C}.|\x{00D4}\x{00C7}.)/u',
+		static function ( $m ) use ( $cp850_to_byte ) {
+			$chars   = preg_split( '//u', $m[0], -1, PREG_SPLIT_NO_EMPTY );
+			$rebuilt = '';
+			foreach ( (array) $chars as $ch ) {
+				if ( isset( $cp850_to_byte[ $ch ] ) ) {
+					$rebuilt .= $cp850_to_byte[ $ch ];
+				} elseif ( strlen( $ch ) === 1 ) {
+					$rebuilt .= $ch;
+				} else {
+					return $m[0];
+				}
+			}
+			return mb_check_encoding( $rebuilt, 'UTF-8' ) ? $rebuilt : $m[0];
+		},
+		$text
+	);
+}
+
+/**
+ * Normaliza título editorial para exibição (reparo UTF-8, entidades HTML5 e respiro em separadores "|").
+ *
+ * @param string $title Título bruto.
+ * @return string
+ */
+function teoriageek_clean_title( $title ) {
+	$clean = html_entity_decode( teoriageek_fix_mojibake( (string) $title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+	// Garante respiro tipográfico ao redor de "|" (ex.: "Na Literatura| Cartas" -> "Na Literatura | Cartas").
+	$clean = (string) preg_replace( '/\s*\|\s*/u', ' | ', $clean );
+	return trim( (string) preg_replace( '/\s{2,}/u', ' ', $clean ) );
+}
+
+/**
+ * Remove blocos legados de Ficha Técnica (HTML `.ficha` e texto corrido "Ficha Técnica ...")
+ * para impedir poluição nos excerpts e cards da capa/arquivos.
+ *
+ * @param string $html Conteúdo HTML ou texto bruto.
+ * @return string
+ */
+function teoriageek_strip_ficha_tecnica( $html ) {
+	$html = (string) $html;
+	if ( '' === $html ) {
+		return '';
+	}
+	// Remove o bloco estrutural `.ficha` completo (incluindo .capa, .col, tabelas e .sinop).
+	$clean = (string) preg_replace( '#<div[^>]*class=["\'][^"\']*\bficha\b[^"\']*["\'][^>]*>[\s\S]*?</table>(?:\s*(?:&nbsp;|\xc2\xa0|\s|<p[^>]*>(?:&nbsp;|\xc2\xa0|\s)*</p>)*</div>){1,3}#iu', ' ', $html );
+	// Fallback para trechos textuais onde tags já foram removidas antes do filtro.
+	$clean = (string) preg_replace( '/Ficha\s+T[eé]cnica[\s\S]{0,650}?(?:Sinopse\s*:|Dispon[ií]vel\s+para\s*:[^\n.]{0,120}|Classifica[cç][aã]o(?:\s+indicativa)?\s*:[^\n.]{0,60})/iu', ' ', $clean );
+	return $clean;
+}
+
+/**
+ * Retorna a lista de "Estreias da Semana" configurada no Personalizador (com cache via Transients API de 30 min).
+ *
+ * @return array<int, array{title:string,platform:string,date:string}>
+ */
+function teoriageek_get_weekly_premieres() {
+	$cached = get_transient( 'teoriageek_weekly_premieres_v1' );
+	if ( is_array( $cached ) ) {
+		return $cached;
+	}
+
+	$raw   = trim( (string) get_theme_mod( 'teoriageek_premieres_list', '' ) );
+	$items = array();
+	if ( '' !== $raw ) {
+		$lines = preg_split( '/\r\n|\r|\n/', $raw );
+		foreach ( (array) $lines as $line ) {
+			$line = trim( (string) $line );
+			if ( '' === $line ) {
+				continue;
+			}
+			$parts    = array_map( 'trim', explode( '|', $line ) );
+			$title    = isset( $parts[0] ) ? sanitize_text_field( $parts[0] ) : '';
+			$platform = isset( $parts[1] ) ? sanitize_text_field( $parts[1] ) : '';
+			$date     = isset( $parts[2] ) ? sanitize_text_field( $parts[2] ) : '';
+			if ( '' !== $title ) {
+				$items[] = array(
+					'title'    => $title,
+					'platform' => $platform,
+					'date'     => $date,
+				);
+			}
+			if ( count( $items ) >= 6 ) {
+				break;
+			}
+		}
+	}
+
+	set_transient( 'teoriageek_weekly_premieres_v1', $items, 30 * MINUTE_IN_SECONDS );
+	return $items;
+}
+
+/**
  * Verifica se a requisição atual corresponde à experiência Reels (/reels/).
  *
  * @return bool
@@ -429,24 +588,25 @@ function teoriageek_get_post_lead( $post_id, $max_chars = 220 ) {
 
 	$raw_excerpt = trim( (string) get_post_field( 'post_excerpt', $post_id ) );
 	if ( '' !== $raw_excerpt ) {
-		$clean = teoriageek_strip_emojis( html_entity_decode( wp_strip_all_tags( strip_shortcodes( $raw_excerpt ) ), ENT_QUOTES, 'UTF-8' ) );
-		if ( '' !== $clean ) {
-			return ( mb_strlen( $clean ) > $max_chars ) ? rtrim( mb_substr( $clean, 0, $max_chars - 1 ) ) . '…' : $clean;
+		$clean = teoriageek_fix_mojibake( teoriageek_strip_ficha_tecnica( $raw_excerpt ) );
+		$clean = teoriageek_strip_emojis( html_entity_decode( wp_strip_all_tags( strip_shortcodes( $clean ) ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		if ( '' !== $clean && 0 !== stripos( $clean, 'Ficha Técnica' ) ) {
+			return ( mb_strlen( $clean, 'UTF-8' ) > $max_chars ) ? rtrim( mb_substr( $clean, 0, $max_chars - 1, 'UTF-8' ) ) . '…' : $clean;
 		}
 	}
 
 	$td = teoriageek_get_legacy_td_settings( $post_id );
 	if ( ! empty( $td['td_subtitle'] ) && is_string( $td['td_subtitle'] ) ) {
-		$sub = teoriageek_strip_emojis( html_entity_decode( wp_strip_all_tags( $td['td_subtitle'] ), ENT_QUOTES, 'UTF-8' ) );
-		if ( mb_strlen( $sub ) >= 12 ) {
-			return ( mb_strlen( $sub ) > $max_chars ) ? rtrim( mb_substr( $sub, 0, $max_chars - 1 ) ) . '…' : $sub;
+		$sub = teoriageek_strip_emojis( html_entity_decode( teoriageek_fix_mojibake( wp_strip_all_tags( $td['td_subtitle'] ) ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		if ( mb_strlen( $sub, 'UTF-8' ) >= 12 ) {
+			return ( mb_strlen( $sub, 'UTF-8' ) > $max_chars ) ? rtrim( mb_substr( $sub, 0, $max_chars - 1, 'UTF-8' ) ) . '…' : $sub;
 		}
 	}
 
 	$bullets = teoriageek_get_post_bullets( $post_id );
 	if ( ! empty( $bullets ) ) {
 		$joined = implode( ' ', array_slice( $bullets, 0, 2 ) );
-		return ( mb_strlen( $joined ) > $max_chars ) ? rtrim( mb_substr( $joined, 0, $max_chars - 1 ) ) . '…' : $joined;
+		return ( mb_strlen( $joined, 'UTF-8' ) > $max_chars ) ? rtrim( mb_substr( $joined, 0, $max_chars - 1, 'UTF-8' ) ) . '…' : $joined;
 	}
 
 	return '';
@@ -643,15 +803,15 @@ function teoriageek_get_post_bullets( $post_id, $only_meta = false ) {
 		$candidates[] = wp_strip_all_tags( strip_shortcodes( $raw_excerpt ) );
 	}
 
-	$content       = (string) get_post_field( 'post_content', $post_id );
-	$content_clean = preg_replace( '#<div[^>]*class=["\'][^"\']*ficha[^"\']*["\'][^>]*>[\s\S]*?</table>\s*(?:<p>&nbsp;</p>\s*)?</div>\s*</div>#i', '', $content );
+	$content       = teoriageek_fix_mojibake( (string) get_post_field( 'post_content', $post_id ) );
+	$content_clean = teoriageek_strip_ficha_tecnica( $content );
 	$content_clean = preg_replace( '#\[/?[a-zA-Z0-9_-]+[^\]]*\]#', '', (string) $content_clean );
 
 	if ( preg_match_all( '#<p[^>]*>([\s\S]*?)</p>#i', (string) $content_clean, $matches ) ) {
 		foreach ( $matches[1] as $p ) {
-			$txt = html_entity_decode( wp_strip_all_tags( $p ), ENT_QUOTES, 'UTF-8' );
+			$txt = html_entity_decode( wp_strip_all_tags( $p ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 			$txt = teoriageek_strip_emojis( $txt );
-			if ( mb_strlen( $txt ) >= 35 && ! preg_match( '/^(quer saber mais|conheça nosso canal|ficha técnica|leia também)/iu', $txt ) ) {
+			if ( mb_strlen( $txt, 'UTF-8' ) >= 35 && ! preg_match( '/^(quer saber mais|conheça nosso canal|ficha técnica|leia também|título:|desenvolvido por:|publicado por:)/iu', $txt ) ) {
 				$candidates[] = $txt;
 			}
 			if ( count( $candidates ) >= 6 ) {
@@ -661,9 +821,9 @@ function teoriageek_get_post_bullets( $post_id, $only_meta = false ) {
 	}
 
 	if ( empty( $candidates ) ) {
-		$plain = html_entity_decode( wp_strip_all_tags( (string) $content_clean ), ENT_QUOTES, 'UTF-8' );
+		$plain = html_entity_decode( wp_strip_all_tags( (string) $content_clean ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		$plain = teoriageek_strip_emojis( $plain );
-		if ( mb_strlen( $plain ) > 20 ) {
+		if ( mb_strlen( $plain, 'UTF-8' ) > 20 ) {
 			$candidates[] = $plain;
 		}
 	}
@@ -673,9 +833,9 @@ function teoriageek_get_post_bullets( $post_id, $only_meta = false ) {
 		$parts = preg_split( '/(?<=[.!?])\s+/u', trim( $block ) );
 		foreach ( (array) $parts as $sent ) {
 			$sent = trim( (string) $sent );
-			if ( mb_strlen( $sent ) >= 28 && ! preg_match( '#^https?://#i', $sent ) ) {
-				if ( mb_strlen( $sent ) > 145 ) {
-					$sent = rtrim( mb_substr( $sent, 0, 142 ) ) . '…';
+			if ( mb_strlen( $sent, 'UTF-8' ) >= 28 && ! preg_match( '#^https?://#i', $sent ) && ! preg_match( '/^(ficha técnica|título:|desenvolvido por:)/iu', $sent ) ) {
+				if ( mb_strlen( $sent, 'UTF-8' ) > 145 ) {
+					$sent = rtrim( mb_substr( $sent, 0, 142, 'UTF-8' ) ) . '…';
 				}
 				if ( ! in_array( $sent, $sentences, true ) ) {
 					$sentences[] = $sent;
@@ -688,7 +848,7 @@ function teoriageek_get_post_bullets( $post_id, $only_meta = false ) {
 	}
 
 	if ( empty( $sentences ) ) {
-		$sentences[] = teoriageek_strip_emojis( html_entity_decode( get_the_title( $post_id ), ENT_QUOTES, 'UTF-8' ) );
+		$sentences[] = teoriageek_strip_emojis( teoriageek_clean_title( get_the_title( $post_id ) ) );
 	}
 
 	return array_slice( $sentences, 0, 3 );

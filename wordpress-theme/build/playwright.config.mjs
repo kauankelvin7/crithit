@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '.',
-  testMatch: ['teoriageek-e2e.spec.mjs'],
+  testMatch: ['*.spec.mjs'],
   fullyParallel: false,
   retries: 0,
   workers: 1,
