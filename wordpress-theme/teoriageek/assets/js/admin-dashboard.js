@@ -1,10 +1,11 @@
 /**
- * Central Teoria Geek — Controlador Vanilla JS do `/wp-admin/` (v2.12.0).
+ * Central Teoria Geek — Controlador Vanilla JS do `/wp-admin/` (v2.12.1).
  * Consome o payload inicial em `window.teoriageekAdminData` e atualiza via
- * `GET /wp-json/teoriageek/v1/admin-metrics` (polling a cada 2,5 min apenas quando
- * `document.visibilityState === 'visible'` e atualização sob demanda com `?refresh=1`).
+ * `GET /wp-json/teoriageek/v1/admin-metrics` (com suporte a `?range=today|7d|14d|30d` e `?refresh=1`,
+ * polling a cada 2 min apenas quando `document.visibilityState === 'visible'`).
  * Renderiza colunas 3D em CSS puro, gráficos SVG nativos (área 14d, sparklines, Donut, barras 24h/7d),
- * painéis de redação, alternância de tema Claro/Escuro (`tgAdmTheme`) e modo Big Board (`Esc`).
+ * painéis completos de Analytics First-Party (Audiência & Origem + Cliques & Comportamento),
+ * fila editorial, rankings, alternância de tema Claro/Escuro (`tgAdmTheme`) e modo Big Board (`Esc`).
  */
 (function () {
   'use strict';
@@ -14,11 +15,12 @@
 
   var cfg = window.teoriageekAdminData || {};
   var state = cfg.payload || {};
-  var POLL_MS = Number(cfg.pollMs) || 150000;
+  var POLL_MS = Number(cfg.pollMs) || 120000;
   var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var finePointer = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
 
   var currentBarWin = '24h';
+  var currentRange = (state && state.range) || cfg.range || '7d';
   var currentTab = 'overview';
   var tabBeforeBoard = 'overview';
   var lastFetch = Date.now();
@@ -35,12 +37,38 @@
   function url(u) { return /^https?:\/\//i.test(String(u || '')) ? esc(u) : '#'; }
   function fmt(n) { return Number(n || 0).toLocaleString('pt-BR'); }
   function fmt1(n) { return Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+  function fmtDuration(sec) {
+    var s = Math.max(0, Math.round(Number(sec) || 0));
+    if (s < 60) return s + 's';
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    if (m < 60) return m + 'm ' + (r < 10 ? '0' : '') + r + 's';
+    var h = Math.floor(m / 60);
+    return h + 'h ' + (m % 60 < 10 ? '0' : '') + (m % 60) + 'm';
+  }
   function sum(arr, from, to) {
     var t = 0;
     for (var i = from; i < to; i++) t += Number((arr[i] || {}).views != null ? arr[i].views : arr[i]) || 0;
     return t;
   }
   function empty(msg) { return '<p class="tg-empty">' + esc(msg) + '</p>'; }
+  function buildRestUrl(base, params) {
+    var pairs = [];
+    Object.keys(params || {}).forEach(function (k) {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+        pairs.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(params[k])));
+      }
+    });
+    if (!pairs.length) return String(base || '');
+    var raw = String(base || '');
+    return raw + (raw.indexOf('?') === -1 ? '?' : '&') + pairs.join('&');
+  }
+  function deltaChip(pct) {
+    if (pct === null || pct === undefined || isNaN(pct)) return '';
+    var n = Math.round(Number(pct));
+    var cls = 'tg-mini-delta' + (n < 0 ? ' is-down' : n === 0 ? ' is-flat' : '');
+    return '<span class="' + cls + '">' + (n > 0 ? '+' : '') + n + '%</span>';
+  }
 
   function showTip(text, x, y) {
     if (!tooltip) return;
@@ -82,7 +110,7 @@
     el._v = to;
     if (reduce || from === to) { el.textContent = fmt(to); return; }
     var t0 = null;
-    var dur = 800;
+    var dur = 750;
     function step(ts) {
       if (t0 === null) t0 = ts;
       var p = Math.min(1, (ts - t0) / dur);
@@ -151,6 +179,53 @@
 
     spark($('tg-spark-views'), series.map(function (p) { return Number(p.views) || 0; }));
     spark($('tg-spark-posts'), pub);
+
+    var an = state.analytics || {};
+    var anSum = an.summary || {};
+    var liveEl = $('tg-live-count');
+    if (liveEl) liveEl.textContent = fmt(anSum.onlineNow || 0);
+  }
+
+  /* ---------- Faixa de Pulso Analytics na Visão geral ---------- */
+  function renderOverviewPulse() {
+    var host = $('tg-overview-pulse');
+    if (!host) return;
+    var an = state.analytics || {};
+    var s = an.summary || {};
+    var period = an.rangeLabel || 'Últimos 7 dias';
+
+    host.innerHTML =
+      '<button type="button" class="tg-pulse-item is-live" data-tg-jump-tab="analytics">' +
+      '<small>Online agora (5 min)</small>' +
+      '<strong>' + fmt(s.onlineNow || 0) + '</strong>' +
+      '<span>Leitores ativos no portal</span>' +
+      '</button>' +
+      '<button type="button" class="tg-pulse-item" data-tg-jump-tab="clicks">' +
+      '<small>Cliques (' + esc(period) + ')</small>' +
+      '<strong>' + fmt(s.clicks || 0) + '</strong>' +
+      '<span>' + (s.clicksPerSess ? fmt1(s.clicksPerSess) + ' cliques por sessão' : 'Rastreio por zona ativo') + '</span>' +
+      '</button>' +
+      '<button type="button" class="tg-pulse-item" data-tg-jump-tab="clicks">' +
+      '<small>Aonde mais clicaram</small>' +
+      '<strong>' + esc(s.topZoneLabel || 'Aguardando dados') + '</strong>' +
+      '<span>' + (s.topZoneLabel ? fmt1(s.topZonePct) + '% de todos os cliques' : 'Ver mapa de cliques →') + '</span>' +
+      '</button>' +
+      '<button type="button" class="tg-pulse-item" data-tg-jump-tab="analytics">' +
+      '<small>Principal origem</small>' +
+      '<strong>' + esc(s.topRefLabel || 'Aguardando dados') + '</strong>' +
+      '<span>' + (s.topRefLabel ? fmt1(s.topRefPct) + '% das sessões' : 'Ver origens de tráfego →') + '</span>' +
+      '</button>' +
+      '<button type="button" class="tg-pulse-item" data-tg-jump-tab="analytics">' +
+      '<small>Tempo ativo médio</small>' +
+      '<strong>' + esc(fmtDuration(s.avgEngagedSec || 0)) + '</strong>' +
+      '<span>' + (s.completionRate ? fmt1(s.completionRate) + '% chegam a 75% do texto' : 'Scroll depth 25%–100%') + '</span>' +
+      '</button>';
+
+    qa('[data-tg-jump-tab]', host).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        showTab(btn.getAttribute('data-tg-jump-tab'));
+      });
+    });
   }
 
   /* ---------- colunas 3D ---------- */
@@ -262,35 +337,39 @@
     hit.addEventListener('mouseleave', function () { svg.classList.remove('is-hover'); hideTip(); });
   }
 
-  /* ---------- donut ---------- */
-  function renderDonut(cats, totalPublished) {
-    var stage = $('tg-donut-stage');
+  /* ---------- donut genérico (Editorias e Dispositivos) ---------- */
+  function renderDonutInto(stage, slices, centerNum, centerCap, ariaLabel) {
     if (!stage) return;
-    if (!Array.isArray(cats) || !cats.length) { stage.innerHTML = empty('Ainda não há categorias com matérias.'); return; }
-    var catSum = cats.reduce(function (a, c) { return a + (c.count || 0); }, 0) || 1;
-    var centerNum = totalPublished > 0 ? totalPublished : catSum;
+    var total = (slices || []).reduce(function (a, c) { return a + (Number(c.count) || 0); }, 0);
+    if (!slices || !slices.length || total <= 0) {
+      stage.innerHTML = empty('Ainda não há dados suficientes neste período.');
+      return;
+    }
     var r = 58, cx = 85, cy = 85, circ = 2 * Math.PI * r, offset = 0;
 
-    var segs = cats.map(function (c, i) {
-      var len = ((c.count || 0) / catSum) * circ;
+    var segs = slices.map(function (c, i) {
+      var val = Number(c.count) || 0;
+      if (val <= 0) return '';
+      var len = (val / total) * circ;
       var vis = Math.max(0, len - 3);
-      var pct = Math.round(((c.count || 0) / catSum) * 100);
+      var pct = Math.round((val / total) * 100);
       var s = '<circle class="tg-donut-seg" data-i="' + i + '" cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke="' + esc(c.color) + '"' +
         ' stroke-dasharray="' + vis.toFixed(2) + ' ' + circ.toFixed(2) + '" transform="rotate(' + ((offset / circ) * 360 - 90).toFixed(2) + ' ' + cx + ' ' + cy + ')"' +
-        ' data-tip="' + esc(c.name + ': ' + fmt(c.count) + ' matérias (' + pct + '%)') + '"/>';
+        ' data-tip="' + esc(c.name + ': ' + fmt(val) + ' (' + pct + '%)') + '"/>';
       offset += len;
       return s;
     }).join('');
 
-    var legend = '<ul class="tg-donut-legend">' + cats.map(function (c, i) {
-      var pct = Math.round(((c.count || 0) / catSum) * 100);
+    var legend = '<ul class="tg-donut-legend">' + slices.map(function (c, i) {
+      var val = Number(c.count) || 0;
+      var pct = total > 0 ? Math.round((val / total) * 100) : 0;
       return '<li data-i="' + i + '"><span class="tg-donut-key"><span class="tg-donut-swatch" style="background:' + esc(c.color) + '"></span>' + esc(c.name) +
-        '</span><span><strong>' + pct + '%</strong></span></li>';
+        '</span><span><strong>' + pct + '%</strong> <small style="color:var(--ink-3);font-family:var(--f-data);">(' + fmt(val) + ')</small></span></li>';
     }).join('') + '</ul>';
 
-    stage.innerHTML = '<svg viewBox="0 0 170 170" class="tg-donut-svg" role="img" aria-label="Distribuição por editoria">' + segs +
-      '<text class="tg-donut-num" x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle">' + fmt(centerNum) + '</text>' +
-      '<text class="tg-donut-cap" x="' + cx + '" y="' + (cy + 22) + '" text-anchor="middle">matérias</text></svg>' + legend;
+    stage.innerHTML = '<svg viewBox="0 0 170 170" class="tg-donut-svg" role="img" aria-label="' + esc(ariaLabel) + '">' + segs +
+      '<text class="tg-donut-num" x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle">' + fmt(centerNum > 0 ? centerNum : total) + '</text>' +
+      '<text class="tg-donut-cap" x="' + cx + '" y="' + (cy + 22) + '" text-anchor="middle">' + esc(centerCap) + '</text></svg>' + legend;
 
     var svg = stage.querySelector('svg');
     function focus(i) {
@@ -338,8 +417,301 @@
     }).join('');
   }
 
+  /* ---------- ABA 2: Audiência & Origem (estilo Google Analytics) ---------- */
+  function renderAnalytics() {
+    var an = state.analytics || {};
+    var s = an.summary || {};
+    var rt = an.realtime || {};
+    var rangeLbl = an.rangeLabel || 'Últimos 7 dias';
+
+    var kpiHost = $('tg-an-kpis');
+    if (kpiHost) {
+      var liveDevs = rt.byDevice || {};
+      var liveSub = (liveDevs.mobile || liveDevs.desktop || liveDevs.tablet)
+        ? (fmt(liveDevs.mobile || 0) + ' mobile · ' + fmt(liveDevs.desktop || 0) + ' desktop')
+        : 'Janela de 5 minutos';
+      kpiHost.innerHTML =
+        '<div class="tg-an-tile is-live">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Online agora</span></div>' +
+        '<span class="tg-an-tile-val">' + fmt(s.onlineNow || 0) + '</span>' +
+        '<span class="tg-an-tile-sub">' + esc(liveSub) + '</span>' +
+        '</div>' +
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Sessões (' + esc(rangeLbl) + ')</span>' + deltaChip(s.sessDeltaPct) + '</div>' +
+        '<span class="tg-an-tile-val">' + fmt(s.sessions || 0) + '</span>' +
+        '<span class="tg-an-tile-sub">' + fmt1(s.pagesPerSession || 0) + ' páginas por sessão</span>' +
+        '</div>' +
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Visualizações</span>' + deltaChip(s.pvDeltaPct) + '</div>' +
+        '<span class="tg-an-tile-val">' + fmt(s.pageviews || 0) + '</span>' +
+        '<span class="tg-an-tile-sub">' + fmt(an.daysWithData || 0) + ' dia(s) com dados</span>' +
+        '</div>' +
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Tempo ativo médio</span></div>' +
+        '<span class="tg-an-tile-val">' + esc(fmtDuration(s.avgEngagedSec || 0)) + '</span>' +
+        '<span class="tg-an-tile-sub">Leitura real (aba ativa)</span>' +
+        '</div>' +
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Taxa de rejeição</span></div>' +
+        '<span class="tg-an-tile-val">' + fmt1(s.bounceRate || 0) + '%</span>' +
+        '<span class="tg-an-tile-sub">Sessões de 1 página</span>' +
+        '</div>';
+    }
+
+    // Origens de tráfego
+    var refHost = $('tg-an-referrers');
+    var refs = an.referrers || [];
+    if (refHost) {
+      if (!refs.length) {
+        refHost.innerHTML = empty('Os canais de origem (Google, Discover, WhatsApp, Instagram, Direto) aparecem aqui conforme novos acessos chegarem.');
+      } else {
+        var maxRef = Math.max.apply(null, refs.map(function (r) { return r.visits || 0; })) || 1;
+        refHost.innerHTML = '<div class="tg-an-bars">' + refs.map(function (r) {
+          var w = Math.max(4, Math.round((r.visits / maxRef) * 100));
+          return '<div class="tg-an-bar-row">' +
+            '<div class="tg-an-bar-head"><span class="tg-an-bar-title"><span class="tg-donut-swatch" style="background:' + esc(r.color) + '"></span><span>' + esc(r.label) + '</span></span>' +
+            '<span class="tg-an-bar-stat"><b>' + fmt(r.visits) + '</b> (' + fmt1(r.pct) + '%)</span></div>' +
+            '<div class="tg-an-bar-track"><div class="tg-an-bar-fill" style="--w:' + w + '%;--bar-c:' + esc(r.color) + '"></div></div></div>';
+        }).join('') + '</div>';
+      }
+    }
+
+    var domHost = $('tg-an-domains');
+    var doms = an.topReferrerDomains || [];
+    if (domHost) {
+      if (!doms.length) {
+        domHost.hidden = true;
+      } else {
+        domHost.hidden = false;
+        domHost.innerHTML = doms.map(function (d) {
+          return '<span class="tg-domain-chip">' + esc(d.domain) + ' <b>' + fmt(d.visits) + '</b></span>';
+        }).join('');
+      }
+    }
+
+    // Dispositivos Donut + Tipos de página
+    var devSlices = (an.devices || []).map(function (d) {
+      return { name: d.label, count: d.count, color: d.color };
+    });
+    renderDonutInto($('tg-an-devices'), devSlices, s.pageviews || 0, 'acessos', 'Distribuição por dispositivo');
+
+    var ptHost = $('tg-an-pagetypes');
+    var pts = an.pageTypes || [];
+    if (ptHost) {
+      if (!pts.length) {
+        ptHost.hidden = true;
+      } else {
+        ptHost.hidden = false;
+        ptHost.innerHTML = '<p class="tg-sub-heading">Acessos por tipo de página</p>' + pts.slice(0, 6).map(function (pt) {
+          return '<div class="tg-pagetype-row"><span>' + esc(pt.label) + '</span>' +
+            '<div class="tg-bar-track"><div class="tg-bar-fill" style="--w:' + Math.max(4, Math.round(pt.pct)) + '%"></div></div>' +
+            '<strong>' + fmt1(pt.pct) + '%</strong></div>';
+        }).join('');
+      }
+    }
+
+    // Horários de Pico (00h–23h)
+    var hrHost = $('tg-an-hourly');
+    var peakBadge = $('tg-an-peak-badge');
+    var hourly = an.hourly24 || [];
+    if (peakBadge) {
+      if (an.peakHour) {
+        peakBadge.hidden = false;
+        peakBadge.textContent = 'Pico: ' + an.peakHour;
+      } else {
+        peakBadge.hidden = true;
+      }
+    }
+    if (hrHost) {
+      var maxHr = Math.max.apply(null, hourly.map(function (h) { return Number(h.pv) || 0; }).concat([0]));
+      if (!hourly.length || maxHr <= 0) {
+        hrHost.innerHTML = empty('A curva de horários de pico (00h–23h) é preenchida automaticamente conforme os leitores navegam.');
+      } else {
+        var W = 600, H = 175, padB = 24, padT = 12, barGap = 4;
+        var slotW = W / 24;
+        var barW = Math.max(8, slotW - barGap);
+        var maxH = H - padB - padT;
+        var svgInner = hourly.map(function (item, idx) {
+          var v = Number(item.pv) || 0;
+          var bh = v > 0 ? Math.max(6, Math.round((v / maxHr) * maxH)) : 3;
+          var x = (idx * slotW + barGap / 2).toFixed(1);
+          var y = (H - padB - bh).toFixed(1);
+          var isPeak = v === maxHr && v > 0;
+          var lbl = (idx % 3 === 0 || idx === 23)
+            ? '<text class="tg-hr-lbl" x="' + (idx * slotW + slotW / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(item.label) + '</text>'
+            : '';
+          return '<rect class="tg-hr-bar' + (isPeak ? ' is-peak' : '') + '" x="' + x + '" y="' + y + '" width="' + barW.toFixed(1) + '" height="' + bh + '" data-tip="' + esc(item.label + ': ' + fmt(v) + ' visualizações') + '"/>' + lbl;
+        }).join('');
+        hrHost.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="tg-hourly-svg" role="img" aria-label="Visualizações por hora do dia (00h a 23h)">' + svgInner + '</svg>';
+        qa('.tg-hr-bar', hrHost).forEach(function (bar) {
+          bar.addEventListener('mousemove', function (ev) { showTip(bar.getAttribute('data-tip'), ev.clientX, ev.clientY); });
+          bar.addEventListener('mouseleave', hideTip);
+        });
+      }
+    }
+
+    // Funil de Profundidade de Leitura (Scroll Depth)
+    var scHost = $('tg-an-scroll');
+    var sf = an.scrollFunnel || {};
+    var steps = sf.steps || [];
+    if (scHost) {
+      if (!sf.base || !steps.length) {
+        scHost.innerHTML = empty('O funil de rolagem (25% → 100%) aparece assim que leitores acessarem matérias individuais.');
+      } else {
+        scHost.innerHTML = '<div class="tg-funnel">' + steps.map(function (st) {
+          return '<div class="tg-funnel-step">' +
+            '<div class="tg-funnel-head"><strong>Chegaram a ' + esc(st.label) + '</strong><span>' + fmt(st.count) + ' leituras (' + fmt1(st.pct) + '%)</span></div>' +
+            '<div class="tg-funnel-track"><div class="tg-funnel-fill" style="--w:' + Math.max(2, Math.min(100, st.pct)) + '%"></div></div>' +
+            '</div>';
+        }).join('') +
+          '<div class="tg-funnel-foot"><span>Base de matérias lidas: <b>' + fmt(sf.base) + '</b></span><span>Conclusão (75%+): <b>' + fmt1(s.completionRate || 0) + '%</b></span></div></div>';
+      }
+    }
+
+    // Top Páginas Mais Acessadas
+    var pgHost = $('tg-an-pages');
+    var pages = an.topPages || [];
+    if (pgHost) {
+      if (!pages.length) {
+        pgHost.innerHTML = empty('Nenhuma visualização registrada neste período ainda.');
+      } else {
+        pgHost.innerHTML = '<div class="tg-table-scroll"><table class="tg-adm-table"><thead><tr><th>#</th><th>Página</th><th class="num">Views</th><th class="num">Cliques</th><th class="num">Tempo</th></tr></thead><tbody>' +
+          pages.map(function (p, i) {
+            var link = p.editUrl || p.viewUrl;
+            return '<tr><td><span class="tg-rank">' + (i + 1) + '</span></td>' +
+              '<td><a href="' + url(link) + '"' + (p.editUrl ? '' : ' target="_blank" rel="noopener noreferrer"') + '>' + esc(p.title) + '</a><span class="tg-path-sub">' + esc(p.path) + '</span></td>' +
+              '<td class="num">' + fmt(p.pv) + '</td>' +
+              '<td class="num">' + fmt(p.clicks) + '</td>' +
+              '<td class="num">' + esc(fmtDuration(p.avgSec)) + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }
+    }
+
+    // Leitores Ao Vivo (5 min) + UTMs
+    var liveHost = $('tg-an-live-pages');
+    var livePages = rt.topLivePages || [];
+    if (liveHost) {
+      liveHost.innerHTML = '<p class="tg-sub-heading">Páginas abertas agora (' + fmt(rt.onlineNow || 0) + ')</p>' +
+        (livePages.length
+          ? '<ul class="tg-list">' + livePages.map(function (lp) {
+              return '<li><span class="tg-search-term">' + esc(lp.path) + '</span><span class="tg-adm-pill tg-pill-ok">' + fmt(lp.count) + '</span></li>';
+            }).join('') + '</ul>'
+          : empty('Nenhum leitor ativo nos últimos 5 minutos.'));
+    }
+
+    var utmHost = $('tg-an-utm');
+    var utms = an.utmCampaigns || [];
+    if (utmHost) {
+      utmHost.innerHTML = '<p class="tg-sub-heading">Campanhas UTM</p>' +
+        (utms.length
+          ? '<ul class="tg-list">' + utms.map(function (u) {
+              return '<li><span class="tg-search-term">' + esc(u.name) + '</span><span class="when">' + fmt(u.visits) + '</span></li>';
+            }).join('') + '</ul>'
+          : empty('Compartilhe links com ?utm_source=...&utm_campaign=... para medir campanhas.'));
+    }
+  }
+
+  /* ---------- ABA 3: Cliques & Comportamento ("Aonde mais clicaram!") ---------- */
+  function renderClicks() {
+    var an = state.analytics || {};
+    var s = an.summary || {};
+    var zones = an.clickZones || [];
+    var topClicks = an.topClicks || [];
+    var convs = an.conversions || [];
+    var searches = an.topSearches || [];
+    var rangeLbl = an.rangeLabel || 'Últimos 7 dias';
+
+    var ckKpiHost = $('tg-clk-kpis');
+    if (ckKpiHost) {
+      ckKpiHost.innerHTML =
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Total de cliques (' + esc(rangeLbl) + ')</span>' + deltaChip(s.clkDeltaPct) + '</div>' +
+        '<span class="tg-an-tile-val">' + fmt(s.clicks || 0) + '</span>' +
+        '<span class="tg-an-tile-sub">Links, cards, botões e CTAs</span>' +
+        '</div>' +
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Zona campeã de cliques</span></div>' +
+        '<span class="tg-an-tile-val is-text">' + esc(s.topZoneLabel || '—') + '</span>' +
+        '<span class="tg-an-tile-sub">' + (s.topZoneLabel ? fmt1(s.topZonePct) + '% do total de cliques' : 'Aguardando interações') + '</span>' +
+        '</div>' +
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Cliques por sessão</span></div>' +
+        '<span class="tg-an-tile-val">' + fmt1(s.clicksPerSess || 0) + '</span>' +
+        '<span class="tg-an-tile-sub">Média de interações por visita</span>' +
+        '</div>' +
+        '<div class="tg-an-tile">' +
+        '<div class="tg-an-tile-top"><span class="tg-an-tile-label">Ações de conversão</span></div>' +
+        '<span class="tg-an-tile-val">' + fmt(s.conversions || 0) + '</span>' +
+        '<span class="tg-an-tile-sub">Canais, share, Reels, YouTube, curtidas</span>' +
+        '</div>';
+    }
+
+    // Mapa por Zona do Portal
+    var zHost = $('tg-clk-zones');
+    if (zHost) {
+      if (!zones.length) {
+        zHost.innerHTML = empty('Assim que os leitores clicarem na capa, menu, Mais Lidas, Reels ou matérias, o mapa de zonas aparece aqui automaticamente.');
+      } else {
+        var maxZ = Math.max.apply(null, zones.map(function (z) { return z.clicks || 0; })) || 1;
+        zHost.innerHTML = '<div class="tg-an-bars">' + zones.map(function (z, idx) {
+          var w = Math.max(4, Math.round((z.clicks / maxZ) * 100));
+          var barColor = idx === 0 ? 'var(--accent)' : idx === 1 ? 'var(--brand-ink)' : 'var(--brand)';
+          return '<div class="tg-an-bar-row">' +
+            '<div class="tg-an-bar-head"><span class="tg-an-bar-title"><span>' + (idx + 1) + '. ' + esc(z.label) + '</span></span>' +
+            '<span class="tg-an-bar-stat"><b>' + fmt(z.clicks) + '</b> cliques (' + fmt1(z.pct) + '%)</span></div>' +
+            (z.desc ? '<div class="tg-an-bar-desc">' + esc(z.desc) + '</div>' : '') +
+            '<div class="tg-an-bar-track"><div class="tg-an-bar-fill" style="--w:' + w + '%;--bar-c:' + barColor + '"></div></div></div>';
+        }).join('') + '</div>';
+      }
+    }
+
+    // Conversões & CTAs
+    var cHost = $('tg-clk-conversions');
+    if (cHost) {
+      if (!convs.length) {
+        cHost.innerHTML = empty('Sem eventos de conversão no período.');
+      } else {
+        cHost.innerHTML = '<div class="tg-conv-grid">' + convs.map(function (c) {
+          return '<div class="tg-conv-card" style="--conv-c:' + esc(c.color) + '"><span>' + esc(c.label) + '</span><strong>' + fmt(c.count) + '</strong></div>';
+        }).join('') + '</div>';
+      }
+    }
+
+    // Top 15 links/botões mais clicados
+    var topHost = $('tg-clk-top');
+    if (topHost) {
+      if (!topClicks.length) {
+        topHost.innerHTML = empty('Os links, matérias e botões mais clicados aparecem listados aqui em tempo real.');
+      } else {
+        topHost.innerHTML = '<div class="tg-table-scroll"><table class="tg-adm-table"><thead><tr><th>#</th><th>Elemento / Link</th><th>Zona</th><th class="num">Cliques</th><th class="num">%</th></tr></thead><tbody>' +
+          topClicks.map(function (it, i) {
+            return '<tr><td><span class="tg-rank">' + (i + 1) + '</span></td>' +
+              '<td><strong>' + esc(it.label) + '</strong>' + (it.target ? '<span class="tg-path-sub">' + esc(it.target) + '</span>' : '') + '</td>' +
+              '<td><span class="tg-adm-pill tg-pill-info">' + esc(it.zoneLabel) + '</span></td>' +
+              '<td class="num">' + fmt(it.clicks) + '</td>' +
+              '<td class="num">' + fmt1(it.pct) + '%</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }
+    }
+
+    // Termos mais buscados
+    var sHost = $('tg-clk-searches');
+    if (sHost) {
+      if (!searches.length) {
+        sHost.innerHTML = empty('Quando leitores pesquisarem no portal, os termos mais buscados aparecem aqui.');
+      } else {
+        sHost.innerHTML = '<ul class="tg-search-list">' + searches.map(function (sq) {
+          var zeroBadge = sq.zeroResults > 0
+            ? '<span class="tg-adm-pill tg-pill-warn" title="Buscas que não encontraram matérias — oportunidade de pauta">0 resultados</span>'
+            : '';
+          return '<li><span class="tg-search-term">' + esc(sq.term) + '</span><span class="tg-search-meta">' + zeroBadge + '<strong>' + fmt(sq.count) + 'x</strong></span></li>';
+        }).join('') + '</ul>';
+      }
+    }
+  }
+
   /* ---------- redação ---------- */
-  function listHtml(items, whenKey) {
+  function listHtml(items) {
     return '<ul class="tg-list">' + items.map(function (it) {
       var st = it.status === 'pending' ? 'Aguardando revisão' : it.status === 'draft' ? 'Rascunho' : '';
       var meta = [it.author, st].filter(Boolean).join(', ');
@@ -393,25 +765,37 @@
   function renderRankings() {
     var t7 = $('tg-top7-stage'), lk = $('tg-liked-stage');
     var a = state.top7d || [];
-    if (t7) t7.innerHTML = a.length ? '<table class="tg-adm-table"><thead><tr><th>#</th><th>Matéria</th><th class="num">Leituras</th><th class="num">Curtidas</th></tr></thead><tbody>' +
+    if (t7) t7.innerHTML = a.length ? '<div class="tg-table-scroll"><table class="tg-adm-table"><thead><tr><th>#</th><th>Matéria</th><th class="num">Leituras</th><th class="num">Curtidas</th></tr></thead><tbody>' +
       a.map(function (it, i) {
         return '<tr><td><span class="tg-rank">' + (i + 1) + '</span></td><td><a href="' + url(it.editUrl) + '">' + esc(it.title) + '</a></td><td class="num">' + fmt(it.total) + '</td><td class="num">' + fmt(it.likes) + '</td></tr>';
-      }).join('') + '</tbody></table>' : empty('Sem dados disponíveis no momento.');
+      }).join('') + '</tbody></table></div>' : empty('Sem dados disponíveis no momento.');
     var b = state.mostLiked || [];
-    if (lk) lk.innerHTML = b.length ? '<table class="tg-adm-table"><thead><tr><th>Matéria</th><th class="num">Curtidas</th><th></th></tr></thead><tbody>' +
+    if (lk) lk.innerHTML = b.length ? '<div class="tg-table-scroll"><table class="tg-adm-table"><thead><tr><th>Matéria</th><th class="num">Curtidas</th><th></th></tr></thead><tbody>' +
       b.map(function (it) {
         return '<tr><td><a href="' + url(it.editUrl) + '">' + esc(it.title) + '</a></td><td class="num">' + fmt(it.likes) + '</td><td><a href="' + url(it.viewUrl) + '" target="_blank" rel="noopener noreferrer">Abrir</a></td></tr>';
-      }).join('') + '</tbody></table>' : empty('Nenhuma curtida registrada ainda.');
+      }).join('') + '</tbody></table></div>' : empty('Nenhuma curtida registrada ainda.');
   }
 
   /* ---------- orquestração ---------- */
+  function syncRangeButtons() {
+    qa('[data-tg-range]').forEach(function (b) {
+      var on = b.getAttribute('data-tg-range') === currentRange;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
   function renderAll() {
+    syncRangeButtons();
     renderKpis();
+    renderOverviewPulse();
     renderSlab(state.series14d || []);
     renderArea(state.series14d || []);
-    renderDonut(state.categories || [], (state.kpis && state.kpis.posts_published) || 0);
+    renderDonutInto($('tg-donut-stage'), state.categories || [], (state.kpis && state.kpis.posts_published) || 0, 'matérias', 'Distribuição por editoria');
     renderBars(currentBarWin);
     renderCritics(state.critics || []);
+    renderAnalytics();
+    renderClicks();
     renderNewsroom();
     renderRankings();
     firstRender = false;
@@ -460,6 +844,21 @@
     });
   });
 
+  var livePill = $('tg-live-pill');
+  if (livePill) {
+    livePill.addEventListener('click', function () { showTab('analytics'); });
+  }
+
+  qa('[data-tg-range]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var nextRange = btn.getAttribute('data-tg-range') || '7d';
+      if (nextRange === currentRange) return;
+      currentRange = nextRange;
+      syncRangeButtons();
+      refresh(false, true, 'Período alterado');
+    });
+  });
+
   qa('[data-tg-bar-win]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var win = btn.getAttribute('data-tg-bar-win');
@@ -471,6 +870,15 @@
       renderBars(win);
     });
   });
+
+  var resetForm = $('tg-reset-analytics-form');
+  if (resetForm) {
+    resetForm.addEventListener('submit', function (ev) {
+      if (!window.confirm('Tem certeza que deseja zerar todo o histórico de Analytics First-Party (últimos 30 dias)? As visualizações das matérias no WordPress não serão afetadas.')) {
+        ev.preventDefault();
+      }
+    });
+  }
 
   /* ---------- inclinação 3D dos cartões de KPI ---------- */
   if (finePointer && !reduce) {
@@ -514,13 +922,19 @@
   });
 
   /* ---------- atualização (manual e automática) ---------- */
-  function refresh(force, manual) {
+  function refresh(force, manual, okMsg) {
     if (!cfg.restUrl || inflight) return;
     inflight = true;
     app.classList.add('is-loading');
     var btn = $('tg-adm-refresh-btn');
-    if (manual && btn) { btn.disabled = true; btn.textContent = 'Atualizando...'; }
-    fetch(cfg.restUrl + (force ? '?refresh=1' : ''), {
+    if (manual && force && btn) { btn.disabled = true; btn.textContent = 'Atualizando...'; }
+
+    var reqUrl = buildRestUrl(cfg.restUrl, {
+      range: currentRange,
+      refresh: force ? '1' : ''
+    });
+
+    fetch(reqUrl, {
       credentials: 'same-origin',
       headers: cfg.nonce ? { 'X-WP-Nonce': cfg.nonce } : {}
     })
@@ -528,10 +942,11 @@
       .then(function (data) {
         if (data && data.kpis) {
           state = data;
+          if (data.range) currentRange = data.range;
           lastFetch = Date.now();
           renderAll();
           updateSync();
-          if (manual) toast('Métricas atualizadas');
+          if (manual) toast(okMsg || 'Métricas atualizadas');
         }
       })
       .catch(function () { if (manual) toast('Não foi possível atualizar. Tente de novo em instantes.'); })

@@ -1,10 +1,16 @@
 <?php
 /**
- * Painel Administrativo Dinâmico "Central Teoria Geek" no /wp-admin/ (v2.12.0: nova identidade, 3D em CSS, painéis de redação).
+ * Painel Administrativo Dinâmico "Central Teoria Geek" no /wp-admin/ (v2.12.1).
  *
- * Enfileira `assets/css/admin-dashboard.css` e `assets/js/admin-dashboard.js` via
- * `admin_enqueue_scripts` usando o `$hook_suffix` real de `add_menu_page()`,
- * garantindo carregamento limpo, isolado e compatível com WordPress 6.2–7.1+.
+ * Carregado diretamente em `functions.php` para que a rota REST `/wp-json/teoriageek/v1/admin-metrics`
+ * seja registrada mesmo quando `is_admin()` é `false` em requisições REST. Todos os demais hooks
+ * (`admin_menu`, `admin_enqueue_scripts`, `wp_dashboard_setup`, `admin_post_*`, `manage_post_posts_*`,
+ * `restrict_manage_posts` e `pre_get_posts` com guarda `is_admin()`) não executam no front-end público.
+ *
+ * Inclui dashboards completos de Analytics First-Party (estilo Google Analytics):
+ * - Leitores online agora (5 min), sessões, visualizações, bounce rate e tempo ativo médio
+ * - Mapa de cliques por zona do portal ("aonde mais clicaram") e top 15 links/elementos clicados
+ * - Origens de tráfego (Referrers), top domínios, campanhas UTM, dispositivos, horários de pico e Scroll Depth
  *
  * @package TeoriaGeek
  */
@@ -71,8 +77,9 @@ function teoriageek_enqueue_admin_assets( $hook_suffix ) {
 				array(
 					'restUrl' => esc_url_raw( rest_url( 'teoriageek/v1/admin-metrics' ) ),
 					'nonce'   => wp_create_nonce( 'wp_rest' ),
-					'pollMs'  => 150000,
-					'payload' => teoriageek_get_admin_dashboard_payload(),
+					'pollMs'  => 120000,
+					'range'   => '7d',
+					'payload' => teoriageek_get_admin_dashboard_payload( '7d' ),
 				)
 			);
 		}
@@ -96,7 +103,8 @@ function teoriageek_register_dashboard_widget() {
 add_action( 'wp_dashboard_setup', 'teoriageek_register_dashboard_widget' );
 
 /**
- * Registra rota REST administrativa para atualizar métricas dinamicamente sem F5.
+ * Registra rota REST administrativa para atualizar métricas e relatórios Analytics sem F5.
+ * Exige `current_user_can( 'edit_posts' )` (retorna 401/403 para visitantes anônimos).
  */
 function teoriageek_register_admin_rest_route() {
 	register_rest_route(
@@ -107,18 +115,90 @@ function teoriageek_register_admin_rest_route() {
 			'permission_callback' => static function () {
 				return current_user_can( 'edit_posts' );
 			},
+			'args'                => array(
+				'refresh' => array(
+					'type'              => 'string',
+					'required'          => false,
+					'sanitize_callback' => 'sanitize_key',
+				),
+				'range'   => array(
+					'type'              => 'string',
+					'required'          => false,
+					'default'           => '7d',
+					'sanitize_callback' => 'sanitize_key',
+				),
+			),
 			'callback'            => static function ( WP_REST_Request $request ) {
 				if ( '1' === (string) $request->get_param( 'refresh' ) ) {
 					delete_transient( 'teoriageek_admin_kpis_v2' );
 					delete_transient( 'teoriageek_admin_series_v1' );
 					teoriageek_delete_admin_extra_cache();
 				}
-				return rest_ensure_response( teoriageek_get_admin_dashboard_payload() );
+				$range = sanitize_key( (string) $request->get_param( 'range' ) );
+				if ( ! in_array( $range, array( 'today', '7d', '14d', '30d' ), true ) ) {
+					$range = '7d';
+				}
+				$res = rest_ensure_response( teoriageek_get_admin_dashboard_payload( $range ) );
+				if ( $res instanceof WP_REST_Response ) {
+					$res->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+				}
+				return $res;
 			},
 		)
 	);
 }
 add_action( 'rest_api_init', 'teoriageek_register_admin_rest_route' );
+
+/**
+ * Trata a ação administrativa de zerar dados de Analytics First-Party (`admin-post.php`).
+ */
+function teoriageek_handle_admin_reset_analytics() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Sem permissão para zerar os dados de Analytics.', 'teoriageek' ) );
+	}
+	check_admin_referer( 'teoriageek_reset_analytics' );
+
+	if ( function_exists( 'teoriageek_analytics_reset_data' ) ) {
+		teoriageek_analytics_reset_data();
+	}
+
+	wp_safe_redirect(
+		add_query_arg(
+			array(
+				'page'               => 'teoriageek-central',
+				'tg_analytics_reset' => '1',
+			),
+			admin_url( 'admin.php' )
+		)
+	);
+	exit;
+}
+add_action( 'admin_post_teoriageek_reset_analytics', 'teoriageek_handle_admin_reset_analytics' );
+
+/**
+ * Alterna se visitas da equipe logada (`edit_posts`) entram ou são ignoradas no Analytics First-Party.
+ */
+function teoriageek_handle_admin_toggle_analytics_staff() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Sem permissão para alterar configurações de Analytics.', 'teoriageek' ) );
+	}
+	check_admin_referer( 'teoriageek_toggle_analytics_staff' );
+
+	$current = '1' === (string) get_option( 'teoriageek_analytics_ignore_staff', '0' );
+	update_option( 'teoriageek_analytics_ignore_staff', $current ? '0' : '1', false );
+
+	wp_safe_redirect(
+		add_query_arg(
+			array(
+				'page'                => 'teoriageek-central',
+				'tg_staff_pref_saved' => '1',
+			),
+			admin_url( 'admin.php' )
+		)
+	);
+	exit;
+}
+add_action( 'admin_post_teoriageek_toggle_analytics_staff', 'teoriageek_handle_admin_toggle_analytics_staff' );
 
 /**
  * Trata a ação de limpeza manual de cache do tema via `admin-post.php`.
@@ -470,14 +550,21 @@ function teoriageek_get_admin_extra_payload() {
 		);
 	}
 
-	// Destaques da capa: Manchete, Plantão e Spoiler.
+	// Destaques da capa: Manchete (_tg_main_headline), Plantão (_tg_plantao) e Spoiler (_tg_has_spoilers), mantendo retrocompatibilidade com chaves antigas.
 	$flags    = array();
 	$flag_map = array(
-		'hero'    => '_tg_is_hero',
-		'ticker'  => '_tg_in_ticker',
-		'spoiler' => '_tg_has_spoilers',
+		'hero'    => array( '_tg_main_headline', '_tg_is_hero' ),
+		'ticker'  => array( '_tg_plantao', '_tg_in_ticker' ),
+		'spoiler' => array( '_tg_has_spoilers' ),
 	);
-	foreach ( $flag_map as $flag_key => $meta_key ) {
+	foreach ( $flag_map as $flag_key => $meta_keys ) {
+		$mq = array( 'relation' => 'OR' );
+		foreach ( $meta_keys as $mk ) {
+			$mq[] = array(
+				'key'   => $mk,
+				'value' => '1',
+			);
+		}
 		$fq    = new WP_Query(
 			array(
 				'post_type'              => 'post',
@@ -487,12 +574,7 @@ function teoriageek_get_admin_extra_payload() {
 				'update_post_term_cache' => false,
 				'orderby'                => 'date',
 				'order'                  => 'DESC',
-				'meta_query'             => array(
-					array(
-						'key'   => $meta_key,
-						'value' => '1',
-					),
-				),
+				'meta_query'             => $mq,
 			)
 		);
 		$items = array();
@@ -588,16 +670,21 @@ function teoriageek_get_admin_extra_payload() {
 }
 
 /**
- * Monta payload completo de métricas para renderização inicial e atualização REST.
+ * Monta payload completo de métricas editoriais + relatório de Analytics First-Party.
  *
+ * @param string $range Período do relatório Analytics (`today`, `7d`, `14d`, `30d`).
  * @return array<string,mixed>
  */
-function teoriageek_get_admin_dashboard_payload() {
+function teoriageek_get_admin_dashboard_payload( $range = '7d' ) {
+	if ( ! in_array( $range, array( 'today', '7d', '14d', '30d' ), true ) ) {
+		$range = '7d';
+	}
 	$kpis       = teoriageek_get_admin_kpi_totals();
 	$series_14d = teoriageek_get_admin_14d_series();
 	$categories = teoriageek_get_admin_category_distribution();
 	$top_24h    = function_exists( 'teoriageek_get_most_read_posts' ) ? teoriageek_get_most_read_posts( 6, array(), '24h' ) : array();
 	$top_7d     = function_exists( 'teoriageek_get_most_read_posts' ) ? teoriageek_get_most_read_posts( 6, array(), '7d' ) : array();
+	$analytics  = function_exists( 'teoriageek_analytics_get_report' ) ? teoriageek_analytics_get_report( $range ) : null;
 
 	$map_posts = static function ( $posts, $window ) {
 		$items = array();
@@ -626,6 +713,8 @@ function teoriageek_get_admin_dashboard_payload() {
 			'categories' => $categories,
 			'top24h'     => $map_posts( $top_24h, '24h' ),
 			'top7d'      => $map_posts( $top_7d, '7d' ),
+			'analytics'  => $analytics,
+			'range'      => $range,
 			'updatedAt'  => wp_date( 'H:i:s' ),
 			'ts'         => time(),
 		),
@@ -682,7 +771,7 @@ function teoriageek_render_admin_central_page() {
 	$greeting = $hour < 12 ? __( 'Bom dia', 'teoriageek' ) : ( $hour < 18 ? __( 'Boa tarde', 'teoriageek' ) : __( 'Boa noite', 'teoriageek' ) );
 	$user     = wp_get_current_user();
 	$first    = ( $user && $user->exists() ) ? (string) strtok( (string) $user->display_name, ' ' ) : '';
-	$version  = defined( 'TEORIAGEEK_VERSION' ) ? TEORIAGEEK_VERSION : '2.12.0';
+	$version  = defined( 'TEORIAGEEK_VERSION' ) ? TEORIAGEEK_VERSION : '2.12.1';
 
 	$has_wa         = '' !== trim( (string) get_theme_mod( 'teoriageek_channel_whatsapp', '' ) );
 	$has_tg         = '' !== trim( (string) get_theme_mod( 'teoriageek_channel_telegram', '' ) );
@@ -691,10 +780,13 @@ function teoriageek_render_admin_central_page() {
 	$has_ads        = '' !== trim( (string) get_theme_mod( 'teoriageek_ad_top', '' ) . (string) get_theme_mod( 'teoriageek_ad_mid_article', '' ) . (string) get_theme_mod( 'teoriageek_ad_sidebar', '' ) );
 	$has_cache      = function_exists( 'wp_cache_clear_cache' );
 	$has_pvc        = function_exists( 'pvc_view_post' );
+	$ignore_staff   = '1' === (string) get_option( 'teoriageek_analytics_ignore_staff', '0' );
 	$rules          = get_option( 'rewrite_rules' );
 	$has_reels_rule = is_array( $rules ) && isset( $rules['^reels/?$'] );
 
-	$flushed = isset( $_GET['tg_cache_flushed'] ) && '1' === (string) wp_unslash( $_GET['tg_cache_flushed'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$flushed       = isset( $_GET['tg_cache_flushed'] ) && '1' === (string) wp_unslash( $_GET['tg_cache_flushed'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$an_reset      = isset( $_GET['tg_analytics_reset'] ) && '1' === (string) wp_unslash( $_GET['tg_analytics_reset'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$staff_updated = isset( $_GET['tg_staff_pref_saved'] ) && '1' === (string) wp_unslash( $_GET['tg_staff_pref_saved'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	?>
 	<div class="tg-adm-wrap" id="tg-admin-app" data-theme="dark">
 		<script>try{var tgT=localStorage.getItem('tgAdmTheme');if(tgT==='light'||tgT==='dark'){document.getElementById('tg-admin-app').setAttribute('data-theme',tgT);}}catch(e){}</script>
@@ -704,10 +796,27 @@ function teoriageek_render_admin_central_page() {
 				<p><strong><?php esc_html_e( 'Cache do tema limpo com sucesso!', 'teoriageek' ); ?></strong> <?php esc_html_e( 'Home, Mais Lidas, Alertas, Estreias e métricas foram atualizados.', 'teoriageek' ); ?></p>
 			</div>
 		<?php endif; ?>
+		<?php if ( $an_reset ) : ?>
+			<div class="notice notice-success is-dismissible" style="margin: 0 0 16px;">
+				<p><strong><?php esc_html_e( 'Dados de Analytics zerados com sucesso!', 'teoriageek' ); ?></strong> <?php esc_html_e( 'A nova coleta começa imediatamente a partir dos próximos acessos ao portal.', 'teoriageek' ); ?></p>
+			</div>
+		<?php endif; ?>
+		<?php if ( $staff_updated ) : ?>
+			<div class="notice notice-success is-dismissible" style="margin: 0 0 16px;">
+				<p><strong><?php esc_html_e( 'Preferência de rastreamento atualizada!', 'teoriageek' ); ?></strong></p>
+			</div>
+		<?php endif; ?>
 
 		<header class="tg-hero">
 			<div class="tg-hero-copy">
-				<p class="tg-hello"><?php echo esc_html( '' !== $first ? $greeting . ', ' . $first : $greeting ); ?></p>
+				<div class="tg-hero-top">
+					<p class="tg-hello"><?php echo esc_html( '' !== $first ? $greeting . ', ' . $first : $greeting ); ?></p>
+					<button type="button" class="tg-live-pill" id="tg-live-pill" title="<?php esc_attr_e( 'Leitores ativos no portal nos últimos 5 minutos. Clique para abrir Audiência & Origem.', 'teoriageek' ); ?>">
+						<span class="tg-live-dot" aria-hidden="true"></span>
+						<strong id="tg-live-count">0</strong>
+						<span><?php esc_html_e( 'online agora', 'teoriageek' ); ?></span>
+					</button>
+				</div>
 				<h1><?php esc_html_e( 'Central Teoria Geek', 'teoriageek' ); ?></h1>
 				<div class="tg-hero-stat">
 					<span class="tg-hero-num" data-tg-kpi="views_7d">0</span>
@@ -757,22 +866,33 @@ function teoriageek_render_admin_central_page() {
 		<nav class="tg-nav" aria-label="<?php esc_attr_e( 'Seções da Central Teoria Geek', 'teoriageek' ); ?>">
 			<div class="tg-adm-tablist" role="tablist">
 				<button type="button" role="tab" id="tg-tab-overview" aria-selected="true" aria-controls="tg-panel-overview" data-tg-adm-tab="overview" class="tg-adm-tab is-active"><?php esc_html_e( 'Visão geral', 'teoriageek' ); ?></button>
+				<button type="button" role="tab" id="tg-tab-analytics" aria-selected="false" aria-controls="tg-panel-analytics" data-tg-adm-tab="analytics" class="tg-adm-tab" tabindex="-1"><?php esc_html_e( 'Audiência & Origem', 'teoriageek' ); ?></button>
+				<button type="button" role="tab" id="tg-tab-clicks" aria-selected="false" aria-controls="tg-panel-clicks" data-tg-adm-tab="clicks" class="tg-adm-tab" tabindex="-1"><?php esc_html_e( 'Cliques & Comportamento', 'teoriageek' ); ?></button>
 				<button type="button" role="tab" id="tg-tab-newsroom" aria-selected="false" aria-controls="tg-panel-newsroom" data-tg-adm-tab="newsroom" class="tg-adm-tab" tabindex="-1"><?php esc_html_e( 'Redação', 'teoriageek' ); ?></button>
 				<button type="button" role="tab" id="tg-tab-rankings" aria-selected="false" aria-controls="tg-panel-rankings" data-tg-adm-tab="rankings" class="tg-adm-tab" tabindex="-1"><?php esc_html_e( 'Rankings', 'teoriageek' ); ?></button>
 				<?php if ( current_user_can( 'manage_options' ) ) : ?>
 					<button type="button" role="tab" id="tg-tab-health" aria-selected="false" aria-controls="tg-panel-health" data-tg-adm-tab="health" class="tg-adm-tab" tabindex="-1"><?php esc_html_e( 'Saúde e atalhos', 'teoriageek' ); ?></button>
 				<?php endif; ?>
 			</div>
-			<span class="tg-sync" title="<?php esc_attr_e( 'Os dados do servidor têm cache de até 5 minutos.', 'teoriageek' ); ?>">
-				<span class="tg-sync-dot" aria-hidden="true"></span>
-				<span id="tg-adm-sync"><?php esc_html_e( 'Atualizado agora', 'teoriageek' ); ?></span>
-			</span>
+			<div class="tg-nav-right">
+				<div class="tg-range-switch" role="group" aria-label="<?php esc_attr_e( 'Período do Analytics', 'teoriageek' ); ?>">
+					<button type="button" data-tg-range="today" aria-pressed="false"><?php esc_html_e( 'Hoje', 'teoriageek' ); ?></button>
+					<button type="button" data-tg-range="7d" class="is-active" aria-pressed="true"><?php esc_html_e( '7d', 'teoriageek' ); ?></button>
+					<button type="button" data-tg-range="14d" aria-pressed="false"><?php esc_html_e( '14d', 'teoriageek' ); ?></button>
+					<button type="button" data-tg-range="30d" aria-pressed="false"><?php esc_html_e( '30d', 'teoriageek' ); ?></button>
+				</div>
+				<span class="tg-sync" title="<?php esc_attr_e( 'Métricas do Analytics atualizam em tempo real; KPIs de acervo têm cache de até 5 min.', 'teoriageek' ); ?>">
+					<span class="tg-sync-dot" aria-hidden="true"></span>
+					<span id="tg-adm-sync"><?php esc_html_e( 'Atualizado agora', 'teoriageek' ); ?></span>
+				</span>
+			</div>
 		</nav>
 
 		<div class="tg-stage" id="tg-stage">
 			<!-- Visão geral -->
 			<section class="tg-adm-panel" id="tg-panel-overview" role="tabpanel" aria-labelledby="tg-tab-overview" data-tg-adm-panel="overview">
 				<div class="tg-grid">
+					<div class="span-12 tg-pulse-strip" id="tg-overview-pulse"></div>
 					<article class="tg-card span-8">
 						<div class="tg-card-head">
 							<div>
@@ -812,6 +932,124 @@ function teoriageek_render_admin_central_page() {
 							</div>
 						</div>
 						<div id="tg-critics-stage"></div>
+					</article>
+				</div>
+			</section>
+
+			<!-- Audiência & Origem (Analytics First-Party) -->
+			<section class="tg-adm-panel" id="tg-panel-analytics" role="tabpanel" aria-labelledby="tg-tab-analytics" data-tg-adm-panel="analytics" hidden>
+				<div class="tg-grid">
+					<div class="span-12 tg-an-tiles" id="tg-an-kpis"></div>
+
+					<article class="tg-card span-7">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Origens de tráfego (Referrers)', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub" id="tg-an-ref-sub"><?php esc_html_e( 'De onde chegam os leitores (Google, Discover, redes sociais e acesso direto).', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-an-referrers"></div>
+						<div id="tg-an-domains" class="tg-domain-chips"></div>
+					</article>
+
+					<article class="tg-card span-5">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Dispositivos & tipos de página', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Distribuição Mobile, Desktop e Tablet no período selecionado.', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div class="tg-donut-wrap" id="tg-an-devices"></div>
+						<div class="tg-pagetypes-wrap" id="tg-an-pagetypes"></div>
+					</article>
+
+					<article class="tg-card span-7">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Horários de pico (00h–23h)', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Volume de visualizações por hora no fuso horário do WordPress.', 'teoriageek' ); ?></span>
+							</div>
+							<span class="tg-adm-pill tg-pill-info" id="tg-an-peak-badge" hidden></span>
+						</div>
+						<div id="tg-an-hourly"></div>
+					</article>
+
+					<article class="tg-card span-5">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Funil de profundidade de leitura', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Até onde os leitores rolam nas matérias (Scroll Depth 25% a 100%).', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-an-scroll"></div>
+					</article>
+
+					<article class="tg-card span-8">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Páginas mais acessadas', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Visualizações, cliques originados e tempo ativo médio em cada URL.', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-an-pages"></div>
+					</article>
+
+					<article class="tg-card span-4">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Ao vivo (5 min) & campanhas UTM', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Páginas abertas agora e links com utm_source / utm_campaign.', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-an-live-pages"></div>
+						<div id="tg-an-utm" class="tg-utm-block"></div>
+					</article>
+				</div>
+			</section>
+
+			<!-- Cliques & Comportamento (Aonde mais clicaram!) -->
+			<section class="tg-adm-panel" id="tg-panel-clicks" role="tabpanel" aria-labelledby="tg-tab-clicks" data-tg-adm-panel="clicks" hidden>
+				<div class="tg-grid">
+					<div class="span-12 tg-an-tiles tg-an-tiles--4" id="tg-clk-kpis"></div>
+
+					<article class="tg-card span-7">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Aonde mais clicaram — Mapa por zona', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Ranking real de cliques em cada bloco do portal (Hero, Giro, Mais Lidas, Reels, Menu, Rodapé).', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-clk-zones"></div>
+					</article>
+
+					<article class="tg-card span-5">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Conversões & ações editoriais', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Cliques em canais oficiais, newsletter, compartilhamento, spoilers, YouTube e Reels.', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-clk-conversions"></div>
+					</article>
+
+					<article class="tg-card span-8">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Links e botões mais clicados (Top 15)', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Elemento exato clicado pelo leitor, em qual bloco apareceu e destino.', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-clk-top"></div>
+					</article>
+
+					<article class="tg-card span-4">
+						<div class="tg-card-head">
+							<div>
+								<h2><?php esc_html_e( 'Termos mais buscados', 'teoriageek' ); ?></h2>
+								<span class="tg-card-sub"><?php esc_html_e( 'Pesquisas reais dos leitores; buscas sem resultado viram pauta.', 'teoriageek' ); ?></span>
+							</div>
+						</div>
+						<div id="tg-clk-searches"></div>
 					</article>
 				</div>
 			</section>
@@ -885,15 +1123,37 @@ function teoriageek_render_admin_central_page() {
 							<div class="tg-card-head">
 								<div>
 									<h2><?php esc_html_e( 'Saúde e produção', 'teoriageek' ); ?></h2>
-									<span class="tg-card-sub"><?php esc_html_e( 'O que está ativo, o que falta configurar e o que é opcional.', 'teoriageek' ); ?></span>
+									<span class="tg-card-sub"><?php esc_html_e( 'O que está ativo, o que falta configurar e manutenção rápida.', 'teoriageek' ); ?></span>
 								</div>
-								<form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="margin:0;">
-									<input type="hidden" name="action" value="teoriageek_flush_cache" />
-									<?php wp_nonce_field( 'teoriageek_flush_cache' ); ?>
-									<button type="submit" class="tg-adm-btn tg-adm-btn-sec"><?php esc_html_e( 'Limpar cache do tema', 'teoriageek' ); ?></button>
-								</form>
+								<div class="tg-health-actions">
+									<form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="margin:0;">
+										<input type="hidden" name="action" value="teoriageek_toggle_analytics_staff" />
+										<?php wp_nonce_field( 'teoriageek_toggle_analytics_staff' ); ?>
+										<button type="submit" class="tg-adm-btn tg-adm-btn-sec">
+											<?php echo $ignore_staff ? esc_html__( 'Contar visitas da equipe', 'teoriageek' ) : esc_html__( 'Ignorar visitas da equipe', 'teoriageek' ); ?>
+										</button>
+									</form>
+									<form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="margin:0;" id="tg-reset-analytics-form">
+										<input type="hidden" name="action" value="teoriageek_reset_analytics" />
+										<?php wp_nonce_field( 'teoriageek_reset_analytics' ); ?>
+										<button type="submit" class="tg-adm-btn tg-adm-btn-sec"><?php esc_html_e( 'Zerar Analytics', 'teoriageek' ); ?></button>
+									</form>
+									<form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post" style="margin:0;">
+										<input type="hidden" name="action" value="teoriageek_flush_cache" />
+										<?php wp_nonce_field( 'teoriageek_flush_cache' ); ?>
+										<button type="submit" class="tg-adm-btn tg-adm-btn-sec"><?php esc_html_e( 'Limpar cache do tema', 'teoriageek' ); ?></button>
+									</form>
+								</div>
 							</div>
 							<ul class="tg-adm-status-list">
+								<li class="tg-adm-status-item">
+									<span><?php esc_html_e( 'Analytics First-Party (/telemetry)', 'teoriageek' ); ?></span>
+									<span class="tg-adm-pill tg-pill-ok"><?php esc_html_e( 'Ativo (30 dias, sem cookies)', 'teoriageek' ); ?></span>
+								</li>
+								<li class="tg-adm-status-item">
+									<span><?php esc_html_e( 'Visitas de editores logados', 'teoriageek' ); ?></span>
+									<span class="tg-adm-pill <?php echo $ignore_staff ? 'tg-pill-info' : 'tg-pill-ok'; ?>"><?php echo $ignore_staff ? esc_html__( 'Ignoradas', 'teoriageek' ) : esc_html__( 'Contabilizadas', 'teoriageek' ); ?></span>
+								</li>
 								<li class="tg-adm-status-item">
 									<span><?php esc_html_e( 'Rota /reels/ (permalinks)', 'teoriageek' ); ?></span>
 									<span class="tg-adm-pill <?php echo $has_reels_rule ? 'tg-pill-ok' : 'tg-pill-warn'; ?>"><?php echo $has_reels_rule ? esc_html__( 'Ativa', 'teoriageek' ) : esc_html__( 'Salvar permalinks', 'teoriageek' ); ?></span>
@@ -1009,8 +1269,8 @@ function teoriageek_render_post_admin_column( $column, $post_id ) {
 			echo '<br><span class="tg-col-metric">' . esc_html( sprintf( __( 'Nota: %s/10', 'teoriageek' ), $rev['score'] ) ) . '</span>';
 		}
 	} elseif ( 'tg_flags' === $column ) {
-		$is_hero    = '1' === (string) get_post_meta( $post_id, '_tg_is_hero', true );
-		$is_ticker  = '1' === (string) get_post_meta( $post_id, '_tg_in_ticker', true );
+		$is_hero    = '1' === (string) get_post_meta( $post_id, '_tg_main_headline', true ) || '1' === (string) get_post_meta( $post_id, '_tg_is_hero', true );
+		$is_ticker  = '1' === (string) get_post_meta( $post_id, '_tg_plantao', true ) || '1' === (string) get_post_meta( $post_id, '_tg_in_ticker', true );
 		$is_spoiler = '1' === (string) get_post_meta( $post_id, '_tg_has_spoilers', true );
 		if ( $is_hero ) {
 			echo '<span class="tg-col-flag tg-pill-info">' . esc_html__( 'Manchete', 'teoriageek' ) . '</span>';
@@ -1060,20 +1320,19 @@ function teoriageek_apply_admin_post_filter( $query ) {
 	}
 	$flag = isset( $_GET['tg_flag'] ) ? sanitize_key( (string) wp_unslash( $_GET['tg_flag'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$map  = array(
-		'hero'    => '_tg_is_hero',
-		'ticker'  => '_tg_in_ticker',
-		'spoiler' => '_tg_has_spoilers',
+		'hero'    => array( '_tg_main_headline', '_tg_is_hero' ),
+		'ticker'  => array( '_tg_plantao', '_tg_in_ticker' ),
+		'spoiler' => array( '_tg_has_spoilers' ),
 	);
 	if ( isset( $map[ $flag ] ) ) {
-		$query->set(
-			'meta_query',
-			array(
-				array(
-					'key'   => $map[ $flag ],
-					'value' => '1',
-				),
-			)
-		);
+		$mq = array( 'relation' => 'OR' );
+		foreach ( $map[ $flag ] as $mk ) {
+			$mq[] = array(
+				'key'   => $mk,
+				'value' => '1',
+			);
+		}
+		$query->set( 'meta_query', $mq );
 	}
 }
 add_action( 'pre_get_posts', 'teoriageek_apply_admin_post_filter' );

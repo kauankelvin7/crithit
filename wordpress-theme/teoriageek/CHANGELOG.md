@@ -4,6 +4,25 @@ Todas as mudanças relevantes do tema nativo **Teoria Geek** são registradas ne
 
 ---
 
+## [2.12.1] — Correção `/admin-metrics`, Auditoria REST & Analytics First-Party
+
+### Corrigido
+- **Erro `404 (Not Found)` em `GET /wp-json/teoriageek/v1/admin-metrics` (`functions.php`):** removido o wrapper `if ( is_admin() )` ao redor de `require_once TEORIAGEEK_DIR . '/inc/admin-dashboard.php';`, pois em requisições `/wp-json/...` o WordPress avalia `is_admin() === false` e impedia o registro do hook `rest_api_init`. Todos os hooks administrativos continuam restritos ao `/wp-admin/` e `/admin-metrics` mantém `permission_callback` exigindo `current_user_can( 'edit_posts' )` (retornando `401`/`403` para anônimos).
+- **Prevenção de `403 rest_cookie_invalid_nonce` sob WP Super Cache (`inc/enqueue.php`, `assets/js/main.js`, `assets/js/reels.js`):** removido o envio do cabeçalho `X-WP-Nonce` (e a injeção do nonce no `teoriageekConfig` público cacheável) nas rotas públicas anônimas (`/posts/{id}/view`, `/posts/{id}/like`, `/posts/{id}/community-score` e `/telemetry`), evitando falhas em páginas cacheadas por mais de 12–24 horas.
+- **Compatibilidade de URLs REST com links permanentes simples (`assets/js/main.js`, `assets/js/reels.js`, `assets/js/admin-dashboard.js`):** adicionado helper `buildRestUrl()` que concatena parâmetros com `&` quando `rest_url()` utiliza `?rest_route=...`.
+- **Sincronização de destaques editoriais na Central e em `edit.php` (`inc/admin-dashboard.php`):** `flags`, coluna *Destaques* e filtro `tg_flag` agora leem `_tg_main_headline` e `_tg_plantao` (gravados pela Ficha Editorial), mantendo retrocompatibilidade com `_tg_is_hero` e `_tg_in_ticker`.
+
+### Adicionado
+- **Motor de Analytics First-Party (`inc/analytics.php` + `assets/js/main.js`):**
+  - Endpoint público `POST /wp-json/teoriageek/v1/telemetry` (sem `X-WP-Nonce`, filtro anti-bot, rate limit de 120 lotes/min por IP, sem cookies e sem gravação de IP/PII), utilizando `navigator.sendBeacon` / `fetch({ keepalive: true })` com armazenamento compacto de 30 dias (`teoriageek_analytics_days_v1`, `autoload = no`) e leitores ativos em janela de 5 minutos (`teoriageek_live_visitors_v1`).
+  - Rastreamento automático de **pageviews**, **sessões**, **páginas/sessão**, **taxa de rejeição (bounce rate)**, **origens de tráfego (Referrers + UTMs + domínios externos)**, **dispositivos (Mobile/Desktop/Tablet)**, **distribuição horária (00h–23h)**, **profundidade de leitura (Scroll Depth 25%/50%/75%/100%)**, **tempo ativo real de leitura**, **cliques por zona do portal** (22 zonas mapeadas), **top 15 links/botões mais clicados**, **conversões editoriais** (WhatsApp, Telegram, Google Notícias, Newsletter, compartilhamento, spoilers, YouTube, Reels, curtidas, votos e links externos) e **termos buscados** (com destaque para buscas sem resultado).
+- **Novos painéis na Central Teoria Geek (`inc/admin-dashboard.php`, `assets/css/admin-dashboard.css`, `assets/js/admin-dashboard.js`):**
+  - Selo ao vivo **● N online agora** no Hero, faixa **Pulso Analytics** na *Visão geral* e seletor de período (`Hoje` | `7d` | `14d` | `30d`) com atualização via `?range=...`.
+  - Aba **Audiência & Origem** (estilo Google Analytics) e aba **Cliques & Comportamento** (*Aonde mais clicaram*).
+  - Controles administrativos em **Saúde e atalhos** para alternar o rastreio de visitas da equipe logada e zerar o histórico de Analytics.
+
+---
+
 ## [2.12.0] — Produção Locaweb
 
 ### Adicionado

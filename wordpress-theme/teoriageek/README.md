@@ -1,4 +1,4 @@
-# Tema WordPress Nativo — Teoria Geek (`v2.12.0`)
+# Tema WordPress Nativo — Teoria Geek (`v2.12.1`)
 
 Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vitals, desenvolvido por **Kauan Kelvin** sob medida para o portal **Teoria Geek** (`teoriageek.com.br`), hospedado na **Locaweb** (PHP 8.0–8.3+, WordPress 6.2–7.1+, **WP Super Cache**), em substituição definitiva ao tema legado *Newspaper v12.6.2* (`td-composer` / `td-cloud-library`).
 
@@ -24,13 +24,13 @@ Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vita
 
 ```text
 teoriageek/
-├── style.css                     # Cabeçalho oficial do tema (v2.12.0, Author: Kauan Kelvin)
-├── functions.php                 # Bootstrapper: constantes e require_once dos módulos em inc/
+├── style.css                     # Cabeçalho oficial do tema (v2.12.1, Author: Kauan Kelvin)
+├── functions.php                 # Bootstrapper: constantes e require_once dos módulos em inc/ (incluindo analytics.php e admin-dashboard.php)
 ├── theme.json                    # Configuração de layout (68ch / 1280px), paleta e famílias tipográficas
 ├── manifest.json                 # Web App Manifest PWA (#0D1933 / #102042)
 ├── screenshot.png                # Capa oficial do tema no WordPress (1200×900)
 ├── README.md                     # Documentação técnica de produção
-├── CHANGELOG.md                  # Histórico estruturado de versões até v2.12.0
+├── CHANGELOG.md                  # Histórico estruturado de versões até v2.12.1
 ├── QA-CHECKLIST.md               # Roteiro de QA automatizado e manual pré-release
 │
 ├── header.php                    # Cabeçalho sticky, busca, Reels, Sino de Alertas, tema e progresso
@@ -54,6 +54,7 @@ teoriageek/
 │   ├── customizer.php            # 5 seções no Personalizador e injeção dinâmica de variáveis :root em wp_head
 │   ├── meta-boxes.php            # Meta Box nativa "Ficha Editorial — Teoria Geek"
 │   ├── template-tags.php         # Badges, breadcrumbs, menus, slots de anúncio, Mais Lidas 24h/7d, Leia Também inline
+│   ├── analytics.php             # Motor de Analytics First-Party (POST /telemetry, 30 dias compactos, tempo real 5 min)
 │   ├── reels-api.php             # Rewrite virtual /reels/ e endpoints REST públicos teoriageek/v1
 │   └── admin-dashboard.php       # Central Teoria Geek (/wp-admin/), endpoint /admin-metrics, widget e colunas edit.php
 │
@@ -151,18 +152,20 @@ teoriageek/
 
 ---
 
-## 5. Central Teoria Geek (`/wp-admin/`)
+## 5. Central Teoria Geek (`/wp-admin/`) & Analytics First-Party
 
 Acessível pelo menu **Teoria Geek** (`admin.php?page=teoriageek-central`, permissão `edit_posts`):
 
-- **Identidade "Redação Noturna":** tema escuro por padrão com alternância para **Tema claro** persistida em `localStorage` (`tgAdmTheme`), fontes locais `.woff2` e colunas 3D em CSS puro exibindo as leituras diárias dos últimos 14 dias (respeita `prefers-reduced-motion`).
+- **Identidade "Redação Noturna":** tema escuro por padrão com alternância para **Tema claro** persistida em `localStorage` (`tgAdmTheme`), selo **● N online agora** clicável no topo, seletor de período (`Hoje` | `7d` | `14d` | `30d`), fontes locais `.woff2` e colunas 3D em CSS puro exibindo as leituras diárias dos últimos 14 dias (respeita `prefers-reduced-motion`).
 - **Abas da Central:**
-  1. **Visão geral:** total de leituras nos últimos 7 dias com delta percentual contra os 7 dias anteriores, 4 cards KPI com mini sparklines, gráfico de área de tendência (14 dias) com média e tooltip interativo, gráfico Donut das 6 maiores editorias, ranking *Mais lidas* alternável (`24h` / `7 dias`) e comparativo *Críticas: redação vs. comunidade*.
-  2. **Redação:** contadores de fila editorial (*rascunhos*, *aguardando revisão*, *agendadas*, exibidos apenas para usuários com `edit_others_posts`), listas de próximas publicações e rascunhos recentes, *Destaques no ar* (Manchete, Plantão e Spoiler) e ranking de autores dos últimos 30 dias.
-  3. **Rankings:** Top mais lidas em 7 dias e Top mais curtidas (`_tg_likes_count`).
-  4. **Saúde e atalhos** *(somente administradores com `manage_options`)*: semáforo de configuração (rota `/reels/`, WhatsApp, Telegram, Google Notícias, Newsletter, WP Super Cache, Post Views Counter, slots de anúncios), botão **Limpar cache do tema** (`admin_post_teoriageek_flush_cache`) e atalhos diretos para cada seção do Personalizador, Hubs de Universo e Permalinks.
+  1. **Visão geral:** faixa executiva *Pulso Analytics* (online agora, cliques, zona campeã, principal origem e tempo ativo médio), total de leituras nos últimos 7 dias com delta percentual, 4 cards KPI com mini sparklines, gráfico de área de tendência (14 dias), gráfico Donut das 6 maiores editorias, ranking *Mais lidas* (`24h` / `7 dias`) e comparativo *Críticas: redação vs. comunidade*.
+  2. **Audiência & Origem** *(estilo Google Analytics, 100% first-party sem cookies)*: leitores online agora (5 min), sessões, páginas/sessão, visualizações com delta %, tempo ativo médio de leitura, taxa de rejeição (bounce rate), **Origens de Tráfego (Referrers)** + top domínios externos, Donut de **Dispositivos (Mobile/Desktop/Tablet)** + tipos de página, **Horários de Pico (00h–23h)**, **Funil de Profundidade de Leitura (Scroll Depth `25% → 50% → 75% → 100%`)**, **Páginas Mais Acessadas**, páginas abertas ao vivo e **Campanhas UTM**.
+  3. **Cliques & Comportamento** *(aonde o público mais clica)*: total de cliques, zona campeã, cliques por sessão, ações de conversão, **Mapa de Cliques por Zona do Portal** (Hero 3D, Giro Geek, Mais Lidas, Reels, Menu, Plantão, Leia Também, Canais Oficiais, Compartilhamento, Rodapé, Links Externos), **Conversões & CTAs** (WhatsApp, Telegram, Google Notícias, Newsletter, Compartilhamento, Spoilers, YouTube, Reels, Curtidas, Votos, Saídas externas), **Ranking dos Links e Botões Mais Clicados (Top 15)** e **Termos Mais Buscados** (sinalizando buscas com `0 resultados` como oportunidade de pauta).
+  4. **Redação:** contadores de fila editorial (*rascunhos*, *aguardando revisão*, *agendadas*, exibidos apenas para usuários com `edit_others_posts`), listas de próximas publicações e rascunhos recentes, *Destaques no ar* (Manchete `_tg_main_headline`, Plantão `_tg_plantao` e Spoiler `_tg_has_spoilers`) e ranking de autores dos últimos 30 dias.
+  5. **Rankings:** Top mais lidas em 7 dias e Top mais curtidas (`_tg_likes_count`).
+  6. **Saúde e atalhos** *(somente administradores com `manage_options`)*: semáforo de configuração (Analytics First-Party, rastreio de editores, rota `/reels/`, WhatsApp, Telegram, Google Notícias, Newsletter, WP Super Cache, Post Views Counter, slots de anúncios), botão **Limpar cache do tema**, **Zerar Analytics**, alternância de rastreio da equipe e atalhos diretos do Personalizador.
 - **Big Board:** botão para modo tela cheia voltado a TV/monitor de redação (pressione `Esc` para sair).
-- **Atualização automática inteligente:** polling a cada `2,5 minutos` (`pollMs = 150000`) via `GET /wp-json/teoriageek/v1/admin-metrics`, disparado **apenas quando `document.visibilityState === 'visible'`**, além do botão manual *Atualizar agora* (`?refresh=1`, que limpa os transients do painel antes de retornar o payload).
+- **Atualização automática inteligente:** polling a cada `2 minutos` (`pollMs = 120000`) via `GET /wp-json/teoriageek/v1/admin-metrics?range=<today|7d|14d|30d>`, disparado **apenas quando `document.visibilityState === 'visible'`**, além do botão manual *Atualizar agora* (`?refresh=1`).
 - **Integrações nativas do `/wp-admin/`:**
   - Widget compacto **Teoria Geek — Resumo Rápido** no Painel Inicial (`index.php`).
   - Colunas **Métricas** (views, curtidas, nota) e **Destaques** (Manchete, Plantão, Spoiler) + seletor de filtro `tg_flag` em **Todos os Posts** (`edit.php`).
@@ -171,7 +174,9 @@ Acessível pelo menu **Teoria Geek** (`admin.php?page=teoriageek-central`, permi
 
 ## 6. Contrato da REST API (`teoriageek/v1`)
 
-| Rota | Método | Parâmetros | Permissão / Rate Limit | Resposta JSON | `post_meta` / Transients afetados |
+> **Nota crítica de compatibilidade com WP Super Cache:** todos os endpoints públicos (`GET /search`, `/reels`, `/alerts` e `POST /posts/{id}/view`, `/like`, `/community-score`, `/telemetry`) são chamados **sem header `X-WP-Nonce`** pelo front-end público, evitando rejeições `403 rest_cookie_invalid_nonce` em HTML cacheado por mais de 12–24 horas. Apenas `/admin-metrics` exige sessão autenticada + `X-WP-Nonce`.
+
+| Rota | Método | Parâmetros | Permissão / Rate Limit | Resposta JSON | `post_meta` / Options / Transients afetados |
 |---|---|---|---|---|---|
 | `/teoriageek/v1/search` | `GET` | `q` (obrigatório, 2–80 chars) | Público (`__return_true`) | `{ items: [{ id, title, url, categoryName, fillColor, inkColor, dateRelative }] }` | Lê/grava transient `tg_search_<md5(q)>` (**3 min**) |
 | `/teoriageek/v1/reels` | `GET` | `page` (1+), `per_page` (1–16, padrão 10), `tab` (`foryou`\|`trending`\|`saved`), `category` (slug), `post` (slug), `id` (int), `slugs` (CSV para `tab=saved`) | Público (`__return_true`) | `{ items: [PostCard...], page }` | Lê `wp_post_views` / `_tg_views_count` / `_tg_likes_count` (batch priming); `tab=trending` usa `teoriageek_most_read_pvc_7d_v2` |
@@ -179,7 +184,8 @@ Acessível pelo menu **Teoria Geek** (`admin.php?page=teoriageek-central`, permi
 | `/teoriageek/v1/posts/{id}/view` | `POST` | `{id}` na rota | Público / **40 req/min por IP** (`tg_rl_view_<md5>`) | `{ views, views24h }` (`404` se post inválido, `429` se limitado) | Chama `pvc_view_post()` (se ativo) e atualiza `_tg_views_count` + `_tg_views_daily` (14 dias) |
 | `/teoriageek/v1/posts/{id}/like` | `POST` | `{id}` na rota; body JSON `{ action: "like" \| "unlike" }` | Público / **30 req/min por IP** (`tg_rl_like_<md5>`) | `{ likes }` (`404` / `429`) | Atualiza `_tg_likes_count` (mínimo `0`) |
 | `/teoriageek/v1/posts/{id}/community-score` | `POST` | `{id}` na rota; body JSON `{ score: 1..10 }` | Público / **20 req/min por IP** (`tg_rl_community_score_<md5>`) | `{ average, count }` (`400` se nota fora de 1–10, `404`, `429`) | Incrementa `_tg_community_score_count` e `_tg_community_score_sum` |
-| `/teoriageek/v1/admin-metrics` | `GET` | `refresh=1` (opcional, força invalidação) | Autenticado (`current_user_can('edit_posts')` + header `X-WP-Nonce`) | `{ kpis, series14d, categories, top24h, top7d, updatedAt, ts, critics, mostLiked, queue, flags, authors, pubSeries }` | Lê/limpa `teoriageek_admin_kpis_v2` (**5 min**), `teoriageek_admin_series_v1` (**5 min**) e `teoriageek_admin_extra_v1_{uid}` (**2 min**) |
+| `/teoriageek/v1/telemetry` | `POST` | Body JSON `{ sid, events: [{ t: "pv"\|"clk"\|"eng"\|"conv"\|"srch", ... }] }` (via `sendBeacon` ou `fetch`) | Público / **120 req/min por IP** (`tg_rl_telemetry_<md5>`) + filtro anti-bot | `{ ok: true, accepted }` (`429` se limitado) | Atualiza option `teoriageek_analytics_days_v1` (`autoload = no`, retenção 30 dias) e transient `teoriageek_live_visitors_v1` (**5 min**) |
+| `/teoriageek/v1/admin-metrics` | `GET` | `range` (`today`\|`7d`\|`14d`\|`30d`, padrão `7d`), `refresh=1` (opcional) | Autenticado (`current_user_can('edit_posts')` + header `X-WP-Nonce`) | `{ kpis, series14d, categories, top24h, top7d, analytics, range, updatedAt, ts, critics, mostLiked, queue, flags, authors, pubSeries }` | Lê/limpa `teoriageek_admin_kpis_v2` (**5 min**), `teoriageek_admin_series_v1` (**5 min**) e `teoriageek_admin_extra_v1_{uid}` (**2 min**) |
 
 ---
 
@@ -189,11 +195,9 @@ Acessível pelo menu **Teoria Geek** (`admin.php?page=teoriageek-central`, permi
 
 | Meta Key | Tipo | Origem / Gravação | Uso no Tema |
 |---|---|---|---|
-| `_tg_main_headline` | `'1'` | Ficha Editorial (`meta-boxes.php`, unicidade garantida) | Prioriza o post como Slide 1 do Hero em `teoriageek_get_home_blocks()` |
-| `_tg_plantao` | `'1'` | Ficha Editorial (`meta-boxes.php`) | Destaca o post na faixa *Plantão Geek* (`helpers.php`, `breaking-ticker.php`) |
+| `_tg_main_headline` | `'1'` | Ficha Editorial (`meta-boxes.php`, unicidade garantida) | Prioriza o post como Slide 1 do Hero em `teoriageek_get_home_blocks()` e exibido em *Destaques no ar* / `edit.php` (retrocompatível com `_tg_is_hero`) |
+| `_tg_plantao` | `'1'` | Ficha Editorial (`meta-boxes.php`) | Destaca o post na faixa *Plantão Geek* (`helpers.php`, `breaking-ticker.php`) e em *Destaques no ar* / `edit.php` (retrocompatível com `_tg_in_ticker`) |
 | `_tg_has_spoilers` | `'1'` | Ficha Editorial (`meta-boxes.php`) | Selo de spoiler nos cards, bloqueio com blur em `single.php` e painel *Destaques* na Central / `edit.php` |
-| `_tg_is_hero` | `'1'` | Consultada pela Central (`admin-dashboard.php`) | Filtro `tg_flag=hero`, coluna *Destaques* em `edit.php` e card *Destaques no ar* (Nota: a Ficha Editorial grava `_tg_main_headline`) |
-| `_tg_in_ticker` | `'1'` | Consultada pela Central (`admin-dashboard.php`) | Filtro `tg_flag=ticker`, coluna *Destaques* em `edit.php` e card *Destaques no ar* (Nota: a Ficha Editorial grava `_tg_plantao`) |
 | `_tg_editorial_format` | `string` | Ficha Editorial (`noticia`, `critica`, `review`, `especial`) | Define o selo de formato editorial (fallback automático por categoria) |
 | `_tg_review_score` | `string` (`0.0`–`10.0`) | Ficha Editorial (`meta-boxes.php`) | Card de Nota/Veredito, filtro `?ordem=criticas` e JSON-LD `Review` |
 | `_tg_bullet_1`..`3` | `string` (≤ 160 chars) | Ficha Editorial (`meta-boxes.php`) | Caixa *Em Resumo* em `single.php` e Lâmina 2 dos Reels |
@@ -230,6 +234,8 @@ Acessível pelo menu **Teoria Geek** (`admin.php?page=teoriageek-central`, permi
 | `tg_rl_{bucket}_{md5(ip)}` | `1 min` | `inc/reels-api.php` | Janela deslizante de rate limit por IP |
 | `teoriageek_admin_kpis_v2` / `teoriageek_admin_series_v1` | `5 min` | `inc/admin-dashboard.php` | Botão *Atualizar agora* (`?refresh=1`) ou *Limpar cache* |
 | `teoriageek_admin_extra_v1_{user_id}` | `2 min` | `inc/admin-dashboard.php` | Botão *Atualizar agora* (`?refresh=1`) ou *Limpar cache* |
+| `teoriageek_live_visitors_v1` | `6 min` (janela ativa `5 min`) | `inc/analytics.php` | Atualizado automaticamente por `POST /telemetry` ou zerado por *Zerar Analytics* |
+| Option `teoriageek_analytics_days_v1` (`autoload = no`) | Retenção rolante de `30 dias` | `inc/analytics.php` | Poda automática de dias anteriores a 30d; zerável em *Saúde e atalhos* |
 
 ---
 
@@ -237,7 +243,7 @@ Acessível pelo menu **Teoria Geek** (`admin.php?page=teoriageek-central`, permi
 
 ### Passo a Passo de Instalação / Atualização
 1. **Backup preventivo:** faça backup completo do banco MySQL e de `wp-content/` no painel da Locaweb.
-2. **Upload do pacote:** em **Aparência > Temas > Adicionar novo > Enviar tema**, envie o arquivo `teoriageek-theme-v2.12.0.zip` e confirme a substituição (ou descompacte diretamente em `wp-content/themes/teoriageek/`).
+2. **Upload do pacote:** em **Aparência > Temas > Adicionar novo > Enviar tema**, envie o arquivo `teoriageek-theme-v2.12.1.zip` e confirme a substituição (ou descompacte diretamente em `wp-content/themes/teoriageek/`).
 3. **Ativação e higiene de legados:** ative o tema **Teoria Geek** e desative os plugins proprietários do tema anterior (`td-composer`, `td-cloud-library` e eventuais complementos `td-*`).
 4. **Flush de Permalinks:** acesse **Configurações > Links Permanentes** e clique em **Salvar alterações** uma vez para garantir o registro das rotas `/reels/` e `/universo/<slug>/`.
 5. **Revisão no Personalizador:** em **Aparência > Personalizar**, verifique **Estreias & Canais** (WhatsApp, Telegram, Google Notícias e Newsletter), **Cores e Identidade** e **Monetização & Anúncios**.

@@ -1,4 +1,4 @@
-# Checklist de QA Pré-Release — Teoria Geek (`v2.12.0`)
+# Checklist de QA Pré-Release — Teoria Geek (`v2.12.1`)
 
 Use este roteiro antes de qualquer publicação em produção (`teoriageek.com.br` — Locaweb, PHP 8.0–8.3+, WordPress 6.2–7.1+, WP Super Cache).
 
@@ -75,12 +75,13 @@ for rel in ['assets/css/bundle.min.css', 'assets/css/main.css', 'assets/css/admi
 ```bash
 python3 -c "
 import zipfile
-z = zipfile.ZipFile('teoriageek-theme-v2.12.0.zip')
+z = zipfile.ZipFile('teoriageek-theme-v2.12.1.zip')
 names = z.namelist()
 required = [
     'teoriageek/',
     'teoriageek/style.css',
     'teoriageek/functions.php',
+    'teoriageek/inc/analytics.php',
     'teoriageek/screenshot.png',
     'teoriageek/README.md',
     'teoriageek/CHANGELOG.md',
@@ -144,12 +145,18 @@ Execute cada item em **Desktop (`1280×900`)** e **Mobile (`360×800` / `390×84
 - [ ] **Botão *"Eu quero!"*:** dispara OneSignal/WebPushr quando instalado ou exibe mensagem amigável de confirmação quando ausente; *"Agora não"* oculta o card via `localStorage` (`teoriageek-push-dismissed`).
 - [ ] **Canais dinâmicos:** confirmar que apenas os links preenchidos no Personalizador (**WhatsApp**, **Telegram**, **Google Notícias** + **Feed RSS**) aparecem no bloco de canais da gaveta, na Home (`community-cta.php`) e no rodapé (`footer.php`).
 
-### 2.7 Central Teoria Geek (`/wp-admin/admin.php?page=teoriageek-central`)
+### 2.7 Central Teoria Geek & Analytics First-Party (`/wp-admin/admin.php?page=teoriageek-central`)
 - [ ] **Isolamento de CSS e fontes:** verificar na aba *Network* o carregamento de `admin-dashboard.css`, `admin-dashboard.js` e das 4 fontes `.woff2` (`../fonts/*.woff2`) com HTTP `200`, sem distorcer outras telas do `/wp-admin/`.
-- [ ] **Gráficos e KPIs:** confirmar renderização das colunas 3D (14 dias), gráfico de área de tendência com tooltip no cursor, Donut das 6 editorias, alternância *Mais lidas* (`24h` / `7 dias`) e comparativo *Críticas: redação e comunidade*.
-- [ ] **Navegação de abas:** alternar entre **Visão geral**, **Redação**, **Rankings** e **Saúde e atalhos** (verificar que *Saúde e atalhos* aparece só para administradores e *Fila editorial* só para `edit_others_posts`).
-- [ ] **Tema Escuro/Claro:** alternar entre *Tema claro* e *Tema escuro*, recarregar a página e confirmar persistência (`localStorage: tgAdmTheme`).
-- [ ] **Big Board:** ativar **Big Board** (modo tela cheia) e sair com a tecla `Esc`.
-- [ ] **Atualização via REST sem F5:** clicar em **Atualizar agora**, confirmar `GET /wp-json/teoriageek/v1/admin-metrics?refresh=1` com status `200`, toast de confirmação e atualização do horário de sync; confirmar que o auto-refresh de `2,5 min` não dispara em aba em segundo plano (`visibilityState === 'hidden'`).
-- [ ] **Limpeza de cache:** em *Saúde e atalhos*, clicar em **Limpar cache do tema** e confirmar o redirecionamento com o aviso verde *"Cache do tema limpo com sucesso!"*.
-- [ ] **Painel Inicial & Todos os Posts:** confirmar widget **Teoria Geek — Resumo Rápido** em `index.php` e colunas **Métricas** / **Destaques** + filtro `tg_flag` em `edit.php`.
+- [ ] **Segurança e disponibilidade do `/admin-metrics`:**
+  - Logado como administrador/editor, clicar em **Atualizar agora** e confirmar `GET /wp-json/teoriageek/v1/admin-metrics?range=7d&refresh=1` retornando **`200 OK`** com JSON válido (`kpis` + `analytics`).
+  - Em aba anônima (deslogado), acessar `/wp-json/teoriageek/v1/admin-metrics` e confirmar resposta **`401`** ou **`403`** (nunca `404` e nunca vazando dados).
+- [ ] **Compatibilidade WP Super Cache nas rotas públicas:** em aba anônima, confirmar no *Network* que `POST /posts/{id}/view`, `POST /posts/{id}/like`, `POST /posts/{id}/community-score` e `POST /telemetry` são enviados **sem cabeçalho `X-WP-Nonce`** e retornam `200 OK`.
+- [ ] **Coleta de cliques, scroll e origem (`POST /telemetry`):** navegar na Home, clicar no Carrossel Hero, em uma matéria e em um canal/compartilhamento, rolar o artigo até o fim e confirmar na Central:
+  - Selo **● online agora** no Hero e **Pulso Analytics** na *Visão geral* atualizados.
+  - Aba **Audiência & Origem**: sessões, tempo ativo médio, bounce rate, referrers, Donut de dispositivos, gráfico horário `00h–23h`, funil Scroll Depth (`25%`–`100%`) e páginas mais acessadas preenchidos.
+  - Aba **Cliques & Comportamento**: **Mapa por zona** ("Aonde mais clicaram"), **Conversões & CTAs**, **Top 15 links/botões clicados** e **Termos mais buscados** preenchidos.
+  - Alternância de período (`Hoje` | `7d` | `14d` | `30d`) recarrega os dados sem F5.
+- [ ] **Gráficos editoriais e Redação:** confirmar colunas 3D (14 dias), gráfico de área com tooltip, Donut das 6 editorias, *Mais lidas* (`24h` / `7 dias`), comparativo de *Críticas*, fila editorial (`edit_others_posts`) e **Destaques no ar** exibindo corretamente posts marcados com `_tg_main_headline`, `_tg_plantao` e `_tg_has_spoilers`.
+- [ ] **Tema Escuro/Claro e Big Board:** alternar entre *Tema claro* e *Tema escuro* (`localStorage: tgAdmTheme`) e testar **Big Board** (sair com `Esc`).
+- [ ] **Manutenção em Saúde e atalhos:** confirmar *Analytics First-Party (/telemetry)* como **Ativo**, testar **Limpar cache do tema**, alternância de visitas da equipe e **Zerar Analytics** (com confirmação).
+- [ ] **Painel Inicial & Todos os Posts:** confirmar widget **Teoria Geek — Resumo Rápido** em `index.php` e colunas **Métricas** / **Destaques** (Manchete/Plantão/Spoiler) + filtro `tg_flag` em `edit.php`.

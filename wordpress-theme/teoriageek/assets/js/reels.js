@@ -1,11 +1,11 @@
 /**
- * Teoria Geek — Player Nativo Reels 2.0 (v2.12.0, Micro-Stories em 3 Lâminas).
+ * Teoria Geek — Player Nativo Reels 2.0 (v2.12.1, Micro-Stories em 3 Lâminas).
  * - Enquadramento exato 100dvh abaixo da Admin Bar (zero recorte no topo ou vazamento do próximo reel)
  * - Navegação de lâminas por setas laterais, clique/toque nas laterais, swipe e barras no topo
  * - Roda do mouse com debounce, scroll-snap mandatory no mobile e atalhos ↑ ↓ ← → S
  * - Painel direito complementar sem duplicar título/resumo do player central
  * - Filtros via REST (Para Você, Mais Lidas, Salvos, Editorias), compartilhamento e deep-link
- * - Curtidas persistidas no banco (_tg_likes_count) via POST /teoriageek/v1/posts/{id}/like
+ * - Curtidas persistidas no banco (_tg_likes_count) via POST /teoriageek/v1/posts/{id}/like (sem X-WP-Nonce para compatibilidade com WP Super Cache)
  */
 (function () {
   'use strict';
@@ -33,6 +33,12 @@
     items = JSON.parse(dataNode.textContent || '[]');
   } catch (_e) {
     items = [];
+  }
+
+  function buildRestUrl(subpath, query) {
+    var base = String(cfg.restUrl || '').replace(/\/+$/, '') + (subpath || '');
+    if (!query) return base;
+    return base + (base.indexOf('?') === -1 ? '?' : '&') + query;
   }
 
   function esc(str) {
@@ -187,11 +193,9 @@
     }
 
     if (cfg.restUrl) {
-      var headers = { 'Content-Type': 'application/json' };
-      if (cfg.nonce) headers['X-WP-Nonce'] = cfg.nonce;
-      fetch(cfg.restUrl + '/posts/' + numId + '/like', {
+      fetch(buildRestUrl('/posts/' + numId + '/like'), {
         method: 'POST',
-        headers: headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: likedNow ? 'like' : 'unlike' }),
       })
         .then(function (r) { return r.ok ? r.json() : null; })
@@ -224,7 +228,7 @@
     });
     if (activeCategory) qs.set('category', activeCategory);
 
-    fetch(cfg.restUrl + '/reels?' + qs.toString())
+    fetch(buildRestUrl('/reels', qs.toString()))
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var batch = (d && Array.isArray(d.items)) ? d.items : [];
@@ -683,7 +687,7 @@
       '<div class="space-y-3"><div class="grid grid-cols-3 gap-1.5"><div class="tgx-skel-dark h-1.5 rounded-sm"></div><div class="tgx-skel-dark h-1.5 rounded-sm"></div><div class="tgx-skel-dark h-1.5 rounded-sm"></div></div><div class="tgx-skel-dark h-5 w-28 rounded-sm"></div></div>' +
       '<div class="space-y-3"><div class="tgx-skel-dark h-7 w-11/12 rounded-sm"></div><div class="tgx-skel-dark h-7 w-3/4 rounded-sm"></div><div class="tgx-skel-dark h-4 w-full rounded-sm"></div><div class="tgx-skel-dark h-4 w-2/3 rounded-sm"></div></div>' +
       '</div></div>';
-    fetch(cfg.restUrl + '/reels?' + qs.toString())
+    fetch(buildRestUrl('/reels', qs.toString()))
       .then(function (r) {
         return r.json();
       })

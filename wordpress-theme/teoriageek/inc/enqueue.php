@@ -129,15 +129,41 @@ function teoriageek_enqueue_assets() {
 		);
 	}
 
+	$page_type = 'other';
+	if ( teoriageek_is_reels_page() ) {
+		$page_type = 'reels';
+	} elseif ( is_front_page() || is_home() ) {
+		$page_type = 'home';
+	} elseif ( is_singular( 'post' ) ) {
+		$page_type = 'single';
+	} elseif ( is_category() ) {
+		$page_type = 'category';
+	} elseif ( is_tax( 'universo' ) ) {
+		$page_type = 'universo';
+	} elseif ( is_search() ) {
+		$page_type = 'search';
+	} elseif ( is_page() ) {
+		$page_type = 'page';
+	}
+
+	$track_logged_in = (bool) apply_filters( 'teoriageek_analytics_track_logged_in', '1' !== (string) get_option( 'teoriageek_analytics_ignore_staff', '0' ) );
+	$skip_analytics  = ! $track_logged_in && is_user_logged_in() && current_user_can( 'edit_posts' );
+	$search_count    = -1;
+	if ( is_search() && isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof WP_Query ) {
+		$search_count = (int) $GLOBALS['wp_query']->found_posts;
+	}
+
 	wp_localize_script(
 		'teoriageek-main',
 		'teoriageekConfig',
 		array(
-			'restUrl'        => esc_url_raw( rest_url( 'teoriageek/v1' ) ),
-			'wpRestPostsUrl' => esc_url_raw( rest_url( 'wp/v2/posts' ) ),
-			'nonce'          => wp_create_nonce( 'wp_rest' ),
+			'restUrl'        => untrailingslashit( esc_url_raw( rest_url( 'teoriageek/v1' ) ) ),
 			'isSingle'       => is_singular( 'post' ),
 			'singlePostId'   => is_singular( 'post' ) ? (int) get_the_ID() : 0,
+			'pageType'       => $page_type,
+			'searchQuery'    => is_search() ? trim( (string) get_search_query( false ) ) : '',
+			'searchCount'    => $search_count,
+			'skipAnalytics'  => $skip_analytics,
 			'reelsUrl'       => esc_url_raw( teoriageek_get_reels_url() ),
 			'homeUrl'        => esc_url_raw( home_url( '/' ) ),
 			'siteName'       => (string) get_theme_mod( 'teoriageek_site_name', get_bloginfo( 'name' ) ?: 'Teoria Geek' ),

@@ -1,5 +1,5 @@
 /**
- * Teoria Geek — Interações Globais Vanilla JS (v2.12.0, zero dependências externas).
+ * Teoria Geek — Interações Globais Vanilla JS (v2.12.1, zero dependências externas).
  * 1. Fallback automático para capas (.tg-cover-img) com falha de carregamento
  * 2. Tema Claro / Escuro persistente sem FOUC + sync de theme-color e Disqus + Spoiler Gate
  * 3. Barra de progresso de leitura suave (requestAnimationFrame) em single.php
@@ -15,15 +15,22 @@
  * 14. Botão Pausar/Retomar no Plantão Geek (WCAG 2.2.2)
  * 15. Central de Alertas (sino + GET /teoriageek/v1/alerts + OneSignal/WebPushr)
  * 16. Lightbox nativo para imagens em .entry-content
- * 17. Contagem real de visualizações (POST /posts/{id}/view com sessionStorage)
- * 18. Reação rápida de 1 clique no fim do artigo (POST /posts/{id}/like)
- * 19. Nota da Comunidade nas críticas (POST /posts/{id}/community-score)
+ * 17. Contagem real de visualizações (POST /posts/{id}/view sem X-WP-Nonce)
+ * 18. Reação rápida de 1 clique no fim do artigo (POST /posts/{id}/like sem X-WP-Nonce)
+ * 19. Nota da Comunidade nas críticas (POST /posts/{id}/community-score sem X-WP-Nonce)
+ * 20. Analytics Editorial First-Party (POST /telemetry: cliques por zona/link, origens, dispositivos, scroll depth e tempo ativo)
  */
 (function () {
   'use strict';
 
   var STORAGE_THEME = 'teoriageek-theme';
   var cfg = window.teoriageekConfig || {};
+
+  function buildRestUrl(subpath, query) {
+    var base = String(cfg.restUrl || '').replace(/\/+$/, '') + (subpath || '');
+    if (!query) return base;
+    return base + (base.indexOf('?') === -1 ? '?' : '&') + query;
+  }
 
   /* 1. Fallback automático para qualquer capa cuja imagem remota falhe (tempo real + pós-load) */
   function revealCoverFallback(img) {
@@ -293,7 +300,7 @@
           '<div class="tgx-skel-row"><div class="tgx-skel-line w-28 h-3"></div><div class="tgx-skel-line w-11/12 h-4"></div></div>' +
           '</div>';
 
-        fetch(cfg.restUrl + '/search?q=' + encodeURIComponent(term), {
+        fetch(buildRestUrl('/search', 'q=' + encodeURIComponent(term)), {
           signal: controller.signal,
         })
           .then(function (r) {
@@ -301,6 +308,7 @@
           })
           .then(function (data) {
             var items = (data && data.items) || [];
+            document.dispatchEvent(new CustomEvent('tg:search-results', { detail: { term: term, count: items.length } }));
             if (!items.length) {
               resultsBox.innerHTML =
                 '<p class="py-4 text-center font-reading text-sm text-ink-secondary">Nenhuma matéria encontrada para <strong>' +
@@ -443,7 +451,7 @@
       var fullUrl = box.getAttribute('data-tg-reel-full-url') || cfg.reelsUrl || '/reels/';
       facadePlay.disabled = true;
 
-      fetch(cfg.restUrl + '/reels?per_page=1&post=' + encodeURIComponent(rSlug))
+      fetch(buildRestUrl('/reels', 'per_page=1&post=' + encodeURIComponent(rSlug)))
         .then(function (r) {
           return r.json();
         })
@@ -1405,7 +1413,7 @@
     function loadAlerts(markSeen) {
       if (!cfg.restUrl) return;
       if (alertsLoaded && !markSeen) return;
-      fetch(cfg.restUrl + '/alerts')
+      fetch(buildRestUrl('/alerts'))
         .then(function (r) { return r.json(); })
         .then(function (data) {
           alertsLoaded = true;
@@ -1564,11 +1572,9 @@
 
     window.setTimeout(function () {
       if (document.visibilityState === 'hidden') return;
-      var headers = { 'Content-Type': 'application/json' };
-      if (cfg.nonce) headers['X-WP-Nonce'] = cfg.nonce;
-      fetch(cfg.restUrl + '/posts/' + pid + '/view', {
+      fetch(buildRestUrl('/posts/' + pid + '/view'), {
         method: 'POST',
-        headers: headers,
+        headers: { 'Content-Type': 'application/json' },
         keepalive: true,
         body: '{}',
       })
@@ -1628,11 +1634,9 @@
       syncUi(likedNow, Math.max(0, cur + (likedNow ? 1 : -1)));
 
       if (cfg.restUrl) {
-        var headers = { 'Content-Type': 'application/json' };
-        if (cfg.nonce) headers['X-WP-Nonce'] = cfg.nonce;
-        fetch(cfg.restUrl + '/posts/' + pid + '/like', {
+        fetch(buildRestUrl('/posts/' + pid + '/like'), {
           method: 'POST',
-          headers: headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: likedNow ? 'like' : 'unlike' }),
         })
           .then(function (r) { return r.ok ? r.json() : null; })
@@ -1696,11 +1700,9 @@
         } catch (_e) {}
 
         if (cfg.restUrl) {
-          var headers = { 'Content-Type': 'application/json' };
-          if (cfg.nonce) headers['X-WP-Nonce'] = cfg.nonce;
-          fetch(cfg.restUrl + '/posts/' + pid + '/community-score', {
+          fetch(buildRestUrl('/posts/' + pid + '/community-score'), {
             method: 'POST',
-            headers: headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ score: score }),
           })
             .then(function (r) { return r.ok ? r.json() : null; })
@@ -1718,6 +1720,354 @@
     });
   }
 
+  /* 20. Analytics Editorial First-Party (cliques por zona/link, origens, dispositivos, scroll depth e tempo ativo) */
+  function initEditorialAnalytics() {
+    if (!cfg.restUrl || cfg.skipAnalytics) return;
+
+    var endpoint = buildRestUrl('/telemetry');
+    var SID_KEY = 'tg_an_sid_v1';
+    var SN_KEY = 'tg_an_sn_v1';
+    var sid = '';
+    var sessPageNum = 1;
+
+    try {
+      sid = window.sessionStorage.getItem(SID_KEY) || '';
+      if (!sid) {
+        sid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-6);
+        window.sessionStorage.setItem(SID_KEY, sid);
+        sessPageNum = 1;
+      } else {
+        sessPageNum = (parseInt(window.sessionStorage.getItem(SN_KEY) || '0', 10) || 0) + 1;
+      }
+      window.sessionStorage.setItem(SN_KEY, String(sessPageNum));
+    } catch (_e) {
+      sid = 'anon' + Date.now().toString(36);
+      sessPageNum = 1;
+    }
+
+    function detectDevice() {
+      var w = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 1280;
+      var ua = navigator.userAgent || '';
+      if (w < 768 || (/Mobi|Android|iPhone/i.test(ua) && !/iPad|Tablet/i.test(ua))) return 'mobile';
+      if (w < 1024 || /iPad|Tablet/i.test(ua)) return 'tablet';
+      return 'desktop';
+    }
+
+    var device = detectDevice();
+    var pagePath = window.location.pathname || '/';
+    var pageType = cfg.pageType || (cfg.isSingle ? 'single' : 'other');
+    var h1 = document.querySelector('main h1, article h1');
+    var pageTitle = (h1 && (h1.textContent || '').trim()) || (document.title || '').replace(/\s+[—–|-]\s+.*$/, '').trim() || pagePath;
+    if (pageTitle.length > 96) pageTitle = pageTitle.slice(0, 96);
+
+    var queue = [];
+    var flushTimer = null;
+
+    function flush(useBeacon) {
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      if (!queue.length) return;
+      var payload = JSON.stringify({
+        sid: sid,
+        events: queue.splice(0, 25),
+      });
+      if (useBeacon && navigator.sendBeacon) {
+        try {
+          var blob = new Blob([payload], { type: 'text/plain;charset=UTF-8' });
+          if (navigator.sendBeacon(endpoint, blob)) return;
+        } catch (_e) {}
+      }
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: payload,
+      }).catch(function () {});
+    }
+
+    function enqueue(ev, immediate) {
+      queue.push(ev);
+      if (immediate || queue.length >= 8) {
+        flush(false);
+      } else if (!flushTimer) {
+        flushTimer = setTimeout(function () {
+          flush(false);
+        }, 4000);
+      }
+    }
+
+    function getUtm() {
+      try {
+        var sp = new URLSearchParams(window.location.search || '');
+        return {
+          us: (sp.get('utm_source') || '').slice(0, 40),
+          uc: (sp.get('utm_campaign') || '').slice(0, 40),
+        };
+      } catch (_e) {
+        return { us: '', uc: '' };
+      }
+    }
+
+    // 20.1 Pageview inicial + Origem + Sessão
+    var utm = getUtm();
+    var pvEv = {
+      t: 'pv',
+      p: pagePath,
+      pt: pageType,
+      tl: pageTitle,
+      d: device,
+      sn: sessPageNum,
+      pid: Number(cfg.singlePostId) || 0,
+      r: sessPageNum === 1 ? (document.referrer || '').slice(0, 240) : '',
+      us: sessPageNum === 1 ? utm.us : '',
+      uc: sessPageNum === 1 ? utm.uc : '',
+    };
+    enqueue(pvEv, false);
+
+    // Se estiver na página de busca (?s=termo), registra a busca consolidada
+    if (pageType === 'search' && cfg.searchQuery && cfg.searchQuery.length >= 2) {
+      enqueue({
+        t: 'srch',
+        p: pagePath,
+        d: device,
+        q: cfg.searchQuery,
+        rc: typeof cfg.searchCount === 'number' ? cfg.searchCount : -1,
+      }, false);
+    }
+
+    // Busca instantânea (registra apenas quando o leitor pausa 1,5s com 3+ caracteres)
+    var searchLogTimer = null;
+    var lastLoggedSearch = '';
+    document.addEventListener('tg:search-results', function (ev) {
+      var det = (ev && ev.detail) || {};
+      var term = String(det.term || '').trim();
+      if (term.length < 3 || term.toLowerCase() === lastLoggedSearch) return;
+      clearTimeout(searchLogTimer);
+      searchLogTimer = setTimeout(function () {
+        lastLoggedSearch = term.toLowerCase();
+        enqueue({
+          t: 'srch',
+          p: pagePath,
+          d: device,
+          q: term,
+          rc: typeof det.count === 'number' ? det.count : -1,
+        }, false);
+      }, 1500);
+    });
+
+    // 20.2 Classificação de Zona Editorial & Conversão para qualquer clique do usuário
+    var ownHost = (window.location.hostname || '').replace(/^www\./, '').toLowerCase();
+
+    function isExternalUrl(href) {
+      if (!href || !/^https?:\/\//i.test(href)) return false;
+      try {
+        var u = new URL(href, window.location.href);
+        var h = (u.hostname || '').replace(/^www\./, '').toLowerCase();
+        return !!h && h !== ownHost;
+      } catch (_e) {
+        return false;
+      }
+    }
+
+    function detectConversion(el, href) {
+      var lowHref = String(href || '').toLowerCase();
+      if (el.closest('[data-tg-spoiler-unlock]')) return 'spoiler';
+      if (el.closest('.tg-yt-facade')) return 'youtube';
+      if (el.closest('[data-tg-article-like], [data-tg-reel-like]')) return 'like';
+      if (el.closest('[data-tg-rate-btn]')) return 'community_vote';
+      if (el.closest('[data-tg-native-share], [data-tg-copy-url], [data-tg-reel-share], [data-tg-reel-copy]') || lowHref.indexOf('api.whatsapp.com/send') !== -1 || lowHref.indexOf('twitter.com/intent/') !== -1) return 'share';
+      if (lowHref.indexOf('whatsapp.com/channel') !== -1 || lowHref.indexOf('chat.whatsapp.com') !== -1 || lowHref.indexOf('wa.me/') !== -1) return 'whatsapp';
+      if (lowHref.indexOf('t.me/') !== -1 || lowHref.indexOf('telegram.me/') !== -1) return 'telegram';
+      if (lowHref.indexOf('news.google.com') !== -1) return 'gnews';
+      if (el.closest('[data-tg-reel-facade-play], .tg-header-reels-btn') || lowHref.indexOf('/reels') !== -1) return 'reels_play';
+      if (isExternalUrl(href)) return 'outbound';
+      return '';
+    }
+
+    function detectZone(el, href) {
+      if (el.closest('.tg-hero-carousel')) return 'hero_carousel';
+      if (el.closest('.tg-reel-facade, .tg-reels-shell, [aria-labelledby*="reels"]')) return 'reels';
+      if (el.closest('.ticker-marquee, [aria-label*="Plantão"]')) return 'plantao_ticker';
+      if (el.closest('[aria-label*="Destaques principais"]')) return 'hero_secondary';
+      if (el.closest('[aria-labelledby="tg-giro-heading"]')) return 'giro_geek';
+      if (el.closest('[aria-labelledby="tg-most-read-heading"], [aria-labelledby="tg-sidebar-mais-lidas"]')) return 'mais_lidas';
+      if (el.closest('[aria-labelledby="tg-reviews-heading"], [data-tg-community-score], .tg-review-box')) return 'criticas';
+      if (el.closest('[aria-labelledby="tg-especiais-heading"]')) return 'especiais';
+      if (el.closest('#editorias')) return 'editorias_home';
+      if (el.closest('.tg-inline-read-more')) return 'leia_tambem';
+      if (el.closest('[aria-labelledby="tg-related-heading"], .tg-next-article')) return 'relacionados';
+      if (el.closest('.tg-series-box, [href*="/universo/"]')) return 'universo';
+      if (el.closest('.tg-newsletter-box')) return 'newsletter';
+      if (el.closest('.tg-share-bar')) return 'compartilhar';
+      if (el.closest('[aria-label*="Canais oficiais"], .tg-push-channels')) return 'canais_sociais';
+      if (el.closest('#tg-search-modal, #tg-alerts-drawer')) return 'busca_alertas';
+      if (el.closest('header.tg-site-header, #tg-mobile-drawer')) return 'header_nav';
+      if (el.closest('footer')) return 'rodape';
+      if (el.closest('#tg-article-body')) return isExternalUrl(href) ? 'links_externos' : 'corpo_artigo';
+      if (isExternalUrl(href)) return 'links_externos';
+      if (el.closest('main article, main .editorial-card')) return 'listagem';
+      return 'outros';
+    }
+
+    function cleanClickLabel(el, href) {
+      var txt = (el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!txt) {
+        var img = el.querySelector('img[alt]');
+        if (img && img.alt) txt = img.alt.trim();
+      }
+      if (!txt) {
+        var card = el.closest('article');
+        var heading = card ? card.querySelector('h1, h2, h3, h4') : null;
+        if (heading) txt = (heading.textContent || '').replace(/\s+/g, ' ').trim();
+      }
+      if (!txt && href) {
+        try {
+          var u = new URL(href, window.location.href);
+          txt = u.hostname === window.location.hostname ? u.pathname : u.hostname;
+        } catch (_e) {
+          txt = href;
+        }
+      }
+      return txt.slice(0, 88);
+    }
+
+    function compactTarget(href, el) {
+      if (href && /^https?:\/\//i.test(href)) {
+        try {
+          var u = new URL(href, window.location.href);
+          if ((u.hostname || '').replace(/^www\./, '').toLowerCase() === ownHost) {
+            return (u.pathname || '/').slice(0, 120);
+          }
+          return (u.hostname + u.pathname).slice(0, 120);
+        } catch (_e) {}
+      }
+      if (el.hasAttribute('data-tg-spoiler-unlock')) return '#spoiler-unlock';
+      if (el.hasAttribute('data-tg-article-like') || el.hasAttribute('data-tg-reel-like')) return '#curtir';
+      if (el.hasAttribute('data-tg-rate-btn')) return '#nota-' + el.getAttribute('data-tg-rate-btn');
+      if (el.closest('.tg-yt-facade')) return '#youtube-play';
+      return '';
+    }
+
+    document.addEventListener('click', function (ev) {
+      var el = ev.target && ev.target.closest
+        ? ev.target.closest('a[href], button[data-tg-spoiler-unlock], button[data-tg-article-like], button[data-tg-reel-like], button[data-tg-rate-btn], button[data-tg-native-share], button[data-tg-copy-url], button[data-tg-reel-facade-play], .tg-yt-facade, .tg-hero-tab, .tg-hero-dock-btn')
+        : null;
+      if (!el) return;
+      var href = el.tagName === 'A' ? (el.getAttribute('href') || '') : '';
+      if (href && href.indexOf('javascript:') === 0) return;
+
+      var zone = detectZone(el, href);
+      var conv = detectConversion(el, href);
+      var label = cleanClickLabel(el, href);
+      var target = compactTarget(href, el);
+
+      enqueue({
+        t: 'clk',
+        p: pagePath,
+        d: device,
+        z: zone,
+        l: label,
+        u: target,
+        cv: conv,
+      }, false);
+
+      // Navegação para link externo ou interno: dispara sendBeacon imediato para não perder o clique
+      if (el.tagName === 'A' && href && href.charAt(0) !== '#') {
+        flush(true);
+      }
+    }, true);
+
+    document.addEventListener('submit', function (ev) {
+      if (ev.target && ev.target.classList && ev.target.classList.contains('tg-newsletter-form')) {
+        enqueue({
+          t: 'clk',
+          p: pagePath,
+          d: device,
+          z: 'newsletter',
+          l: 'Assinar Newsletter',
+          u: '#newsletter-submit',
+          cv: 'newsletter',
+        }, false);
+        flush(true);
+      }
+    }, true);
+
+    // 20.3 Tempo Ativo de Leitura + Profundidade de Scroll (25% / 50% / 75% / 100%)
+    var engagedSec = 0;
+    var lastActivity = Date.now();
+    var maxScrollPct = 0;
+    var engagementSent = false;
+    var articleEl = document.getElementById('tg-article-body');
+
+    function markActivity() {
+      lastActivity = Date.now();
+    }
+    ['scroll', 'pointerdown', 'keydown', 'touchstart'].forEach(function (evtName) {
+      window.addEventListener(evtName, markActivity, { passive: true });
+    });
+
+    function measureScroll() {
+      var pct = 0;
+      if (articleEl) {
+        var rect = articleEl.getBoundingClientRect();
+        var total = Math.max(1, articleEl.offsetHeight);
+        var passed = Math.max(0, window.innerHeight - rect.top);
+        pct = Math.min(100, Math.round((passed / total) * 100));
+      } else {
+        var docH = Math.max(1, (document.documentElement.scrollHeight || 1) - window.innerHeight);
+        pct = Math.min(100, Math.round(((window.scrollY || 0) / docH) * 100));
+      }
+      if (pct > maxScrollPct) maxScrollPct = pct;
+    }
+
+    var scrollTick = false;
+    window.addEventListener('scroll', function () {
+      if (!scrollTick) {
+        scrollTick = true;
+        window.requestAnimationFrame(function () {
+          measureScroll();
+          scrollTick = false;
+        });
+      }
+    }, { passive: true });
+
+    setInterval(function () {
+      if (document.visibilityState === 'visible' && Date.now() - lastActivity <= 30000) {
+        engagedSec = Math.min(900, engagedSec + 1);
+      }
+    }, 1000);
+
+    function sendEngagementAndFlush() {
+      measureScroll();
+      if (!engagementSent && (engagedSec >= 2 || (cfg.isSingle && maxScrollPct >= 25))) {
+        engagementSent = true;
+        queue.push({
+          t: 'eng',
+          p: pagePath,
+          d: device,
+          s: engagedSec,
+          sc: cfg.isSingle ? maxScrollPct : 0,
+        });
+      }
+      flush(true);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') {
+        sendEngagementAndFlush();
+      }
+    });
+    window.addEventListener('pagehide', sendEngagementAndFlush);
+
+    // Envia o pageview inicial rapidamente (1,2s após carregar) para aparecer no "Online agora"
+    setTimeout(function () {
+      measureScroll();
+      flush(false);
+    }, 1200);
+  }
+
   /* Boot */
   syncThemeButtons();
   initReadingProgress();
@@ -1732,6 +2082,7 @@
   initArticleViewTracker();
   initArticleReaction();
   initCommunityScore();
+  initEditorialAnalytics();
   scanBrokenCoverImages();
   window.addEventListener('load', scanBrokenCoverImages);
 })();
