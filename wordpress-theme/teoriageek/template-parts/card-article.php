@@ -19,10 +19,11 @@ $tg_pid         = (int) $tg_card_post->ID;
 $tg_variant     = isset( $args['variant'] ) ? (string) $args['variant'] : 'default';
 $tg_heading_tag = isset( $args['heading_tag'] ) && in_array( $args['heading_tag'], array( 'h2', 'h3', 'h4' ), true ) ? $args['heading_tag'] : 'h3';
 
+$tg_is_quiz     = ( 'tg_quiz' === $tg_card_post->post_type );
 $tg_cat         = teoriageek_get_primary_category( $tg_pid );
 $tg_format      = teoriageek_get_post_format_badge( $tg_pid );
-$tg_score       = teoriageek_get_post_score( $tg_pid );
-$tg_has_spoiler = (bool) get_post_meta( $tg_pid, '_tg_has_spoilers', true );
+$tg_score       = $tg_is_quiz ? null : teoriageek_get_post_score( $tg_pid );
+$tg_has_spoiler = $tg_is_quiz ? false : (bool) get_post_meta( $tg_pid, '_tg_has_spoilers', true );
 $tg_permalink   = get_permalink( $tg_pid );
 $tg_title       = teoriageek_clean_title( get_the_title( $tg_pid ) );
 $tg_lead        = teoriageek_get_post_lead( $tg_pid, 145 );
@@ -51,9 +52,15 @@ $tg_rel_date    = teoriageek_get_relative_date( $tg_pid );
 		<div class="tgx-card-scrim pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16"></div>
 		<div class="absolute bottom-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between gap-2">
 			<div class="min-w-0">
-				<?php teoriageek_category_badge( $tg_cat, true, 'sm' ); ?>
+				<?php if ( $tg_cat instanceof WP_Term ) : ?>
+					<?php teoriageek_category_badge( $tg_cat, true, 'sm' ); ?>
+				<?php elseif ( $tg_is_quiz ) : ?>
+					<span class="tg-quiz__card-pill"><?php esc_html_e( 'Quiz', 'teoriageek' ); ?></span>
+				<?php endif; ?>
 			</div>
-			<?php if ( $tg_has_spoiler ) : ?>
+			<?php if ( $tg_is_quiz ) : ?>
+				<span class="tg-quiz__card-pill"><?php esc_html_e( 'Trivia', 'teoriageek' ); ?></span>
+			<?php elseif ( $tg_has_spoiler ) : ?>
 				<span class="tg-card-spoiler-pill"><?php esc_html_e( 'Spoiler', 'teoriageek' ); ?></span>
 			<?php endif; ?>
 		</div>
@@ -81,7 +88,11 @@ $tg_rel_date    = teoriageek_get_relative_date( $tg_pid );
 
 		<div class="mt-auto flex items-center justify-between gap-2 border-t border-border-subtle pt-2.5 font-sans text-[11px] text-ink-muted">
 			<?php teoriageek_render_author_chip( $tg_author_id, 20, false ); ?>
-			<span class="shrink-0 whitespace-nowrap"><?php echo esc_html( sprintf( '%s · %d min', $tg_rel_date, $tg_read_mins ) ); ?></span>
+			<?php if ( $tg_is_quiz ) : ?>
+				<span class="shrink-0 whitespace-nowrap font-semibold text-brand"><?php esc_html_e( 'Jogar quiz', 'teoriageek' ); ?></span>
+			<?php else : ?>
+				<span class="shrink-0 whitespace-nowrap"><?php echo esc_html( sprintf( '%s · %d min', $tg_rel_date, $tg_read_mins ) ); ?></span>
+			<?php endif; ?>
 		</div>
 	</div>
 </article>

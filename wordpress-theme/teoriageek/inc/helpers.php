@@ -1657,8 +1657,16 @@ function teoriageek_get_reels_categories() {
  * @param int $post_id ID opcional do post.
  */
 function teoriageek_flush_editorial_transients( $post_id = 0 ) {
-	if ( $post_id > 0 && ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) ) {
-		return;
+	if ( is_numeric( $post_id ) && (int) $post_id > 0 ) {
+		$pid = (int) $post_id;
+		if ( wp_is_post_revision( $pid ) || wp_is_post_autosave( $pid ) ) {
+			return;
+		}
+		// Evita limpar todo o WP Super Cache em exclusões/lixeira de CPTs como `tg_quiz` (que usa purge cirúrgico próprio).
+		$ptype = get_post_type( $pid );
+		if ( false !== $ptype && 'post' !== $ptype ) {
+			return;
+		}
 	}
 	delete_transient( 'teoriageek_home_blocks_v1' );
 	delete_transient( 'teoriageek_home_blocks_v2' );

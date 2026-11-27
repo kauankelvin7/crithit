@@ -180,7 +180,7 @@
   /* 3. Âncoras em H2/H3 + Sumário automático retrátil (TOC) */
   function enhanceHeadingsAndToc(content) {
     var headings = Array.prototype.slice.call(content.querySelectorAll('h2, h3')).filter(function (h) {
-      return !h.closest('.ficha') && !h.closest('details') && (h.textContent || '').trim().length > 1;
+      return !h.closest('.ficha') && !h.closest('details') && !h.closest('.tg-quiz') && (h.textContent || '').trim().length > 1;
     });
     if (!headings.length) return;
 
@@ -272,7 +272,7 @@
   function enhanceExternalLinks(content) {
     var host = window.location.hostname;
     content.querySelectorAll('a[href^="http"]').forEach(function (a) {
-      if (a.classList.contains('tactile-btn') || a.classList.contains('bg-highlight') || a.querySelector('img')) {
+      if (a.closest('.tg-quiz') || a.classList.contains('tactile-btn') || a.classList.contains('bg-highlight') || a.querySelector('img')) {
         return;
       }
       try {
@@ -292,7 +292,7 @@
   /* 5. Lightbox acessível para imagens dentro de .entry-content */
   function enhanceLightbox(content) {
     var imgs = Array.prototype.slice.call(content.querySelectorAll('img')).filter(function (img) {
-      if (img.classList.contains('selo') || img.closest('.div-selo') || img.closest('.tg-yt-facade')) return false;
+      if (img.closest('.tg-quiz') || img.classList.contains('selo') || img.closest('.div-selo') || img.closest('.tg-yt-facade')) return false;
       var parentLink = img.closest('a');
       if (parentLink && !/\.(jpe?g|png|webp|gif|avif)(\?.*)?$/i.test(parentLink.getAttribute('href') || '')) {
         return false;

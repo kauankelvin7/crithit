@@ -59,8 +59,9 @@ function teoriageek_breadcrumb() {
 		}
 	}
 
+	$root_label = is_singular( 'tg_quiz' ) ? __( 'Início', 'teoriageek' ) : __( 'Capa', 'teoriageek' );
 	echo '<nav aria-label="' . esc_attr__( 'Navegação estrutural', 'teoriageek' ) . '" class="mb-5 flex flex-wrap items-center gap-1.5 font-mono text-xs text-ink-secondary">';
-	echo '<a href="' . esc_url( home_url( '/' ) ) . '" class="font-semibold hover:text-brand hover:underline">' . esc_html__( 'Capa', 'teoriageek' ) . '</a>';
+	echo '<a href="' . esc_url( home_url( '/' ) ) . '" class="font-semibold hover:text-brand hover:underline">' . esc_html( $root_label ) . '</a>';
 
 	if ( is_singular( 'post' ) ) {
 		$cat = teoriageek_get_primary_category( get_the_ID() );
@@ -71,6 +72,9 @@ function teoriageek_breadcrumb() {
 		$fmt = teoriageek_get_post_format_badge( get_the_ID() );
 		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
 		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( $fmt['label'] ) . '</span>';
+	} elseif ( is_singular( 'tg_quiz' ) ) {
+		echo '<span class="text-ink-muted" aria-hidden="true">' . teoriageek_icon( 'chevron-right', 'h-3.5 w-3.5' ) . '</span>';
+		echo '<span aria-current="page" class="font-bold text-ink-primary">' . esc_html( teoriageek_clean_title( get_the_title() ) ) . '</span>';
 	} elseif ( is_category() ) {
 		$queried = get_queried_object();
 		if ( $queried instanceof WP_Term && $queried->parent > 0 ) {
@@ -623,15 +627,29 @@ function teoriageek_inject_inline_read_more( $content ) {
 		return $content;
 	}
 
+	// Protege blocos `[tg_quiz]` já expandidos por `do_shortcode` para nunca contar nem injetar dentro do player.
+	$quiz_placeholders = array();
+	if ( false !== strpos( $content, '<!--tg-quiz-block-start-->' ) ) {
+		$content = (string) preg_replace_callback(
+			'/<!--tg-quiz-block-start-->.*?<!--tg-quiz-block-end-->/s',
+			static function ( $m ) use ( &$quiz_placeholders ) {
+				$token                       = '<!--TG_QUIZ_HOLD_' . count( $quiz_placeholders ) . '-->';
+				$quiz_placeholders[ $token ] = $m[0];
+				return $token;
+			},
+			$content
+		);
+	}
+
 	$parts = preg_split( '/(<\/p>)/i', $content, -1, PREG_SPLIT_DELIM_CAPTURE );
 	if ( ! is_array( $parts ) || count( $parts ) < 13 ) {
 		// Exige ao menos 6 parágrafos completos para não interromper notas curtas.
-		return $content;
+		return ! empty( $quiz_placeholders ) ? strtr( $content, $quiz_placeholders ) : $content;
 	}
 
 	$pid = (int) get_the_ID();
 	if ( $pid <= 0 ) {
-		return $content;
+		return ! empty( $quiz_placeholders ) ? strtr( $content, $quiz_placeholders ) : $content;
 	}
 
 	$transient_key = 'tg_inline_rm_' . $pid;
@@ -705,7 +723,7 @@ function teoriageek_inject_inline_read_more( $content ) {
 	}
 
 	if ( empty( $related_data['url'] ) || empty( $related_data['title'] ) ) {
-		return $content;
+		return ! empty( $quiz_placeholders ) ? strtr( $content, $quiz_placeholders ) : $content;
 	}
 
 	$thumb_html = '';
@@ -727,6 +745,7 @@ function teoriageek_inject_inline_read_more( $content ) {
 	$parts[7] .= "
 " . $box . "
 ";
-	return implode( '', $parts );
+	$merged    = implode( '', $parts );
+	return ! empty( $quiz_placeholders ) ? strtr( $merged, $quiz_placeholders ) : $merged;
 }
 add_filter( 'the_content', 'teoriageek_inject_inline_read_more', 22 );

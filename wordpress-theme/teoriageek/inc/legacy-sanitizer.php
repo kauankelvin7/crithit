@@ -299,10 +299,22 @@ function teoriageek_enhance_rendered_content( $html ) {
 		$html
 	);
 
-	// 4. Injeção opcional de slot de anúncio no meio do artigo (apenas em single post principal).
+	// 4. Injeção opcional de slot de anúncio no meio do artigo (apenas em single post principal, protegendo blocos [tg_quiz]).
 	if ( is_singular( 'post' ) && in_the_loop() && is_main_query() ) {
 		$mid_ad = teoriageek_get_ad_slot_markup( 'mid_article' );
 		if ( '' !== $mid_ad ) {
+			$quiz_holds = array();
+			if ( false !== strpos( $html, '<!--tg-quiz-block-start-->' ) ) {
+				$html = (string) preg_replace_callback(
+					'/<!--tg-quiz-block-start-->.*?<!--tg-quiz-block-end-->/s',
+					static function ( $m ) use ( &$quiz_holds ) {
+						$tok                = '<!--TG_QUIZ_AD_HOLD_' . count( $quiz_holds ) . '-->';
+						$quiz_holds[ $tok ] = $m[0];
+						return $tok;
+					},
+					$html
+				);
+			}
 			$parts = explode( '</p>', $html );
 			if ( count( $parts ) > 4 ) {
 				$parts[2] .= '</p>' . $mid_ad;
@@ -315,6 +327,9 @@ function teoriageek_enhance_rendered_content( $html ) {
 					}
 				}
 				$html = $rebuilt;
+			}
+			if ( ! empty( $quiz_holds ) ) {
+				$html = strtr( $html, $quiz_holds );
 			}
 		}
 	}

@@ -168,10 +168,17 @@ add_filter( 'excerpt_more', 'teoriageek_excerpt_more' );
  * Atualiza rewrite rules na ativação/troca do tema.
  */
 function teoriageek_after_switch_theme() {
+	if ( function_exists( 'teoriageek_register_universo_taxonomy' ) ) {
+		teoriageek_register_universo_taxonomy();
+	}
 	if ( function_exists( 'teoriageek_register_reels_rewrite' ) ) {
 		teoriageek_register_reels_rewrite();
 	}
+	if ( function_exists( 'tg_quiz_register_cpt' ) ) {
+		tg_quiz_register_cpt();
+	}
 	flush_rewrite_rules( false );
+	update_option( 'tg_quiz_rewrite_ver', TEORIAGEEK_VERSION, true );
 }
 add_action( 'after_switch_theme', 'teoriageek_after_switch_theme' );
 

@@ -27,12 +27,13 @@ function teoriageek_output_social_meta_tags() {
 		return;
 	}
 
-	$site_name = (string) get_theme_mod( 'teoriageek_site_name', get_bloginfo( 'name' ) ?: 'Teoria Geek' );
-	$og_type   = is_singular( 'post' ) ? 'article' : 'website';
-	$og_url    = is_singular() ? get_permalink() : home_url( add_query_arg( array(), $GLOBALS['wp']->request ?? '' ) );
-	$og_title  = wp_get_document_title();
-	$og_desc   = (string) get_bloginfo( 'description' );
-	$og_image  = teoriageek_get_brand_logo_url( 'header' );
+	$site_name       = (string) get_theme_mod( 'teoriageek_site_name', get_bloginfo( 'name' ) ?: 'Teoria Geek' );
+	$is_article_type = is_singular( 'post' ) || is_singular( 'tg_quiz' );
+	$og_type         = $is_article_type ? 'article' : 'website';
+	$og_url          = is_singular() ? get_permalink() : home_url( add_query_arg( array(), $GLOBALS['wp']->request ?? '' ) );
+	$og_title        = wp_get_document_title();
+	$og_desc         = (string) get_bloginfo( 'description' );
+	$og_image        = teoriageek_get_brand_logo_url( 'header' );
 
 	if ( is_singular( 'post' ) ) {
 		$pid      = (int) get_the_ID();
@@ -45,6 +46,24 @@ function teoriageek_output_social_meta_tags() {
 		if ( $thumb ) {
 			$og_image = $thumb;
 		}
+	} elseif ( is_singular( 'tg_quiz' ) ) {
+		$pid      = (int) get_the_ID();
+		$og_title = teoriageek_clean_title( get_the_title( $pid ) );
+		$raw_ex   = trim( (string) get_post_field( 'post_excerpt', $pid ) );
+		$raw_src  = '' !== $raw_ex ? $raw_ex : (string) get_post_field( 'post_content', $pid );
+		$stripped = trim( (string) preg_replace( '/\s+/u', ' ', wp_strip_all_tags( strip_shortcodes( $raw_src ) ) ) );
+		if ( '' !== $stripped ) {
+			$og_desc = mb_strlen( $stripped, 'UTF-8' ) > 165
+				? rtrim( mb_substr( $stripped, 0, 162, 'UTF-8' ) ) . '...'
+				: $stripped;
+		}
+		$thumb = get_the_post_thumbnail_url( $pid, 'tg-hero' );
+		if ( ! $thumb ) {
+			$thumb = get_the_post_thumbnail_url( $pid, 'full' );
+		}
+		if ( $thumb ) {
+			$og_image = $thumb;
+		}
 	} elseif ( is_category() || is_tag() || is_tax() ) {
 		$term_desc = trim( wp_strip_all_tags( (string) term_description() ) );
 		if ( '' !== $term_desc ) {
@@ -53,6 +72,9 @@ function teoriageek_output_social_meta_tags() {
 	}
 
 	echo "\n<!-- Teoria Geek OpenGraph & Twitter Cards -->\n";
+	if ( is_singular( 'tg_quiz' ) && ! has_action( 'wp_head', 'rel_canonical' ) ) {
+		echo '<link rel="canonical" href="' . esc_url( (string) get_permalink() ) . '" />' . "\n";
+	}
 	echo '<meta property="og:locale" content="' . esc_attr( get_locale() ) . '" />' . "\n";
 	echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
 	echo '<meta property="og:type" content="' . esc_attr( $og_type ) . '" />' . "\n";
@@ -68,7 +90,7 @@ function teoriageek_output_social_meta_tags() {
 	if ( '' !== $og_image ) {
 		echo '<meta name="twitter:image" content="' . esc_url( $og_image ) . '" />' . "\n";
 	}
-	if ( is_singular( 'post' ) ) {
+	if ( $is_article_type ) {
 		echo '<meta property="article:published_time" content="' . esc_attr( get_the_date( DATE_W3C ) ) . '" />' . "\n";
 		echo '<meta property="article:modified_time" content="' . esc_attr( get_the_modified_date( DATE_W3C ) ) . '" />' . "\n";
 	}
@@ -203,7 +225,7 @@ function teoriageek_output_breadcrumb_schema() {
 		array(
 			'@type'    => 'ListItem',
 			'position' => 1,
-			'name'     => __( 'Capa', 'teoriageek' ),
+			'name'     => is_singular( 'tg_quiz' ) ? __( 'Início', 'teoriageek' ) : __( 'Capa', 'teoriageek' ),
 			'item'     => home_url( '/' ),
 		),
 	);
@@ -218,6 +240,13 @@ function teoriageek_output_breadcrumb_schema() {
 				'item'     => get_category_link( $cat->term_id ),
 			);
 		}
+		$items[] = array(
+			'@type'    => 'ListItem',
+			'position' => $pos,
+			'name'     => teoriageek_clean_title( get_the_title() ),
+			'item'     => get_permalink(),
+		);
+	} elseif ( is_singular( 'tg_quiz' ) ) {
 		$items[] = array(
 			'@type'    => 'ListItem',
 			'position' => $pos,
