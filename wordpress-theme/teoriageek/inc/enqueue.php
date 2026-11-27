@@ -1,7 +1,7 @@
 <?php
 /**
- * Teoria Geek — Enfileiramento autossuficiente (fontes .woff2 locais sem Google Fonts externo)
- * e inicialização anti-FOUC.
+ * Teoria Geek — Enfileiramento autossuficiente (bundle CSS único + fontes .woff2 locais + preload LCP)
+ * e inicialização anti-FOUC com theme-color dinâmico.
  *
  * @package TeoriaGeek
  */
@@ -11,7 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Script síncrono mínimo no <head> (prioridade 1) para aplicar Modo Claro/Escuro sem flash branco.
+ * Script síncrono mínimo no <head> (prioridade 1) para aplicar Modo Claro/Escuro sem flash branco
+ * e sincronizar <meta name="theme-color"> imediatamente.
  */
 function teoriageek_theme_init_script() {
 	?>
@@ -26,6 +27,8 @@ function teoriageek_theme_init_script() {
 			root.setAttribute('data-theme', theme);
 			if (theme === 'dark') root.classList.add('dark');
 			else root.classList.remove('dark');
+			var meta = document.getElementById('tg-theme-color-meta') || document.querySelector('meta[name="theme-color"]');
+			if (meta) meta.setAttribute('content', theme === 'dark' ? '#102042' : '#FFFFFF');
 		} catch (e) {
 			document.documentElement.setAttribute('data-theme', 'light');
 		}
@@ -52,55 +55,50 @@ function teoriageek_preload_critical_fonts() {
 add_action( 'wp_head', 'teoriageek_preload_critical_fonts', 2 );
 
 /**
- * Enfileira CSS compilado (com fontes .woff2 auto-hospedadas) e Vanilla JS com cache-busting via filemtime().
+ * Preload da imagem LCP principal na Home (Slide 0) e em matérias individuais (single.php).
+ */
+function teoriageek_preload_lcp_image() {
+	if ( is_admin() || is_feed() ) {
+		return;
+	}
+	$lcp_url = '';
+	if ( is_front_page() && function_exists( 'teoriageek_get_home_blocks' ) ) {
+		$blocks = teoriageek_get_home_blocks();
+		$first  = ! empty( $blocks['hero_slides'][0] ) ? $blocks['hero_slides'][0] : ( $blocks['hero'] ?? null );
+		if ( $first instanceof WP_Post ) {
+			$lcp_url = (string) get_the_post_thumbnail_url( (int) $first->ID, 'tg-hero' );
+		}
+	} elseif ( is_singular( 'post' ) ) {
+		$lcp_url = (string) get_the_post_thumbnail_url( (int) get_queried_object_id(), 'tg-hero' );
+	}
+	if ( '' !== $lcp_url ) {
+		echo '<link rel="preload" as="image" href="' . esc_url( $lcp_url ) . '" fetchpriority="high" />' . "\n";
+	}
+}
+add_action( 'wp_head', 'teoriageek_preload_lcp_image', 3 );
+
+/**
+ * Enfileira bundle CSS unificado (1 requisição bloqueante em vez de 5) e Vanilla JS com cache-busting via filemtime().
  */
 function teoriageek_enqueue_assets() {
-	$style_header = TEORIAGEEK_DIR . '/style.css';
-	wp_enqueue_style(
-		'teoriageek-style',
-		get_stylesheet_uri(),
-		array(),
-		file_exists( $style_header ) ? (string) filemtime( $style_header ) : TEORIAGEEK_VERSION
-	);
-
-	$css_file = TEORIAGEEK_DIR . '/assets/css/main.css';
-	$css_ver  = file_exists( $css_file ) ? (string) filemtime( $css_file ) : TEORIAGEEK_VERSION;
-
-	wp_enqueue_style(
-		'teoriageek-main',
-		TEORIAGEEK_URI . '/assets/css/main.css',
-		array( 'teoriageek-style' ),
-		$css_ver
-	);
-
-	$resp_file = TEORIAGEEK_DIR . '/assets/css/responsive.css';
-	if ( file_exists( $resp_file ) ) {
+	$bundle_file = TEORIAGEEK_DIR . '/assets/css/bundle.min.css';
+	if ( file_exists( $bundle_file ) ) {
 		wp_enqueue_style(
-			'teoriageek-responsive',
-			TEORIAGEEK_URI . '/assets/css/responsive.css',
-			array( 'teoriageek-main' ),
-			(string) filemtime( $resp_file )
+			'teoriageek-bundle',
+			TEORIAGEEK_URI . '/assets/css/bundle.min.css',
+			array(),
+			(string) filemtime( $bundle_file )
 		);
-	}
-
-	$enh_css_file = TEORIAGEEK_DIR . '/assets/css/enhancements.css';
-	if ( file_exists( $enh_css_file ) ) {
-		wp_enqueue_style(
-			'teoriageek-enhancements',
-			TEORIAGEEK_URI . '/assets/css/enhancements.css',
-			array( 'teoriageek-responsive' ),
-			(string) filemtime( $enh_css_file )
-		);
-	}
-
-	$ds_css_file = TEORIAGEEK_DIR . '/assets/css/design-system.css';
-	if ( file_exists( $ds_css_file ) ) {
-		wp_enqueue_style(
-			'teoriageek-design-system',
-			TEORIAGEEK_URI . '/assets/css/design-system.css',
-			array( 'teoriageek-enhancements' ),
-			(string) filemtime( $ds_css_file )
-		);
+	} else {
+		$css_file = TEORIAGEEK_DIR . '/assets/css/main.css';
+		$css_ver  = file_exists( $css_file ) ? (string) filemtime( $css_file ) : TEORIAGEEK_VERSION;
+		wp_enqueue_style( 'teoriageek-main', TEORIAGEEK_URI . '/assets/css/main.css', array(), $css_ver );
+		foreach ( array( 'responsive', 'enhancements', 'design-system' ) as $slug ) {
+			$p = TEORIAGEEK_DIR . '/assets/css/' . $slug . '.css';
+			if ( file_exists( $p ) ) {
+				wp_enqueue_style( 'teoriageek-' . $slug, TEORIAGEEK_URI . '/assets/css/' . $slug . '.css', array( 'teoriageek-main' ), (string) filemtime( $p ) );
+			}
+		}
 	}
 
 	$js_file = TEORIAGEEK_DIR . '/assets/js/main.js';
@@ -168,3 +166,27 @@ function teoriageek_enqueue_assets() {
 	}
 }
 add_action( 'wp_enqueue_scripts', 'teoriageek_enqueue_assets' );
+
+/**
+ * Remove CSS pesado de blocos Gutenberg na Home e arquivos (mantém ativo em artigos e páginas).
+ */
+function teoriageek_dequeue_unused_block_css() {
+	if ( is_admin() || is_singular() ) {
+		return;
+	}
+	wp_dequeue_style( 'wp-block-library' );
+	wp_dequeue_style( 'wp-block-library-theme' );
+	wp_dequeue_style( 'classic-theme-styles' );
+}
+add_action( 'wp_enqueue_scripts', 'teoriageek_dequeue_unused_block_css', 100 );
+
+/**
+ * Adiciona dns-prefetch condicional apenas quando o artigo tem vídeo incorporado.
+ */
+function teoriageek_conditional_resource_hints() {
+	if ( is_singular( 'post' ) && function_exists( 'teoriageek_post_has_video' ) && teoriageek_post_has_video( (int) get_queried_object_id() ) ) {
+		echo '<link rel="dns-prefetch" href="//i.ytimg.com" />' . "
+";
+	}
+}
+add_action( 'wp_head', 'teoriageek_conditional_resource_hints', 4 );

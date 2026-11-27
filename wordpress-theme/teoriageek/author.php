@@ -44,6 +44,8 @@ $tg_count      = count_user_posts( $tg_author_id, 'post', true );
 					<p class="max-w-3xl font-reading text-sm leading-relaxed text-ink-secondary sm:text-base">
 						<?php echo esc_html( $tg_bio ); ?>
 					</p>
+				<?php else : ?>
+					<p class="max-w-3xl font-reading text-sm leading-relaxed text-ink-secondary sm:text-base"><?php esc_html_e( 'Colaborador da redação do Teoria Geek.', 'teoriageek' ); ?></p>
 				<?php endif; ?>
 			</div>
 		</div>

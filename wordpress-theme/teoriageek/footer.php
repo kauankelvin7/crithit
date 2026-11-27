@@ -44,6 +44,13 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 						</p>
 					</div>
 					<div class="flex flex-wrap items-center gap-2">
+						<?php $tg_footer_gn = teoriageek_safe_http_url( (string) get_theme_mod( 'teoriageek_channel_google_news', '' ) ); ?>
+						<?php if ( '' !== $tg_footer_gn ) : ?>
+							<a href="<?php echo esc_url( $tg_footer_gn ); ?>" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-white/25 bg-chrome px-3.5 py-2 font-sans text-xs font-bold uppercase text-chrome-ink hover:border-highlight hover:text-highlight">
+								<?php echo teoriageek_icon( 'star', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+								<span><?php esc_html_e( 'Google Notícias', 'teoriageek' ); ?></span>
+							</a>
+						<?php endif; ?>
 						<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" class="tactile-btn inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-3.5 py-2 font-sans text-xs font-bold uppercase text-ink-highlight">
 							<?php echo teoriageek_icon( 'film', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<span><?php esc_html_e( 'Reels', 'teoriageek' ); ?></span>
@@ -89,6 +96,8 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 							<?php endforeach; ?>
 						</div>
 					<?php endif; ?>
+				
+					<?php get_template_part( 'template-parts/newsletter-box', null, array( 'variant' => 'footer' ) ); ?>
 				</div>
 
 				<div class="space-y-3 md:col-span-4">
@@ -190,6 +199,7 @@ foreach ( array( 'contato', 'saiba-como-anunciar-com-o-tg', 'venhaparaotg', 'pol
 <?php
 get_template_part( 'template-parts/navigation-mobile' );
 get_template_part( 'template-parts/search-modal' );
+get_template_part( 'template-parts/alerts-saved-drawer' );
 get_template_part( 'template-parts/cookie-banner' );
 ?>
 <?php if ( ! function_exists( 'wp_print_speculation_rules' ) ) : ?>

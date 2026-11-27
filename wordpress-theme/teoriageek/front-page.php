@@ -66,37 +66,83 @@ $tg_used_col_ids   = array();
 	?>
 
 	<?php if ( ! empty( $tg_giro_posts ) ) : ?>
-		<section aria-labelledby="tg-giro-heading" class="mt-10">
-			<div class="mb-5 flex flex-wrap items-end justify-between gap-2 border-b-2 border-border-strong pb-2">
+		<?php
+		$tg_giro_pages      = array_chunk( $tg_giro_posts, 4 );
+		$tg_giro_page_count = count( $tg_giro_pages );
+		?>
+		<section
+			aria-labelledby="tg-giro-heading"
+			class="mt-10"
+			<?php if ( $tg_giro_page_count > 1 ) : ?>
+				data-tg-strip-carousel
+			<?php endif; ?>
+		>
+			<div class="mb-5 flex flex-wrap items-end justify-between gap-3 border-b-2 border-border-strong pb-2">
 				<div>
 					<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
 						<?php esc_html_e( 'Radar de Notícias', 'teoriageek' ); ?>
 					</p>
-					<h2 id="tg-giro-heading" class="font-headline text-2xl font-extrabold uppercase tracking-[0.005em] text-ink-primary sm:text-3xl">
+					<h2 id="tg-giro-heading" class="tg-strip-heading font-headline text-2xl font-extrabold uppercase tracking-[0.005em] text-ink-primary sm:text-3xl">
 						<?php esc_html_e( 'Giro Geek — Últimas Publicações', 'teoriageek' ); ?>
 					</h2>
 				</div>
-				<?php
-				$tg_noticias_term = ( '' !== $tg_noticias_slug ) ? get_category_by_slug( $tg_noticias_slug ) : null;
-				if ( $tg_noticias_term ) :
-					?>
-					<a href="<?php echo esc_url( get_category_link( $tg_noticias_term->term_id ) ); ?>" class="inline-flex shrink-0 items-center gap-1 font-mono text-xs font-bold uppercase text-ink-secondary hover:text-brand">
-						<span><?php esc_html_e( 'Ver todas as notícias', 'teoriageek' ); ?></span>
-						<?php echo teoriageek_icon( 'arrow-right', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-					</a>
-				<?php endif; ?>
+
+				<div class="flex flex-wrap items-center gap-3">
+					<?php if ( $tg_giro_page_count > 1 ) : ?>
+						<div class="tg-strip-controls">
+							<div class="tg-strip-dots" role="tablist" data-tg-strip-dots aria-label="<?php esc_attr_e( 'Páginas do Giro Geek', 'teoriageek' ); ?>">
+								<?php for ( $tg_gp_idx = 0; $tg_gp_idx < $tg_giro_page_count; $tg_gp_idx++ ) : ?>
+									<?php $tg_gp_active = ( 0 === $tg_gp_idx ); ?>
+									<button
+										type="button"
+										role="tab"
+										class="tg-strip-dot<?php echo $tg_gp_active ? ' is-active' : ''; ?>"
+										data-tg-strip-dot="<?php echo esc_attr( (string) $tg_gp_idx ); ?>"
+										tabindex="<?php echo $tg_gp_active ? '0' : '-1'; ?>"
+										aria-selected="<?php echo $tg_gp_active ? 'true' : 'false'; ?>"
+										aria-label="<?php echo esc_attr( sprintf( __( 'Grupo %1$d de %2$d', 'teoriageek' ), $tg_gp_idx + 1, $tg_giro_page_count ) ); ?>"
+									></button>
+								<?php endfor; ?>
+							</div>
+							<button type="button" class="tg-strip-arrow" data-tg-strip-prev aria-label="<?php esc_attr_e( 'Grupo anterior', 'teoriageek' ); ?>">
+								<?php echo teoriageek_icon( 'chevron-left', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							</button>
+							<button type="button" class="tg-strip-arrow" data-tg-strip-next aria-label="<?php esc_attr_e( 'Próximo grupo', 'teoriageek' ); ?>">
+								<?php echo teoriageek_icon( 'chevron-right', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							</button>
+						</div>
+					<?php endif; ?>
+
+					<?php
+					$tg_noticias_term = ( '' !== $tg_noticias_slug ) ? get_category_by_slug( $tg_noticias_slug ) : null;
+					if ( $tg_noticias_term ) :
+						?>
+						<a href="<?php echo esc_url( get_category_link( $tg_noticias_term->term_id ) ); ?>" class="inline-flex shrink-0 items-center gap-1 font-mono text-xs font-bold uppercase text-ink-secondary hover:text-brand">
+							<span><?php esc_html_e( 'Ver todas as notícias', 'teoriageek' ); ?></span>
+							<?php echo teoriageek_icon( 'arrow-right', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						</a>
+					<?php endif; ?>
+				</div>
 			</div>
 
-			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<?php foreach ( $tg_giro_posts as $tg_g_post ) : ?>
-					<?php get_template_part( 'template-parts/card-compact', null, array( 'post' => $tg_g_post ) ); ?>
+			<div class="tg-strip-stage" data-tg-strip-stage>
+				<?php foreach ( $tg_giro_pages as $tg_gp_idx => $tg_gp_posts ) : ?>
+					<div
+						class="tg-strip-page grid gap-4 sm:grid-cols-2 lg:grid-cols-4<?php echo 0 === $tg_gp_idx ? '' : ' hidden'; ?>"
+						data-tg-strip-page="<?php echo esc_attr( (string) $tg_gp_idx ); ?>"
+						aria-hidden="<?php echo 0 === $tg_gp_idx ? 'false' : 'true'; ?>"
+					>
+						<?php foreach ( $tg_gp_posts as $tg_g_post ) : ?>
+							<?php get_template_part( 'template-parts/card-compact', null, array( 'post' => $tg_g_post ) ); ?>
+						<?php endforeach; ?>
+					</div>
 				<?php endforeach; ?>
 			</div>
 		</section>
 	<?php endif; ?>
 
 	<?php if ( ! empty( $tg_most_read_7d ) ) : ?>
-		<section aria-labelledby="tg-most-read-heading" class="mt-10 rounded-lg border border-border-subtle bg-surface p-4 shadow-sm sm:p-6">
+		<section aria-labelledby="tg-most-read-heading" class="tg-defer-section mt-10 rounded-lg border border-border-subtle bg-surface p-4 shadow-sm sm:p-6">
 			<div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
 				<div class="flex items-center gap-2.5">
 					<span class="inline-flex h-8 w-8 items-center justify-center rounded border border-[#0B0F19] bg-highlight text-ink-highlight">
@@ -113,10 +159,10 @@ $tg_used_col_ids   = array();
 				</div>
 
 				<div role="tablist" aria-label="<?php esc_attr_e( 'Período do ranking', 'teoriageek' ); ?>" class="inline-flex rounded border border-border-subtle bg-surface-alt p-0.5 font-mono text-xs font-bold">
-					<button type="button" role="tab" aria-selected="true" data-tg-mr-tab="7d" class="rounded bg-brand-fill px-3 py-1 text-white">
+					<button type="button" role="tab" id="tg-mr-tab-7d" aria-controls="tg-mr-panel-7d" aria-selected="true" data-tg-mr-tab="7d" class="rounded bg-brand-fill px-3 py-1 text-white">
 						<?php esc_html_e( '7 dias', 'teoriageek' ); ?>
 					</button>
-					<button type="button" role="tab" aria-selected="false" data-tg-mr-tab="24h" class="rounded px-3 py-1 text-ink-secondary hover:text-ink-primary">
+					<button type="button" role="tab" id="tg-mr-tab-24h" aria-controls="tg-mr-panel-24h" aria-selected="false" data-tg-mr-tab="24h" class="rounded px-3 py-1 text-ink-secondary hover:text-ink-primary">
 						<?php esc_html_e( '24 horas', 'teoriageek' ); ?>
 					</button>
 				</div>
@@ -125,11 +171,11 @@ $tg_used_col_ids   = array();
 			<?php
 			$tg_mr_panels = array(
 				'7d'  => $tg_most_read_7d,
-				'24h' => ! empty( $tg_most_read_24h ) ? $tg_most_read_24h : $tg_most_read_7d,
+				'24h' => $tg_most_read_24h,
 			);
 			foreach ( $tg_mr_panels as $tg_win => $tg_mr_list ) :
 				?>
-				<ol data-tg-mr-panel="<?php echo esc_attr( $tg_win ); ?>" class="<?php echo '24h' === $tg_win ? 'hidden ' : ''; ?>grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+				<ol id="tg-mr-panel-<?php echo esc_attr( $tg_win ); ?>" role="tabpanel" aria-labelledby="tg-mr-tab-<?php echo esc_attr( $tg_win ); ?>" data-tg-mr-panel="<?php echo esc_attr( $tg_win ); ?>" class="<?php echo '24h' === $tg_win ? 'hidden ' : ''; ?>grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
 					<?php foreach ( $tg_mr_list as $tg_idx => $tg_m_post ) : ?>
 						<?php
 						$tg_m_id    = (int) $tg_m_post->ID;
@@ -165,7 +211,7 @@ $tg_used_col_ids   = array();
 	<?php endif; ?>
 
 	<?php if ( ! empty( $tg_premieres ) ) : ?>
-		<section aria-labelledby="tg-premieres-heading" class="mt-10 rounded-lg border border-border-subtle bg-surface p-4 shadow-sm sm:p-5">
+		<section aria-labelledby="tg-premieres-heading" class="tg-defer-section mt-10 rounded-lg border border-border-subtle bg-surface p-4 shadow-sm sm:p-5">
 			<div class="mb-4 flex items-center justify-between border-b border-border-subtle pb-2.5">
 				<h2 id="tg-premieres-heading" class="font-headline text-2xl font-extrabold uppercase tracking-[0.005em] text-ink-primary">
 					<?php esc_html_e( 'Estreias da Semana', 'teoriageek' ); ?>
@@ -193,7 +239,7 @@ $tg_used_col_ids   = array();
 	<?php endif; ?>
 
 	<?php if ( ! empty( $tg_reviews_posts ) ) : ?>
-		<section aria-labelledby="tg-reviews-heading" class="mt-10">
+		<section aria-labelledby="tg-reviews-heading" class="tg-defer-section mt-10">
 			<div class="mb-5 flex flex-wrap items-end justify-between gap-2 border-b-[3px] border-border-strong pb-2">
 				<div>
 					<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
@@ -240,7 +286,7 @@ $tg_used_col_ids   = array();
 	?>
 
 	<?php if ( ! empty( $tg_especiais_posts ) ) : ?>
-		<section aria-labelledby="tg-especiais-heading" class="mt-10">
+		<section aria-labelledby="tg-especiais-heading" class="tg-defer-section mt-10">
 			<div class="mb-5 flex flex-wrap items-end justify-between gap-2 border-b-[3px] border-border-strong pb-2">
 				<div>
 					<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
@@ -269,7 +315,7 @@ $tg_used_col_ids   = array();
 		</section>
 	<?php endif; ?>
 
-	<section id="editorias" aria-labelledby="tg-editorias-heading" class="mt-10">
+	<section id="editorias" aria-labelledby="tg-editorias-heading" class="tg-defer-section mt-10">
 		<div class="mb-5 border-b-[3px] border-border-strong pb-2">
 			<p class="font-mono text-xs font-bold uppercase tracking-widest text-brand">
 				<?php esc_html_e( 'Cobertura por Universo', 'teoriageek' ); ?>

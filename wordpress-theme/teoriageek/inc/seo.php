@@ -1,6 +1,6 @@
 <?php
 /**
- * Teoria Geek — SEO Técnico enxuto (OpenGraph, Twitter Cards e JSON-LD NewsArticle/Review).
+ * Teoria Geek — SEO Técnico enxuto (OpenGraph, Twitter Cards e JSON-LD NewsArticle, Review, BreadcrumbList e ProfilePage).
  * Suprimido automaticamente quando plugins dedicados de SEO (Yoast, AIOSEO, RankMath) estão ativos.
  *
  * @package TeoriaGeek
@@ -76,6 +76,35 @@ function teoriageek_output_social_meta_tags() {
 add_action( 'wp_head', 'teoriageek_output_social_meta_tags', 5 );
 
 /**
+ * Mapeia a categoria editorial para um tipo Schema.org aceito pelo Google Rich Results em Review.
+ *
+ * @param WP_Term|null $cat Categoria principal do post.
+ * @return string
+ */
+function teoriageek_resolve_review_schema_type( $cat ) {
+	if ( ! $cat instanceof WP_Term ) {
+		return 'CreativeWork';
+	}
+	$slug = sanitize_title( (string) $cat->slug );
+	if ( preg_match( '/filme|cinema|movie/', $slug ) ) {
+		return 'Movie';
+	}
+	if ( preg_match( '/serie|tv|streaming|anime/', $slug ) ) {
+		return 'TVSeries';
+	}
+	if ( preg_match( '/game|jogo|xbox|playstation|nintendo|pc/', $slug ) ) {
+		return 'VideoGame';
+	}
+	if ( preg_match( '/hq|manga|livro|quadrinho|comic/', $slug ) ) {
+		return 'Book';
+	}
+	if ( preg_match( '/tech|hardware|gadget|hands-on/', $slug ) ) {
+		return 'Product';
+	}
+	return 'CreativeWork';
+}
+
+/**
  * Monta o JSON-LD estruturado (NewsArticle ou Review com reviewRating) para um post individual.
  *
  * @param int $post_id ID do post.
@@ -122,7 +151,7 @@ function teoriageek_build_single_schema( $post_id ) {
 			),
 			'publisher'     => $publisher,
 			'itemReviewed'  => array(
-				'@type' => 'Thing',
+				'@type' => teoriageek_resolve_review_schema_type( $cat ),
 				'name'  => $title,
 			),
 			'reviewRating'  => array(
@@ -218,3 +247,66 @@ function teoriageek_output_breadcrumb_schema() {
 ";
 }
 add_action( 'wp_head', 'teoriageek_output_breadcrumb_schema', 6 );
+
+/**
+ * Evita indexação de páginas de busca, 404 e combinações de filtros (?ordem=... / ?tg_cat=...).
+ *
+ * @param array<string, mixed> $robots Diretivas wp_robots.
+ * @return array<string, mixed>
+ */
+function teoriageek_filter_wp_robots( $robots ) {
+	$has_filter = isset( $_GET['ordem'] ) || isset( $_GET['tg_cat'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( is_search() || is_404() || ( ( is_category() || is_tax( 'universo' ) ) && $has_filter ) ) {
+		$robots['noindex'] = true;
+		$robots['follow']  = true;
+	}
+	return $robots;
+}
+add_filter( 'wp_robots', 'teoriageek_filter_wp_robots', 20 );
+
+/**
+ * Garante canonical limpo (sem ?ordem=...) em categorias/universos no Yoast ou no fallback nativo.
+ *
+ * @param string $canonical URL canônica atual.
+ * @return string
+ */
+function teoriageek_clean_filtered_canonical( $canonical ) {
+	if ( ( is_category() || is_tax( 'universo' ) ) && isset( $_GET['ordem'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$term = get_queried_object();
+		if ( $term instanceof WP_Term ) {
+			$link = get_term_link( $term );
+			if ( ! is_wp_error( $link ) ) {
+				return (string) $link;
+			}
+		}
+	}
+	return $canonical;
+}
+add_filter( 'wpseo_canonical', 'teoriageek_clean_filtered_canonical', 20 );
+
+/**
+ * Emite JSON-LD ProfilePage/Person em páginas de autor (author.php) quando não há plugin SEO ativo.
+ */
+function teoriageek_output_author_schema() {
+	if ( teoriageek_has_seo_plugin() || ! is_author() ) {
+		return;
+	}
+	$author = get_queried_object();
+	if ( ! $author instanceof WP_User ) {
+		return;
+	}
+	$schema = array(
+		'@context'   => 'https://schema.org',
+		'@type'      => 'ProfilePage',
+		'mainEntity' => array(
+			'@type'       => 'Person',
+			'name'        => $author->display_name,
+			'url'         => get_author_posts_url( (int) $author->ID ),
+			'description' => trim( (string) get_the_author_meta( 'description', (int) $author->ID ) ),
+			'image'       => get_avatar_url( (int) $author->ID, array( 'size' => 160 ) ),
+		),
+	);
+	echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "</script>
+";
+}
+add_action( 'wp_head', 'teoriageek_output_author_schema', 7 );

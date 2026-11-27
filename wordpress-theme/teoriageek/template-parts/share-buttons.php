@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Part: Barra de compartilhamento editorial (navigator.share nativo mobile + WhatsApp + X + Copiar Link + Salvar).
+ * Template Part: Barra de compartilhamento editorial (Ver em Reels, navigator.share nativo, WhatsApp, X e Copiar Link).
  *
  * @package TeoriaGeek
  * @var array $args { post_id?: int, compact?: bool }
@@ -45,11 +45,6 @@ $tg_tw_url    = 'https://twitter.com/intent/tweet?text=' . $tg_enc_title . '&url
 			<span>X</span>
 		</a>
 	<?php endif; ?>
-
-	<button type="button" data-tg-save-slug="<?php echo esc_attr( $tg_slug ); ?>" aria-pressed="false" class="tactile-btn inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-alt px-3 py-1.5 font-sans text-xs font-bold text-ink-primary hover:border-brand">
-		<?php echo teoriageek_icon( 'bookmark', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-		<span data-tg-save-label><?php esc_html_e( 'Salvar', 'teoriageek' ); ?></span>
-	</button>
 
 	<button type="button" data-tg-copy-url="<?php echo esc_url( $tg_url ); ?>" class="tactile-btn inline-flex min-h-[40px] items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-alt px-3 py-1.5 font-sans text-xs font-bold text-ink-primary hover:border-brand hover:text-brand">
 		<?php echo teoriageek_icon( 'copy', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

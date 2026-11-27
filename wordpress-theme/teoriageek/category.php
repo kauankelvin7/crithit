@@ -73,11 +73,28 @@ $tg_sub   = ( $tg_term instanceof WP_Term ) ? get_categories(
 	</header>
 
 	<?php if ( have_posts() ) : ?>
+		<?php
+		$tg_cur_ordem = isset( $_GET['ordem'] ) ? sanitize_key( wp_unslash( $_GET['ordem'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$tg_base_url  = remove_query_arg( array( 'ordem', 'paged' ) );
+		$tg_is_p1     = ( max( 1, (int) get_query_var( 'paged' ) ) === 1 );
+		?>
+		<div class="tg-archive-sort mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-3">
+			<span class="font-mono text-[11px] font-bold uppercase tracking-wider text-ink-muted"><?php esc_html_e( 'Ordenar:', 'teoriageek' ); ?></span>
+			<div class="flex flex-wrap items-center gap-1.5 font-mono text-xs font-bold">
+				<a href="<?php echo esc_url( $tg_base_url ); ?>" class="rounded-sm border px-2.5 py-1 <?php echo '' === $tg_cur_ordem ? 'border-brand bg-brand-fill text-white' : 'border-border-subtle bg-surface-alt text-ink-secondary hover:text-ink-primary'; ?>"><?php esc_html_e( 'Recentes', 'teoriageek' ); ?></a>
+				<a href="<?php echo esc_url( add_query_arg( 'ordem', 'populares', $tg_base_url ) ); ?>" class="rounded-sm border px-2.5 py-1 <?php echo 'populares' === $tg_cur_ordem ? 'border-brand bg-brand-fill text-white' : 'border-border-subtle bg-surface-alt text-ink-secondary hover:text-ink-primary'; ?>"><?php esc_html_e( 'Mais comentadas', 'teoriageek' ); ?></a>
+				<a href="<?php echo esc_url( add_query_arg( 'ordem', 'criticas', $tg_base_url ) ); ?>" class="rounded-sm border px-2.5 py-1 <?php echo 'criticas' === $tg_cur_ordem ? 'border-brand bg-brand-fill text-white' : 'border-border-subtle bg-surface-alt text-ink-secondary hover:text-ink-primary'; ?>"><?php esc_html_e( 'Com nota', 'teoriageek' ); ?></a>
+			</div>
+		</div>
 		<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 			<?php
+			$tg_loop_idx = 0;
 			$tg_is_review_cat = in_array( $tg_slug, array( 'criticas', 'reviews', 'hands-on' ), true );
 			while ( have_posts() ) :
 				the_post();
+				$tg_feat = ( $tg_is_p1 && 0 === $tg_loop_idx );
+				$tg_loop_idx++;
+				if ( $tg_feat ) { echo '<div class="tg-archive-featured">'; }
 				get_template_part(
 					'template-parts/card-article',
 					null,
@@ -87,6 +104,7 @@ $tg_sub   = ( $tg_term instanceof WP_Term ) ? get_categories(
 						'heading_tag' => 'h2',
 					)
 				);
+			if ( $tg_feat ) { echo '</div>'; }
 			endwhile;
 			?>
 		</div>

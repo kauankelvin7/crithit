@@ -55,6 +55,15 @@ $tg_socials = teoriageek_get_social_links();
 				<?php echo teoriageek_icon( 'arrow-right', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</a>
 
+			<button type="button" data-tg-theme-toggle aria-pressed="false" class="flex min-h-[42px] w-full items-center justify-between rounded-sm border border-white/20 bg-chrome-surface px-4 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-chrome-ink hover:border-highlight hover:text-highlight">
+				<span class="inline-flex items-center gap-2">
+					<span data-tg-theme-icon="moon" class="inline-flex"><?php echo teoriageek_icon( 'moon', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<span data-tg-theme-icon="sun" class="hidden"><?php echo teoriageek_icon( 'sun', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<span><?php esc_html_e( 'Aparência:', 'teoriageek' ); ?> <strong data-tg-theme-label><?php esc_html_e( 'Claro', 'teoriageek' ); ?></strong></span>
+				</span>
+				<span class="font-mono text-[11px] text-highlight"><?php esc_html_e( 'Alternar', 'teoriageek' ); ?></span>
+			</button>
+
 			<nav aria-label="<?php esc_attr_e( 'Menu Mobile', 'teoriageek' ); ?>" class="tg-mobile-nav">
 				<?php teoriageek_render_primary_nav( 'tg-mobile-menu flex flex-col divide-y divide-white/10 font-sans text-sm font-semibold' ); ?>
 			</nav>

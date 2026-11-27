@@ -175,6 +175,9 @@ function teoriageek_after_switch_theme() {
 }
 add_action( 'after_switch_theme', 'teoriageek_after_switch_theme' );
 
+/**
+ * Limpa regras de rewrite ao desativar o tema.
+ */
 function teoriageek_switch_theme() {
 	flush_rewrite_rules( false );
 }
@@ -230,3 +233,119 @@ function teoriageek_style_rss_feed() {
 	}
 }
 add_action( 'rss2_ns', 'teoriageek_style_rss_feed', 1 );
+
+/**
+ * Aplica filtros seguros de ordenação (?ordem=populares|criticas) em categorias/universos
+ * e filtro por editoria/ordenação na busca (?cat=...&orderby=date).
+ *
+ * @param WP_Query $query Query principal.
+ */
+function teoriageek_filter_archive_and_search_queries( $query ) {
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	if ( $query->is_category() || $query->is_tax( 'universo' ) ) {
+		$ordem = isset( $_GET['ordem'] ) ? sanitize_key( wp_unslash( $_GET['ordem'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'criticas' === $ordem ) {
+			$query->set(
+				'meta_query',
+				array(
+					array(
+						'key'     => '_tg_review_score',
+						'compare' => 'EXISTS',
+					),
+				)
+			);
+		} elseif ( 'populares' === $ordem ) {
+			$query->set( 'orderby', 'comment_count date' );
+		}
+	} elseif ( $query->is_search() ) {
+		$cat_id = isset( $_GET['tg_cat'] ) ? absint( $_GET['tg_cat'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( $cat_id > 0 ) {
+			$query->set( 'cat', $cat_id );
+		}
+		$ordem = isset( $_GET['ordem'] ) ? sanitize_key( wp_unslash( $_GET['ordem'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'recentes' === $ordem ) {
+			$query->set( 'orderby', 'date' );
+			$query->set( 'order', 'DESC' );
+		}
+	}
+}
+add_action( 'pre_get_posts', 'teoriageek_filter_archive_and_search_queries' );
+
+/**
+ * Limpeza de metadados desnecessários no <head>, bloqueio de XML-RPC/pingbacks e cabeçalhos de segurança HTTP.
+ */
+function teoriageek_security_and_head_hardening() {
+	remove_action( 'wp_head', 'wp_generator' );
+	remove_action( 'wp_head', 'rsd_link' );
+	remove_action( 'wp_head', 'wlwmanifest_link' );
+	remove_action( 'wp_head', 'wp_shortlink_wp_head', 10 );
+	remove_action( 'template_redirect', 'wp_shortlink_header', 11 );
+}
+add_action( 'init', 'teoriageek_security_and_head_hardening' );
+add_filter( 'xmlrpc_enabled', '__return_false' );
+add_filter(
+	'xmlrpc_methods',
+	static function ( $methods ) {
+		unset( $methods['pingback.ping'], $methods['pingback.extensions.getPingbacks'] );
+		return $methods;
+	}
+);
+
+/**
+ * Envia cabeçalhos HTTP básicos de segurança nas respostas públicas do site.
+ */
+function teoriageek_send_security_headers() {
+	if ( headers_sent() || is_admin() ) {
+		return;
+	}
+	header( 'X-Content-Type-Options: nosniff' );
+	header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+	header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
+}
+add_action( 'send_headers', 'teoriageek_send_security_headers' );
+
+/**
+ * Diagnóstico rápido do tema em Ferramentas -> Diagnóstico do Site (Site Health).
+ *
+ * @param array<string, mixed> $tests Testes registrados.
+ * @return array<string, mixed>
+ */
+function teoriageek_register_site_health_test( $tests ) {
+	$tests['direct']['teoriageek_theme_status'] = array(
+		'label' => __( 'Saúde do Tema Teoria Geek', 'teoriageek' ),
+		'test'  => 'teoriageek_run_site_health_test',
+	);
+	return $tests;
+}
+add_filter( 'site_status_tests', 'teoriageek_register_site_health_test' );
+
+/**
+ * Executa a verificação de integridade exibida em Ferramentas > Diagnóstico do Site.
+ *
+ * @return array<string, mixed>
+ */
+function teoriageek_run_site_health_test() {
+	$bundle_ok = file_exists( TEORIAGEEK_DIR . '/assets/css/bundle.min.css' );
+	$notes     = array();
+	$notes[]   = $bundle_ok ? __( 'Bundle CSS unificado ativo.', 'teoriageek' ) : __( 'Bundle CSS ausente (usando fallback).', 'teoriageek' );
+	$notes[]   = ( defined( 'CKY_VERSION' ) || class_exists( 'CookieYes\Lite\Loader' ) )
+		? __( 'CookieYes detectado (banner nativo do tema suprimido).', 'teoriageek' )
+		: __( 'Nenhum plugin de cookies detectado (banner LGPD nativo do tema ativo).', 'teoriageek' );
+	$notes[]   = function_exists( 'wp_cache_clear_cache' )
+		? __( 'WP Super Cache integrado com limpeza automática ao publicar.', 'teoriageek' )
+		: __( 'WP Super Cache não detectado.', 'teoriageek' );
+
+	return array(
+		'label'       => __( 'Tema Teoria Geek pronto para produção', 'teoriageek' ),
+		'status'      => $bundle_ok ? 'good' : 'recommended',
+		'badge'       => array(
+			'label' => __( 'Teoria Geek', 'teoriageek' ),
+			'color' => 'blue',
+		),
+		'description' => '<p>' . esc_html( implode( ' ', $notes ) ) . '</p>',
+		'test'        => 'teoriageek_theme_status',
+	);
+}

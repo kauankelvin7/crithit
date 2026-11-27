@@ -1,105 +1,258 @@
-# Tema WordPress Nativo — Teoria Geek (`v2.3.0`)
+# Tema WordPress Nativo — Teoria Geek (`v2.12.0`)
 
-Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vitals, desenvolvido por **Kauan Kelvin** sob medida para o portal **Teoria Geek** (`teoriageek.com.br`) em substituição ao tema legado *Newspaper v12.6.2* (`td-composer` e `td-cloud-library`).
+Tema WordPress editorial 100% nativo, autocontido e otimizado para Core Web Vitals, desenvolvido por **Kauan Kelvin** sob medida para o portal **Teoria Geek** (`teoriageek.com.br`), hospedado na **Locaweb** (PHP 8.0–8.3+, WordPress 6.2–7.1+, **WP Super Cache**), em substituição definitiva ao tema legado *Newspaper v12.6.2* (`td-composer` / `td-cloud-library`).
 
 ---
 
 ## 1. Requisitos e Compatibilidade
 
-- **WordPress:** 6.2+ (testado e validado no **WordPress 6.9+**)
-- **PHP:** 8.0+ (validado com zero warnings/deprecations no **PHP 8.3.37**)
-- **Servidor:** Apache / LiteSpeed / Nginx (pronto para Locaweb, sem dependência de Node.js, npm ou build no servidor)
-- **Plugins opcionais suportados nativamente (com fallback seguro quando ausentes):**
-  - **Yoast SEO** (breadcrumbs nativos + supressão automática de OpenGraph/JSON-LD duplicados)
-  - **Post Views Counter** (leitura otimizada de `wp_post_views` com Transients API de 15 min)
-  - **Disqus** (comentários nativos do WP funcionam automaticamente caso o plugin não esteja ativo)
-  - **Google Site Kit / AdSense** (slots dedicados sem CLS)
+- **WordPress:** 6.2+ (compatível com **6.2–7.1+**, testado no **6.9+**)
+- **PHP:** 8.0+ (validado em **PHP 8.0–8.3+**)
+- **Servidor:** Apache / LiteSpeed / Nginx (pronto para **Locaweb**, sem dependência de Node.js, npm ou build no servidor)
+- **Cache de página:** compatível com **WP Super Cache** (limpeza automática ao publicar/editar/excluir posts ou salvar o Personalizador; contagem de leituras, curtidas e votos operam via REST API com rate limit)
+- **Plugins opcionais integrados (com fallback seguro quando ausentes):**
+  - **Yoast SEO:** breadcrumbs nativos (`yoast_breadcrumb`) + supressão automática de OpenGraph/JSON-LD duplicados + canonical limpo em filtros `?ordem=`.
+  - **Post Views Counter:** leitura otimizada de `wp_post_views` + gravação via `pvc_view_post()` combinada com fallback nativo em baldes diários (`_tg_views_daily`).
+  - **Disqus:** estilização dedicada para `#disqus_thread`, `content-visibility: auto` e reset automático de tema ao alternar Claro/Escuro.
+  - **CookieYes:** detecção automática (`CKY_VERSION` / `CookieYes\Lite\Loader`) suprimindo o banner LGPD nativo do tema.
+  - **OneSignal / WebPushr:** disparo automático no botão *"Eu quero!"* da Central de Alertas.
+  - **Google Site Kit / AdSense:** slots opcionais com `min-height` reservado (zero CLS).
 
 ---
 
-## 2. Principais Recursos do Tema
+## 2. Arquitetura de Diretórios
 
-### Identidade Visual, Performance e Acessibilidade (WCAG 2.1 AA)
-- **Identidade Azul e Amarelo customizável:** variáveis CSS em `:root` (`--tg-primary: #1D4ED8`, `--tg-accent: #FACC15`, `--tg-on-accent: #0B0F19`, `--tg-bg`, `--tg-surface`, `--tg-text`) injetadas via `wp_head` pelo Personalizador.
-- **Logo oficial clássica embutida:** `assets/images/logo-teoria-geek.png` (`300x190`) e `logo-teoria-geek-footer.png` (`120x120`), substituíveis sem código em **Aparência > Personalizar**.
-- **Modo Claro/Escuro sem flash (anti-FOUC):** script inline mínimo no `<head>` respeita preferência salva e `prefers-color-scheme`, com contraste WCAG 2.1 AA validado em ambos os modos (inclusive proteção contra spans legados com cores inline coladas do editor clássico).
-- **Fontes 100% auto-hospedadas:** 14 arquivos `.woff2` (`Bangers`, `Barlow Condensed`, `Plus Jakarta Sans`, `Space Grotesk`, `JetBrains Mono`) em `assets/fonts/` com `font-display: swap` e `preload` das fontes críticas — zero requisições externas ao Google Fonts.
-- **Core Web Vitals & Performance Real (`v1.2.1`):**
-  - Cache dos blocos da Home em **Transients API (`10 min`)** com deduplicação global (`$shown_ids`), hidratação em lote (`1 WP_Query` + batch priming de `wp_post_views` em `1 ms`) e invalidação automática via `save_post_post` / `deleted_post` / `trashed_post` / `customize_save_after` — reduzindo a Home de **155 queries (`1.058 ms`)** para **46 queries (`129,7 ms`)**.
-  - **YouTube Facade automático** em `.entry-content` / `.youtube-embed`: exibe thumbnail leve + botão play acessível e só injeta o `<iframe>` (`youtube-nocookie.com`) sob clique, eliminando scripts e fontes externas no carregamento inicial.
-  - `fetchpriority="high"` no Hero compacto (`max-height: 375px`) e capa de artigo controlada (`max-height: 400px`), `loading="lazy" decoding="async"` nos cards, `contain: layout style`, sidebar sticky (`top: 88px`), fallback elegante para imagens ausentes/quebradas, WebP condicional no upload e `<script type="speculationrules">` sem duplicação no WP 6.8+.
-
-### Recursos Editoriais Sem Bloat (Zero Plugins Extras)
-- **Mais Lidas 24h / 7 dias:** consulta indexada em `wp_post_views` cacheada via Transients API (`15 min`), com alternância instantânea em abas e fallback automático.
-- **Estreias da Semana:** faixa configurável no Personalizador (`30 min` de cache em transient) sem criar tabelas extras.
-- **Hubs / Dossiês de Universo (`/universo/<slug>/`):** taxonomia nativa hierárquica `universo` com template dedicado (`taxonomy-universo.php`) para agrupar notícias, críticas e especiais de uma mesma franquia (ex.: *Marvel*, *Star Wars*, *GTA*, *DC*).
-- **Alerta de Spoiler Nativo (`[spoiler]`):** shortcode sem JavaScript baseado em `<details class="tg-spoiler"><summary>...</summary></details>`:
-  ```text
-  [spoiler title="Spoiler do episódio final"]Texto protegido aqui.[/spoiler]
-  ```
-- **Reels Verticais (`/reels/`) e Facade na Home:** player em altura exata `calc(100dvh - var(--tg-header-h) - var(--wp-admin-bar-h))` com proporção `9:16` sem vazamento de borda, navegação por clique/toque nas laterais esquerda/direita, barras clicáveis no topo, roda do mouse com debounce e atalhos (`↑`/`↓`, `←`/`→`, `S`), painel direito complementar sem duplicação de título/resumo no Desktop, chips horizontais roláveis + rail compacto no Mobile (`360px`–`768px`) e filtros reais (`Para Você`, `Mais Lidas`, `Salvos`, `Editorias`) via REST `teoriageek/v1`.
-- **Card "Próxima Matéria", Compartilhamento Mobile e Canais:** `navigator.share` nativo + WhatsApp + X + Salvar + Copiar link, card leve de próxima leitura no fim do artigo e bloco configurável de convite para Canal do WhatsApp / Telegram.
-- **SEO & Dados Estruturados (`inc/seo.php`):** OpenGraph/Twitter Cards e JSON-LD dinâmico (`Review` com `reviewRating` para Críticas/Reviews e `NewsArticle` para matérias), desativados automaticamente se Yoast/RankMath/AIOSEO estiverem ativos.
-
-### Compatibilidade com Acervo Legado (Newspaper / tagDiv)
-- **Higienização em tempo de renderização (sem alterar o banco):** remove shortcodes órfãos `[vc_*]`, `[td_*]`, `[tdc_*]`, `[tdb_*]`, `[tdm_*]`, `[rbc_*]` preservando o conteúdo útil.
-- **Preservação visual do acervo antigo:** estilização responsiva pronta para `.ficha`, `.rev-series`, `.rev-games`, `.capa`, `.col`, `.tit`, `.sinop`, `.div-selo`/`.selo` (com injeção de `alt` acessível) e `.youtube-embed`.
-- **Resumos limpos:** remove blocos de "Ficha Técnica" dos excerpts exibidos na capa e arquivos.
-- **Card de Nota automático:** lê a Ficha Editorial nativa, metadados `td_post_theme_settings` ou selos legados (`selo-teoria-geek-*-8|9|10.png`) e exibe o selo em destaque amarelo com alto contraste.
-- **Proteção UTF-8:** reparo automático em tempo de renderização caso algum texto legado apresente mojibake CP850/UTF-8.
-
----
-
-## 3. Configuração no Painel WordPress (100% Sem Código)
-
-### Aparência > Personalizar
-1. **Cores e Identidade — Teoria Geek:** ajuste nome do portal, logo para fundo escuro e as 5 cores da paleta (`--tg-primary`, `--tg-accent`, `--tg-bg`, `--tg-surface`, `--tg-text`).
-2. **Categorias da Capa — Teoria Geek:** mapeie os slugs das editorias exibidas nos blocos da Home (`destaque`, `noticias`, `criticas`, `reviews`, `especial-teoria-geek` e as 5 colunas temáticas).
-3. **Redes Sociais & Reels — Teoria Geek:** URLs oficiais (Instagram, YouTube, Spotify, Twitch, X/Twitter, Facebook) e texto do selo de curtida dupla nos Reels.
-4. **Monetização & Anúncios — Teoria Geek:** cole os snippets dos slots `Topo` (abaixo da 1ª dobra), `Meio do Artigo` (após o 3º parágrafo) e `Sidebar` (todos com `min-height` reservado para CLS zero), além de configurar o selo editorial de **"Oferecimento"** por categoria.
-5. **Estreias & Canais — Teoria Geek:** cadastre itens da faixa *Estreias da Semana* (`Título | Plataforma/Cinema | Data | URL opcional`, um por linha) e links do Canal do WhatsApp / Telegram.
-
-### Editor de Posts (Meta Box "Ficha Editorial — Teoria Geek")
-Disponível diretamente na edição de qualquer post, sem precisar de ACF:
-- **Manchete Principal da Capa** (garante unicidade automática)
-- **Exibir no Plantão Geek**
-- **Formato Editorial** (`Notícia`, `Crítica`, `Review`, `Especial`, `Coluna`, `Guia`)
-- **Nota (`0` a `10`)** + resumo opcional da avaliação
-- **3 Pontos-Chave** (usados nos Reels e resumo editorial)
-- **Crédito / Fonte externa** (opcional, validado estritamente como `http://` ou `https://`)
-
-### Widgets & Menus
-- **Menus (`Aparência > Menus`):** associe `Menu Principal do Cabeçalho` (`primary`) e `Menu do Rodapé` (`footer`). Caso não haja menu associado, o tema detecta automaticamente o menu existente `Menu Principal` (`menu-principal`).
-- **Áreas de Widgets (`Aparência > Widgets`):** `tg-top-banner`, `tg-mid-article`, `tg-single-sidebar`, `tg-footer-widgets`.
-
----
-
-## 4. Checklist de Virada para Produção (`teoriageek.com.br` — Locaweb)
-
-Execute na ordem abaixo em janela de baixo tráfego:
-
-1. **Backup completo:** faça backup do banco de dados MySQL e de `wp-content/` antes da troca.
-2. **Upload do tema:** envie `dist/teoriageek-theme.zip` em **Aparência > Temas > Adicionar novo > Enviar tema** (ou descompacte em `wp-content/themes/teoriageek/`).
-3. **Ativação e limpeza de plugins do Newspaper:**
-   - Ative o tema **Teoria Geek**.
-   - Desative os plugins proprietários do tema anterior: **`tagDiv Composer` (`td-composer`)**, **`tagDiv Cloud Library` (`td-cloud-library`)** e eventuais complementos `td-*` (não é necessário excluí-los imediatamente até validar tudo).
-4. **Regeneração de Permalinks:** acesse **Configurações > Links Permanentes** e clique em **Salvar alterações** uma vez para registrar as rotas `/reels/` e `/universo/<slug>/`.
-5. **Menus e Personalizador:**
-   - Em **Aparência > Menus**, vincule o menu real do portal à posição **Menu Principal do Cabeçalho**.
-   - Em **Aparência > Personalizar**, revise cores, redes sociais, slots de AdSense/Site Kit e (se desejado) *Estreias da Semana*, *Oferecimento* e canais de WhatsApp/Telegram.
-6. **Regeneração de Miniaturas (Thumbnails):**
-   - Execute a regeneração de miniaturas (via plugin *Regenerate Thumbnails* ou WP-CLI `wp media regenerate --only-missing`) para gerar os recortes otimizados `tg-hero` (`1200x675`), `tg-card` (`640x360`) e `tg-thumb` (`360x203`).
-   - Novos uploads gerarão WebP automaticamente quando suportado pelo servidor PHP/GD/Imagick.
-7. **Limpeza de Cache e CDN:**
-   - Limpe o cache de página do WordPress (se usar WP Rocket / LiteSpeed / W3TC) e faça **Purge Everything** no **Cloudflare**.
-   - Configure no Cloudflare cache de borda padrão para assets estáticos (`assets/fonts/*.woff2`, `assets/css/main.css`, `assets/js/*.js`) e *bypass* para `/wp-admin/*`, `/wp-login.php*` e `/?s=*`.
-8. **Validação pós-virada:**
-   - Teste Home (`/`), uma Crítica antiga (`.ficha` + selo de nota), uma Notícia recente com vídeo YouTube (YouTube Facade), `/reels/` (Desktop e Mobile), Busca (`/?s=marvel`), página 404 e Modo Claro/Escuro.
-   - Verifique no PageSpeed Insights / Chrome DevTools que não há requisições externas ao Google Fonts, erros 404 de assets ou deslocamento de layout (CLS).
+```text
+teoriageek/
+├── style.css                     # Cabeçalho oficial do tema (v2.12.0, Author: Kauan Kelvin)
+├── functions.php                 # Bootstrapper: constantes e require_once dos módulos em inc/
+├── theme.json                    # Configuração de layout (68ch / 1280px), paleta e famílias tipográficas
+├── manifest.json                 # Web App Manifest PWA (#0D1933 / #102042)
+├── screenshot.png                # Capa oficial do tema no WordPress (1200×900)
+├── README.md                     # Documentação técnica de produção
+├── CHANGELOG.md                  # Histórico estruturado de versões até v2.12.0
+├── QA-CHECKLIST.md               # Roteiro de QA automatizado e manual pré-release
+│
+├── header.php                    # Cabeçalho sticky, busca, Reels, Sino de Alertas, tema e progresso
+├── footer.php                    # Rodapé institucional, Google Notícias, Newsletter e modais globais
+├── front-page.php                # Capa editorial (Hero 3D, Giro Geek paginado, Mais Lidas, Editorias)
+├── single.php                    # Leitor de matéria (Spoiler Gate, Leia Também, Review, Timeline, Reação)
+├── page-reels.php                # Experiência vertical 9:16 (/reels/) em 3 zonas (Desktop) / tela cheia
+├── category.php / archive.php    # Arquivos com filtros (?ordem=populares|criticas)
+├── taxonomy-universo.php         # Hub / Dossiê de Universo (/universo/<slug>/)
+├── search.php / author.php       # Busca refinada (?tg_cat=&ordem=recentes) e página de autor (ProfilePage)
+├── tag.php / page.php / 404.php  # Templates auxiliares e fallback 404 com últimas matérias
+├── comments.php / index.php      # Comentários nativos/Disqus e fallback de loop
+│
+├── inc/                          # Lógica PHP modular (zero dependências externas)
+│   ├── helpers.php               # Utilitários, mojibake, views/likes/community-score, blocos da Home, SVG icons
+│   ├── setup.php                 # Theme supports, tamanhos de imagem, menus, sidebars, segurança HTTP, Site Health
+│   ├── taxonomies.php            # Registro da taxonomia hierárquica `universo` (/universo/<slug>/)
+│   ├── seo.php                   # OpenGraph, Twitter Cards, JSON-LD (NewsArticle, Review, BreadcrumbList, ProfilePage)
+│   ├── enqueue.php               # Anti-FOUC inline, preload de fontes/LCP, bundle.min.css, JS com defer e localize
+│   ├── legacy-sanitizer.php      # Remoção segura de shortcodes Newspaper/VC, [spoiler], YouTube Facade e Ad mid-article
+│   ├── customizer.php            # 5 seções no Personalizador e injeção dinâmica de variáveis :root em wp_head
+│   ├── meta-boxes.php            # Meta Box nativa "Ficha Editorial — Teoria Geek"
+│   ├── template-tags.php         # Badges, breadcrumbs, menus, slots de anúncio, Mais Lidas 24h/7d, Leia Também inline
+│   ├── reels-api.php             # Rewrite virtual /reels/ e endpoints REST públicos teoriageek/v1
+│   └── admin-dashboard.php       # Central Teoria Geek (/wp-admin/), endpoint /admin-metrics, widget e colunas edit.php
+│
+├── template-parts/               # Componentes de interface reutilizáveis
+│   ├── hero-home.php             # Carrossel Hero 3D HQ (4,2s), 3 secundárias, Reels Facade e Radar na Redação
+│   ├── breaking-ticker.php       # Faixa Plantão Geek com botão Pausar/Retomar
+│   ├── card-article.php          # Card editorial padrão / review / compact-grid (com selo de spoiler e nota)
+│   ├── card-compact.php          # Card horizontal compacto (Giro Geek, Radar, buscas)
+│   ├── cover-media.php           # Capa anti-CLS com srcset/sizes, tratamento de capas antigas e fallback SVG
+│   ├── review-card.php           # Veredito Editorial amarelo + seletor interativo Nota da Comunidade (1–10)
+│   ├── series-timeline.php       # Linha do Tempo de Cobertura Especial (universo com 3+ matérias)
+│   ├── article-reaction.php      # Reação rápida de 1 clique ("Curtiu esta matéria?") sincronizada com _tg_likes_count
+│   ├── newsletter-box.php        # Captura leve de Newsletter (1 campo de e-mail; artigo e rodapé)
+│   ├── community-cta.php         # Bloco de Canais Oficiais (WhatsApp, Telegram e Google Notícias)
+│   ├── alerts-saved-drawer.php   # Gaveta do Sino (Central de Alertas, push OneSignal/WebPushr e canais)
+│   ├── share-buttons.php         # Barra de compartilhamento (Ver em Reels, Share nativo, WhatsApp, X, Copiar)
+│   ├── author-box.php            # Box do autor com avatar, bio e link de arquivo
+│   ├── next-article.php          # Card "Próxima Matéria" no fim do artigo
+│   ├── related-posts.php         # Grade de matérias relacionadas
+│   ├── reels-strip.php           # Faixa de Web Stories / Reels (5 cols na Home, 3 cols em single.php)
+│   ├── navigation-mobile.php     # Drawer de navegação mobile com acordeão de submenus
+│   ├── search-modal.php          # Modal de busca instantânea (Ctrl+K)
+│   ├── pagination.php            # Paginação editorial acessível
+│   └── cookie-banner.php         # Banner LGPD nativo (suprimido se CookieYes estiver ativo)
+│
+└── assets/
+    ├── css/
+    │   ├── bundle.min.css        # Bundle único carregado no site público (gerado dos 4 arquivos abaixo)
+    │   ├── main.css              # Build estático Tailwind + @font-face locais (.woff2)
+    │   ├── responsive.css        # Contenção mobile, ergonomia de widgets e proteção do rodapé
+    │   ├── enhancements.css      # TOC, capitular, lightbox, A-/A+, skeletons e fallback de imagens
+    │   ├── design-system.css     # Tokens oficiais, componentes editoriais e evolução visual (fonte para novas regras)
+    │   └── admin-dashboard.css   # CSS isolado da Central Teoria Geek (#tg-admin-app) no /wp-admin/
+    ├── js/
+    │   ├── main.js               # Interações globais (tema, Hero 3D HQ, Giro, Ticker, Alertas, views/likes/score)
+    │   ├── enhancements.js       # Fallback de imagens no conteúdo, TOC, capitular, A-/A+, cookies e foco
+    │   ├── reels.js              # Player vertical /reels/ em 3 lâminas com persistência de curtidas
+    │   └── admin-dashboard.js    # Gráficos SVG nativos, colunas 3D CSS, Big Board e polling na Central
+    ├── fonts/                    # 14 arquivos .woff2 auto-hospedados (Barlow Condensed, Plus Jakarta Sans, JetBrains Mono, Space Grotesk, Bangers)
+    ├── images/                   # logo-teoria-geek.png (300×190) e logo-teoria-geek-footer.png (120×120)
+    └── xsl/rss-style.xsl         # Folha de estilo XSL para visualização limpa do Feed RSS no navegador
+```
 
 ---
 
-## 5. Nota sobre Ambiente Local (LocalWP) vs. Produção (Locaweb)
+## 3. Identidade Visual e Pipeline de CSS
 
-- **Redirecionamento de `/wp-content/uploads/` no LocalWP:** no clone local de desenvolvimento (`http://teoriageek.local`), o banco real foi importado sem copiar gigabytes de mídia, e o arquivo `.htaccess` da raiz redireciona requisições de `/wp-content/uploads/` para o domínio de produção. **Em produção na Locaweb, NÃO utilize essa regra de redirecionamento** — as mídias já residem localmente em `wp-content/uploads/` no servidor e serão servidas diretamente pelo Apache/Cloudflare com latência mínima.
-- **Conexão MySQL e TTFB local:** no Windows/LocalWP, `DB_HOST='localhost'` no `wp-config.php` adiciona latência de handshake IPv6/TCP (~6s), o que não ocorre em produção Linux/Apache na Locaweb (onde a renderização PHP/MySQL da Home com transient quente foi medida em **~130 ms**).
+### Paleta Oficial (`v2.12.0`)
+
+| Token / Uso | Valor Hex | Aplicação |
+|---|---|---|
+| `--tg-primary` | `#0073E6` | Azul primário Teoria Geek (botões primários, barras de seção, destaque ativo) |
+| `--accent-brand` (Dark) | `#3898FF` / `#60A5FA` | Links e números de destaque em superfícies escuras (contraste WCAG AA) |
+| `--tg-accent` | `#FACC15` | Amarelo destaque editorial — **sempre** combinado com texto escuro `#0B0F19` (`--tg-on-accent`) |
+| `--tg-text` (Claro) / `--bg` (Admin) | `#0B0F19` | Tinta principal no Modo Claro e base "Redação Noturna" na Central `/wp-admin/` |
+| `--chrome-bg` | `#102042` | Cabeçalho, rodapé e chrome estrutural do portal (`theme-color` no Modo Escuro) |
+| `--tg-bg` (Escuro) | `#0D1933` | Fundo principal do portal no Modo Escuro (superfícies `#122244` e `#182C56`) |
+| `--tg-bg` (Claro) | `#FFFFFF` | Fundo contínuo limpo no Modo Claro (superfície alternativa `#F4F6F9`) |
+
+### Regra Obrigatória de Manutenção do CSS Público
+1. `assets/css/main.css` é um **build estático do Tailwind CSS** (e já contém os `@font-face` locais `.woff2`). **Não edite classes utilitárias diretamente em `main.css` nem espere que novas classes Tailwind inexistentes nele funcionem sem rebuild.**
+2. **Todo novo estilo do site público deve ser escrito como classe semântica dedicada em `assets/css/design-system.css`.**
+3. O tema enfileira `assets/css/bundle.min.css` em produção (1 única requisição com cache-busting via `filemtime()`). Ele consolida, nesta ordem:
+   `main.css` → `responsive.css` → `enhancements.css` → `design-system.css`.
+4. **Atenção crítica ao regenerar `bundle.min.css`:** qualquer minificador utilizado **deve preservar espaços ao redor de `+` e `-` dentro de `calc(...)`** (ex.: `calc(100dvh - var(--wp-admin-bar-h, 0px))`). Remover esses espaços quebra o cálculo no navegador.
+
+### Isolamento do Painel Administrativo (`/wp-admin/`)
+- `inc/admin-dashboard.php` enfileira `assets/css/admin-dashboard.css` e `assets/js/admin-dashboard.js` exclusivamente via hook `admin_enqueue_scripts`, checando o `$hook_suffix` real de `add_menu_page()` (`toplevel_page_teoriageek-central`), além de carregar apenas o CSS leve em `index.php` (widget do Painel) e `edit.php` (colunas de *Todos os Posts*).
+- Todas as regras da Central ficam isoladas sob `#tg-admin-app` (`isolation: isolate`) e declaram `@font-face` próprios apontando para `../fonts/*.woff2`, sem vazar estilos para o restante do `/wp-admin/`.
+
+---
+
+## 4. Recursos Editoriais e Engajamento (`v2.12.0`)
+
+- **Hero Editorial com Virada de Página HQ 3D (`hero-home.php` + `main.js`):** exibe até 4 destaques (priorizando `_tg_main_headline` como Slide 1), com transição WebGL cilíndrica de virada de página em quadrinhos (`createHalftoneHQRenderer`), autoplay de `4,2s` (`data-interval="4200"`), dock discreto (`01 / 04`, Pausar/Retomar, `‹` / `›`), minimapa segmentado (`3px`), trilho numerado 2px sincronizado, swipe horizontal no mobile e fallback suave caso WebGL ou `prefers-reduced-motion` estejam ativos.
+- **Plantão Geek Acessível (`breaking-ticker.php` + `main.js`):** faixa contínua das últimas notícias com botão Pausar/Retomar (`data-tg-ticker-pause`, WCAG 2.2.2) que libera foco residual ao clicar para retomar imediatamente e restringe a pausa por hover à área das manchetes.
+- **Giro Geek Paginado (`front-page.php` + `main.js`):** exibe até 12 matérias deduplicadas divididas em 3 faixas de 4 cards (`data-tg-strip-carousel`), com dots e setas `‹` / `›`.
+- **Mais Lidas `24h` / `7 dias` com Contagem Real (`template-tags.php` + `reels-api.php` + `main.js`):**
+  - Em `single.php`, `initArticleViewTracker()` dispara `POST /wp-json/teoriageek/v1/posts/{id}/view` após `1,5s` com a aba visível, protegido por `sessionStorage` (`tg-viewed-{id}`) contra F5 repetido e compatível com WP Super Cache.
+  - O servidor aciona `pvc_view_post()` (se Post Views Counter estiver instalado) **e** incrementa `_tg_views_count` + baldes diários `_tg_views_daily` (janela rolante de 14 dias), garantindo rankings distintos para `24h` e `7d`.
+- **Reels Verticais (`/reels/`, `page-reels.php` + `reels.js`):** experiência 9:16 em 3 zonas no Desktop e tela cheia no Mobile com 3 lâminas por matéria (Manchete, Pontos-Chave, Veredito/Leitura), filtros (`Para Você`, `Mais Lidas`, `Salvos` no player e Editorias), atalhos de teclado (`↑`/`↓`, `←`/`→`, `S`) e **curtidas persistidas em `_tg_likes_count`** via `POST /posts/{id}/like` (sincronizadas com `teoriageek-liked-ids` e com o botão de reação do artigo).
+- **Alerta de Spoiler (`meta-boxes.php` + `single.php` + `legacy-sanitizer.php`):**
+  - Checkbox *"Esta matéria contém spoilers"* (`_tg_has_spoilers`) aplica selo visual nos cards e bloqueio interativo com blur sobre `.entry-content` (desbloqueado por clique em `data-tg-spoiler-unlock`).
+  - Shortcode nativo sem JS para trechos pontuais:
+    ```text
+    [spoiler titulo="Spoiler do episódio final"]Texto protegido aqui.[/spoiler]
+    ```
+- **Bloco "Leia Também" Automático (`inc/template-tags.php`):** `teoriageek_inject_inline_read_more()` insere 1 card enxuto após o 4º parágrafo em artigos com 6+ parágrafos, priorizando outra matéria do mesmo `universo` ou da categoria primária (HTML cacheável pelo WP Super Cache, transient de 30 min).
+- **Nota da Comunidade nas Críticas (`review-card.php` + `main.js`):** seletor de notas inteiras de `1` a `10` sem login ao lado da Nota da Redação, persistido em `_tg_community_score_sum` e `_tg_community_score_count` via `POST /posts/{id}/community-score` com trava local em `localStorage` (`teoriageek-rated-posts`).
+- **Reação Rápida de 1 Clique (`article-reaction.php` + `main.js`):** botão *"Curtir"* ao final do artigo unificado ao mesmo contador `_tg_likes_count` e `localStorage` (`teoriageek-liked-ids`) dos Reels.
+- **Linha do Tempo de Cobertura Especial (`series-timeline.php`):** exibida automaticamente quando o post pertence a um termo da taxonomia `universo` com **3 ou mais** publicações, destacando o artigo atual (*"Lendo agora"*) e ligando ao hub `/universo/<slug>/`.
+- **Captura Leve de Newsletter (`newsletter-box.php`):** formulário de 1 campo de e-mail exibido no fim do artigo (`variant=article`) e no rodapé (`variant=footer`) **somente quando `teoriageek_newsletter_action_url` estiver configurada** no Personalizador (compatível com MailerLite, Brevo, Substack ou endpoint próprio).
+- **Canais Oficiais & Central de Alertas (`community-cta.php`, `footer.php`, `alerts-saved-drawer.php`):** links de **WhatsApp**, **Telegram** e **Google Notícias** configurados em um único local no Personalizador e refletidos na Home, no rodapé e na gaveta do sino (junto ao feed `/alerts` e ao disparo de OneSignal/WebPushr).
+- **Leitura, Mídia & SEO (`enhancements.js`, `main.js`, `legacy-sanitizer.php`, `seo.php`, `setup.php`):** controles `A-`/`100%`/`A+`, sumário retrátil (TOC), letra capitular, Lightbox nativo para imagens do artigo, fallback para imagens quebradas, YouTube Facade sob clique (`youtube-nocookie.com`), sanitização não-destrutiva de shortcodes legados (`td_*`, `vc_*`, `rbc_*`), reparo de mojibake UTF-8, OpenGraph/JSON-LD (`NewsArticle`, `Review`, `BreadcrumbList`, `ProfilePage`), bloqueio de XML-RPC/pingbacks e cabeçalhos HTTP (`X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`).
+
+---
+
+## 5. Central Teoria Geek (`/wp-admin/`)
+
+Acessível pelo menu **Teoria Geek** (`admin.php?page=teoriageek-central`, permissão `edit_posts`):
+
+- **Identidade "Redação Noturna":** tema escuro por padrão com alternância para **Tema claro** persistida em `localStorage` (`tgAdmTheme`), fontes locais `.woff2` e colunas 3D em CSS puro exibindo as leituras diárias dos últimos 14 dias (respeita `prefers-reduced-motion`).
+- **Abas da Central:**
+  1. **Visão geral:** total de leituras nos últimos 7 dias com delta percentual contra os 7 dias anteriores, 4 cards KPI com mini sparklines, gráfico de área de tendência (14 dias) com média e tooltip interativo, gráfico Donut das 6 maiores editorias, ranking *Mais lidas* alternável (`24h` / `7 dias`) e comparativo *Críticas: redação vs. comunidade*.
+  2. **Redação:** contadores de fila editorial (*rascunhos*, *aguardando revisão*, *agendadas*, exibidos apenas para usuários com `edit_others_posts`), listas de próximas publicações e rascunhos recentes, *Destaques no ar* (Manchete, Plantão e Spoiler) e ranking de autores dos últimos 30 dias.
+  3. **Rankings:** Top mais lidas em 7 dias e Top mais curtidas (`_tg_likes_count`).
+  4. **Saúde e atalhos** *(somente administradores com `manage_options`)*: semáforo de configuração (rota `/reels/`, WhatsApp, Telegram, Google Notícias, Newsletter, WP Super Cache, Post Views Counter, slots de anúncios), botão **Limpar cache do tema** (`admin_post_teoriageek_flush_cache`) e atalhos diretos para cada seção do Personalizador, Hubs de Universo e Permalinks.
+- **Big Board:** botão para modo tela cheia voltado a TV/monitor de redação (pressione `Esc` para sair).
+- **Atualização automática inteligente:** polling a cada `2,5 minutos` (`pollMs = 150000`) via `GET /wp-json/teoriageek/v1/admin-metrics`, disparado **apenas quando `document.visibilityState === 'visible'`**, além do botão manual *Atualizar agora* (`?refresh=1`, que limpa os transients do painel antes de retornar o payload).
+- **Integrações nativas do `/wp-admin/`:**
+  - Widget compacto **Teoria Geek — Resumo Rápido** no Painel Inicial (`index.php`).
+  - Colunas **Métricas** (views, curtidas, nota) e **Destaques** (Manchete, Plantão, Spoiler) + seletor de filtro `tg_flag` em **Todos os Posts** (`edit.php`).
+
+---
+
+## 6. Contrato da REST API (`teoriageek/v1`)
+
+| Rota | Método | Parâmetros | Permissão / Rate Limit | Resposta JSON | `post_meta` / Transients afetados |
+|---|---|---|---|---|---|
+| `/teoriageek/v1/search` | `GET` | `q` (obrigatório, 2–80 chars) | Público (`__return_true`) | `{ items: [{ id, title, url, categoryName, fillColor, inkColor, dateRelative }] }` | Lê/grava transient `tg_search_<md5(q)>` (**3 min**) |
+| `/teoriageek/v1/reels` | `GET` | `page` (1+), `per_page` (1–16, padrão 10), `tab` (`foryou`\|`trending`\|`saved`), `category` (slug), `post` (slug), `id` (int), `slugs` (CSV para `tab=saved`) | Público (`__return_true`) | `{ items: [PostCard...], page }` | Lê `wp_post_views` / `_tg_views_count` / `_tg_likes_count` (batch priming); `tab=trending` usa `teoriageek_most_read_pvc_7d_v2` |
+| `/teoriageek/v1/alerts` | `GET` | — | Público (`__return_true`) | `{ latestId, items: [{ id, slug, title, url, thumb, categoryName, fillColor, inkColor, dateRelative }] }` | Lê/grava transient `teoriageek_rest_alerts_v1` (**3 min**) |
+| `/teoriageek/v1/posts/{id}/view` | `POST` | `{id}` na rota | Público / **40 req/min por IP** (`tg_rl_view_<md5>`) | `{ views, views24h }` (`404` se post inválido, `429` se limitado) | Chama `pvc_view_post()` (se ativo) e atualiza `_tg_views_count` + `_tg_views_daily` (14 dias) |
+| `/teoriageek/v1/posts/{id}/like` | `POST` | `{id}` na rota; body JSON `{ action: "like" \| "unlike" }` | Público / **30 req/min por IP** (`tg_rl_like_<md5>`) | `{ likes }` (`404` / `429`) | Atualiza `_tg_likes_count` (mínimo `0`) |
+| `/teoriageek/v1/posts/{id}/community-score` | `POST` | `{id}` na rota; body JSON `{ score: 1..10 }` | Público / **20 req/min por IP** (`tg_rl_community_score_<md5>`) | `{ average, count }` (`400` se nota fora de 1–10, `404`, `429`) | Incrementa `_tg_community_score_count` e `_tg_community_score_sum` |
+| `/teoriageek/v1/admin-metrics` | `GET` | `refresh=1` (opcional, força invalidação) | Autenticado (`current_user_can('edit_posts')` + header `X-WP-Nonce`) | `{ kpis, series14d, categories, top24h, top7d, updatedAt, ts, critics, mostLiked, queue, flags, authors, pubSeries }` | Lê/limpa `teoriageek_admin_kpis_v2` (**5 min**), `teoriageek_admin_series_v1` (**5 min**) e `teoriageek_admin_extra_v1_{uid}` (**2 min**) |
+
+---
+
+## 7. Modelo de Dados (`post_meta`, `theme_mod` e Transients)
+
+### 7.1 Metadados de Post (`wp_postmeta`)
+
+| Meta Key | Tipo | Origem / Gravação | Uso no Tema |
+|---|---|---|---|
+| `_tg_main_headline` | `'1'` | Ficha Editorial (`meta-boxes.php`, unicidade garantida) | Prioriza o post como Slide 1 do Hero em `teoriageek_get_home_blocks()` |
+| `_tg_plantao` | `'1'` | Ficha Editorial (`meta-boxes.php`) | Destaca o post na faixa *Plantão Geek* (`helpers.php`, `breaking-ticker.php`) |
+| `_tg_has_spoilers` | `'1'` | Ficha Editorial (`meta-boxes.php`) | Selo de spoiler nos cards, bloqueio com blur em `single.php` e painel *Destaques* na Central / `edit.php` |
+| `_tg_is_hero` | `'1'` | Consultada pela Central (`admin-dashboard.php`) | Filtro `tg_flag=hero`, coluna *Destaques* em `edit.php` e card *Destaques no ar* (Nota: a Ficha Editorial grava `_tg_main_headline`) |
+| `_tg_in_ticker` | `'1'` | Consultada pela Central (`admin-dashboard.php`) | Filtro `tg_flag=ticker`, coluna *Destaques* em `edit.php` e card *Destaques no ar* (Nota: a Ficha Editorial grava `_tg_plantao`) |
+| `_tg_editorial_format` | `string` | Ficha Editorial (`noticia`, `critica`, `review`, `especial`) | Define o selo de formato editorial (fallback automático por categoria) |
+| `_tg_review_score` | `string` (`0.0`–`10.0`) | Ficha Editorial (`meta-boxes.php`) | Card de Nota/Veredito, filtro `?ordem=criticas` e JSON-LD `Review` |
+| `_tg_bullet_1`..`3` | `string` (≤ 160 chars) | Ficha Editorial (`meta-boxes.php`) | Caixa *Em Resumo* em `single.php` e Lâmina 2 dos Reels |
+| `_tg_source_name` / `_tg_source_url` | `string` / URL `http(s)` | Ficha Editorial (`meta-boxes.php`) | Crédito de fonte externa na matéria e nos Reels |
+| `_tg_views_count` | `int` | `POST /posts/{id}/view` (`helpers.php`) | Contador próprio total de visualizações |
+| `_tg_views_daily` | `array<YYYYMMDD,int>` | `POST /posts/{id}/view` (`helpers.php`) | Baldes diários (últimos 14 dias) para *Mais Lidas 24h/7d* e série 14d na Central |
+| `_tg_likes_count` | `int` | `POST /posts/{id}/like` (`reels-api.php`) | Curtidas persistidas compartilhadas entre `/reels/`, `article-reaction.php` e Central |
+| `_tg_community_score_sum` | `float` | `POST /posts/{id}/community-score` | Soma acumulada dos votos da comunidade (1–10) |
+| `_tg_community_score_count` | `int` | `POST /posts/{id}/community-score` | Quantidade de votos da comunidade |
+| `td_post_theme_settings` | `array` (legado) | Leitura somente (Newspaper/tagDiv) | Fallback para subtítulo, fonte externa e notas/critérios legados |
+| `_yoast_wpseo_primary_category` / `_yoast_wpseo_estimated-reading-time-minutes` | `int` (plugin) | Leitura somente (Yoast SEO) | Categoria primária e tempo estimado de leitura quando presentes |
+
+### 7.2 Opções do Personalizador (`theme_mod`)
+
+| Seção no Personalizador | Chaves `theme_mod` | Padrão / Observação |
+|---|---|---|
+| **Cores e Identidade** | `teoriageek_site_name`, `teoriageek_logo_dark`, `teoriageek_color_primary`, `teoriageek_color_accent`, `teoriageek_color_bg`, `teoriageek_color_surface`, `teoriageek_color_text` (+ `custom_logo` nativo) | `#0073E6`, `#FACC15`, `#FFFFFF`, `#FFFFFF`, `#0B0F19` |
+| **Categorias da Capa** | `teoriageek_cat_destaque`, `teoriageek_cat_noticias`, `teoriageek_cat_criticas`, `teoriageek_cat_reviews`, `teoriageek_cat_especiais`, `teoriageek_cat_col_1`..`col_5` | Mapeiam cada bloco da `front-page.php` |
+| **Redes Sociais & Reels** | `teoriageek_social_instagram`, `_youtube`, `_spotify`, `_twitch`, `_twitter`, `_facebook`, `teoriageek_reels_stamp_text` | Links oficiais + selo `'CURTIU!'` |
+| **Monetização & Anúncios** | `teoriageek_ad_top`, `teoriageek_ad_mid_article`, `teoriageek_ad_sidebar`, `teoriageek_sponsor_category`, `teoriageek_sponsor_label`, `teoriageek_sponsor_name`, `teoriageek_sponsor_url` | Sanitizado com `unfiltered_html` (admins) ou `wp_kses_post` |
+| **Estreias & Canais** | `teoriageek_premieres_list`, `teoriageek_channel_title`, `teoriageek_channel_subtitle`, `teoriageek_channel_whatsapp`, `teoriageek_channel_telegram`, `teoriageek_channel_google_news`, `teoriageek_newsletter_action_url`, `teoriageek_newsletter_email_field`, `teoriageek_newsletter_title`, `teoriageek_newsletter_desc` | Controla agenda de Estreias, Canais Oficiais (Home/Rodapé/Sino) e caixa de Newsletter |
+
+### 7.3 Transients e Política de Cache
+
+| Transient | TTL | Módulo | Invalidação |
+|---|---|---|---|
+| `teoriageek_home_blocks_v5` | `10 min` | `inc/helpers.php` | `save_post_post`, `deleted_post`, `trashed_post`, `customize_save_after`, botão *Limpar cache* |
+| `teoriageek_reels_cats_v2` | `15 min` | `inc/helpers.php` | Idem `teoriageek_flush_editorial_transients()` |
+| `teoriageek_weekly_premieres_v1` | `30 min` | `inc/helpers.php` | `customize_save_after`, botão *Limpar cache* |
+| `teoriageek_most_read_pvc_7d_v2` / `_24h_v2` | `15 min` | `inc/template-tags.php` | Botão *Limpar cache* na Central |
+| `tg_inline_rm_{post_id}` | `30 min` | `inc/template-tags.php` | Expiração natural (TTL) |
+| `teoriageek_rest_alerts_v1` | `3 min` | `inc/reels-api.php` | `teoriageek_flush_editorial_transients()`, botão *Limpar cache* |
+| `tg_search_{md5}` | `3 min` | `inc/reels-api.php` | Expiração natural (TTL) |
+| `tg_rl_{bucket}_{md5(ip)}` | `1 min` | `inc/reels-api.php` | Janela deslizante de rate limit por IP |
+| `teoriageek_admin_kpis_v2` / `teoriageek_admin_series_v1` | `5 min` | `inc/admin-dashboard.php` | Botão *Atualizar agora* (`?refresh=1`) ou *Limpar cache* |
+| `teoriageek_admin_extra_v1_{user_id}` | `2 min` | `inc/admin-dashboard.php` | Botão *Atualizar agora* (`?refresh=1`) ou *Limpar cache* |
+
+---
+
+## 8. Runbook de Deploy e Produção (Locaweb + WP Super Cache)
+
+### Passo a Passo de Instalação / Atualização
+1. **Backup preventivo:** faça backup completo do banco MySQL e de `wp-content/` no painel da Locaweb.
+2. **Upload do pacote:** em **Aparência > Temas > Adicionar novo > Enviar tema**, envie o arquivo `teoriageek-theme-v2.12.0.zip` e confirme a substituição (ou descompacte diretamente em `wp-content/themes/teoriageek/`).
+3. **Ativação e higiene de legados:** ative o tema **Teoria Geek** e desative os plugins proprietários do tema anterior (`td-composer`, `td-cloud-library` e eventuais complementos `td-*`).
+4. **Flush de Permalinks:** acesse **Configurações > Links Permanentes** e clique em **Salvar alterações** uma vez para garantir o registro das rotas `/reels/` e `/universo/<slug>/`.
+5. **Revisão no Personalizador:** em **Aparência > Personalizar**, verifique **Estreias & Canais** (WhatsApp, Telegram, Google Notícias e Newsletter), **Cores e Identidade** e **Monetização & Anúncios**.
+6. **Limpeza de Cache:**
+   - Acesse **Teoria Geek > Saúde e atalhos** e clique em **Limpar cache do tema** (invalida todos os transients e aciona `wp_cache_clear_cache()` no WP Super Cache).
+   - Se usar CDN/Cloudflare, execute **Purge Everything** e mantenha *bypass* para `/wp-admin/*`, `/wp-json/*` e `/?s=*`.
+7. **Verificação pós-deploy:** execute o roteiro de smoke test em `QA-CHECKLIST.md` e confira **Ferramentas > Diagnóstico do Site** (*Saúde do Tema Teoria Geek*).
+
+### Troubleshooting (Problemas Comuns em Produção)
+
+| Sintoma | Causa Provável | Solução |
+|---|---|---|
+| `/reels/` ou `/universo/...` retorna **404** | Regras de rewrite não foram atualizadas após upload/migração | Acesse **Configurações > Links Permanentes** e clique em **Salvar alterações**. Confirme na aba *Saúde e atalhos* que *Rota /reels/* está **Ativa**. |
+| CSS antigo ou layout quebrado após atualização | Cache de página no WP Super Cache ou cache de borda/navegador | Clique em **Limpar cache do tema** na Central (ou **Excluir Cache** no WP Super Cache), limpe a CDN e recarregue com `Ctrl + F5`. O tema já aplica `?ver=<filemtime>` em `bundle.min.css`. |
+| Canais (WhatsApp / Telegram / Google Notícias) não aparecem no sino | Campos vazios no Personalizador ou URL sem `https://` | Preencha URLs completas (`https://...`) em **Aparência > Personalizar > Estreias & Canais — Teoria Geek**, salve e limpe o cache de página. |
+| Caixa de Newsletter não aparece no artigo/rodapé | Comportamento intencional quando a URL de envio está vazia | Preencha *Newsletter — URL de envio do formulário* em **Estreias & Canais** com uma URL `https://` válida. |
+| *Mais Lidas 24h* e *7 dias* exibem os mesmos posts recém-instalados | Poucos acessos registrados desde a virada ou cache de 15 min ativo | Aguarde o tráfego popular `_tg_views_daily` / `wp_post_views` (cada leitura em `single.php` registra após `1,5s`) e limpe o cache do tema na Central. |
+| Gráficos ou fontes não carregam na Central `/wp-admin/` | Permissão de leitura nos `.woff2`, bloqueio de REST ou erro de cache de admin | Verifique `assets/css/admin-dashboard.css`, `assets/js/admin-dashboard.js` e `assets/fonts/*.woff2` no servidor e confirme que `/wp-json/teoriageek/v1/admin-metrics` responde HTTP 200 logado. |

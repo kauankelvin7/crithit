@@ -29,6 +29,7 @@ get_header();
 		$tg_author_url = get_author_posts_url( $tg_author_id );
 		$tg_avatar     = get_avatar_url( $tg_author_id, array( 'size' => 96 ) );
 		$tg_ext_src    = teoriageek_get_external_source( $tg_pid );
+		$tg_has_spoiler = (bool) get_post_meta( $tg_pid, '_tg_has_spoilers', true );
 		$tg_bullets    = teoriageek_get_post_bullets( $tg_pid, true );
 		$tg_tags       = get_the_tags( $tg_pid );
 		$tg_most_read  = teoriageek_get_most_read_posts( 5, array( $tg_pid ) );
@@ -67,6 +68,9 @@ get_header();
 					<span class="rounded border border-border-subtle bg-surface-alt px-2.5 py-1 font-mono text-xs font-bold uppercase text-ink-secondary">
 						<?php echo esc_html( $tg_fmt['label'] ); ?>
 					</span>
+					<?php if ( $tg_has_spoiler ) : ?>
+						<span class="tg-card-spoiler-pill"><?php esc_html_e( 'Contém Spoilers', 'teoriageek' ); ?></span>
+					<?php endif; ?>
 
 					<?php if ( ! empty( $tg_universos ) && ! is_wp_error( $tg_universos ) ) : ?>
 						<?php foreach ( array_slice( $tg_universos, 0, 2 ) as $tg_u_term ) : ?>
@@ -208,6 +212,16 @@ get_header();
 							</section>
 						<?php endif; ?>
 
+						<?php if ( $tg_has_spoiler ) : ?>
+							<div class="tg-spoiler-gate is-locked" data-tg-spoiler-gate>
+								<div class="tg-spoiler-gate-card" role="region" aria-label="<?php esc_attr_e( 'Aviso de spoiler', 'teoriageek' ); ?>">
+									<span class="tg-spoiler-tag"><?php esc_html_e( 'ALERTA DE SPOILER', 'teoriageek' ); ?></span>
+									<p class="tg-spoiler-gate-msg"><?php esc_html_e( 'Esta matéria revela detalhes importantes da trama. Deseja continuar mesmo assim?', 'teoriageek' ); ?></p>
+									<button type="button" data-tg-spoiler-unlock class="tg-spoiler-gate-btn">
+										<?php esc_html_e( 'Clique aqui para ver o spoiler por sua conta e risco', 'teoriageek' ); ?>
+									</button>
+								</div>
+						<?php endif; ?>
 						<div class="entry-content font-reading text-base leading-[1.78] text-ink-primary sm:text-[17px]">
 							<?php
 							the_content();
@@ -220,8 +234,13 @@ get_header();
 							);
 							?>
 						</div>
+						<?php if ( $tg_has_spoiler ) : ?></div><?php endif; ?>
 
 						<?php get_template_part( 'template-parts/review-card', null, array( 'post_id' => $tg_pid ) ); ?>
+
+						<?php get_template_part( 'template-parts/series-timeline', null, array( 'post_id' => $tg_pid ) ); ?>
+
+						<?php get_template_part( 'template-parts/article-reaction', null, array( 'post_id' => $tg_pid ) ); ?>
 
 						<?php if ( ! empty( $tg_tags ) && ! is_wp_error( $tg_tags ) ) : ?>
 							<div class="mt-8 flex flex-wrap items-center gap-2 border-t border-border-subtle pt-5">
@@ -242,6 +261,8 @@ get_header();
 						</div>
 
 						<?php get_template_part( 'template-parts/author-box' ); ?>
+
+						<?php get_template_part( 'template-parts/newsletter-box', null, array( 'variant' => 'article' ) ); ?>
 					</div>
 
 					<?php
@@ -351,6 +372,7 @@ get_header();
 			</div>
 		</article>
 	<?php endwhile; ?>
+
 </main>
 
 <?php

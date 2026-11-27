@@ -1,10 +1,11 @@
 /**
- * Teoria Geek — Player Nativo Reels 2.0 (Micro-Stories em 3 Lâminas).
- * - Altura exata 100% da viewport (zero vazamento do próximo reel)
- * - Navegação de lâminas por clique/toque nas laterais (esquerda/direita) e barras clicáveis no topo
+ * Teoria Geek — Player Nativo Reels 2.0 (v2.12.0, Micro-Stories em 3 Lâminas).
+ * - Enquadramento exato 100dvh abaixo da Admin Bar (zero recorte no topo ou vazamento do próximo reel)
+ * - Navegação de lâminas por setas laterais, clique/toque nas laterais, swipe e barras no topo
  * - Roda do mouse com debounce, scroll-snap mandatory no mobile e atalhos ↑ ↓ ← → S
  * - Painel direito complementar sem duplicar título/resumo do player central
- * - Filtros reais (Para Você, Mais Lidas, Salvos, Editorias), Salvar, Compartilhar e deep-link
+ * - Filtros via REST (Para Você, Mais Lidas, Salvos, Editorias), compartilhamento e deep-link
+ * - Curtidas persistidas no banco (_tg_likes_count) via POST /teoriageek/v1/posts/{id}/like
  */
 (function () {
   'use strict';
@@ -192,7 +193,23 @@
         method: 'POST',
         headers: headers,
         body: JSON.stringify({ action: likedNow ? 'like' : 'unlike' }),
-      }).catch(function () {});
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (data && typeof data.likes === 'number') {
+            if (btn) {
+              var cntEl = btn.querySelector('[data-like-count]');
+              if (cntEl) cntEl.textContent = data.likes > 0 ? String(data.likes) : '';
+            }
+            for (var i = 0; i < items.length; i++) {
+              if (Number(items[i].id) === numId) {
+                items[i].likes = data.likes;
+                break;
+              }
+            }
+          }
+        })
+        .catch(function () {});
     }
   }
 

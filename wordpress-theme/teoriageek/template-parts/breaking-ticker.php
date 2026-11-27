@@ -75,5 +75,9 @@ if ( empty( $tg_ticker_posts ) ) {
 				<?php endforeach; ?>
 			</div>
 		</div>
+		<button type="button" data-tg-ticker-pause aria-pressed="false" aria-label="<?php esc_attr_e( 'Pausar plantão', 'teoriageek' ); ?>" title="<?php esc_attr_e( 'Pausar/Retomar plantão', 'teoriageek' ); ?>" class="tg-ticker-pause-btn z-10 inline-flex shrink-0 items-center justify-center border-l border-border-subtle bg-surface-alt px-2.5 text-ink-secondary hover:text-brand">
+			<span data-tg-ticker-icon="pause" class="inline-flex"><?php echo teoriageek_icon( 'pause', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+			<span data-tg-ticker-icon="play" class="hidden"><?php echo teoriageek_icon( 'play', 'h-3.5 w-3.5 fill-current' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		</button>
 	</div>
 </section>

@@ -2,6 +2,10 @@
 /**
  * Teoria Geek — Bootstrapper principal do tema.
  *
+ * Carrega os módulos internos do tema (helpers, setup, taxonomias, SEO, enfileiramento,
+ * sanitização de acervo legado, Personalizador, meta boxes editoriais, template tags,
+ * REST API e painel administrativo quando em `/wp-admin/`).
+ *
  * @package TeoriaGeek
  */
 
@@ -9,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TEORIAGEEK_VERSION', '2.3.0' );
+define( 'TEORIAGEEK_VERSION', '2.12.0' );
 define( 'TEORIAGEEK_DIR', get_template_directory() );
 define( 'TEORIAGEEK_URI', get_template_directory_uri() );
 
@@ -23,3 +27,7 @@ require_once TEORIAGEEK_DIR . '/inc/customizer.php';
 require_once TEORIAGEEK_DIR . '/inc/meta-boxes.php';
 require_once TEORIAGEEK_DIR . '/inc/template-tags.php';
 require_once TEORIAGEEK_DIR . '/inc/reels-api.php';
+
+if ( is_admin() ) {
+	require_once TEORIAGEEK_DIR . '/inc/admin-dashboard.php';
+}

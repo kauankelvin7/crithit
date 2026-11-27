@@ -843,17 +843,87 @@ function teoriageek_get_post_views( $post_id ) {
 }
 
 /**
- * Incrementa visualizações do post em post_meta próprio sem alterar tabelas de plugins externos.
+ * Incrementa visualizações do post em post_meta próprio (`_tg_views_count`) e no balde diário
+ * (`_tg_views_daily`, retendo os últimos 14 dias) para suportar filtros reais de 24h e 7 dias
+ * mesmo quando o plugin Post Views Counter não está instalado.
  *
  * @param int $post_id ID do post.
- * @return int
+ * @return int Nova contagem total de visualizações do post.
  */
 function teoriageek_increment_post_views( $post_id ) {
+	global $teoriageek_views_cache;
 	$post_id = (int) $post_id;
+	if ( $post_id <= 0 ) {
+		return 0;
+	}
+
 	$current = teoriageek_get_post_views( $post_id );
 	$next    = $current + 1;
 	update_post_meta( $post_id, '_tg_views_count', $next );
+
+	if ( is_array( $teoriageek_views_cache ) ) {
+		$teoriageek_views_cache[ $post_id ] = $next;
+	}
+
+	// Atualiza balde diário (`YYYYMMDD => contagem`) podando chaves > 14 dias.
+	$today = wp_date( 'Ymd' );
+	$daily = get_post_meta( $post_id, '_tg_views_daily', true );
+	if ( ! is_array( $daily ) ) {
+		$daily = array();
+	}
+	$daily[ $today ] = isset( $daily[ $today ] ) ? ( (int) $daily[ $today ] + 1 ) : 1;
+
+	$cutoff_dt = new DateTimeImmutable( '-14 days', wp_timezone() );
+	$cutoff    = $cutoff_dt->format( 'Ymd' );
+	foreach ( array_keys( $daily ) as $day_key ) {
+		if ( ! preg_match( '/^\d{8}$/', (string) $day_key ) || (string) $day_key < $cutoff ) {
+			unset( $daily[ $day_key ] );
+		}
+	}
+	update_post_meta( $post_id, '_tg_views_daily', $daily );
+
 	return $next;
+}
+
+/**
+ * Soma visualizações registradas nos baldes diários próprios (`_tg_views_daily`)
+ * para a janela '24h' (hoje + ontem) ou '7d' (últimos 7 dias).
+ *
+ * @param int    $post_id ID do post.
+ * @param string $window  '24h' ou '7d'.
+ * @return int
+ */
+function teoriageek_get_post_window_views( $post_id, $window = '7d' ) {
+	$daily = get_post_meta( (int) $post_id, '_tg_views_daily', true );
+	if ( ! is_array( $daily ) || empty( $daily ) ) {
+		return 0;
+	}
+	$days_back = ( '24h' === $window ) ? '-1 days' : '-7 days';
+	$min_day   = ( new DateTimeImmutable( $days_back, wp_timezone() ) )->format( 'Ymd' );
+	$sum       = 0;
+	foreach ( $daily as $day_key => $cnt ) {
+		if ( (string) $day_key >= $min_day ) {
+			$sum += max( 0, (int) $cnt );
+		}
+	}
+	return $sum;
+}
+
+/**
+ * Retorna a média e o total de votos da Nota da Comunidade em uma crítica/review.
+ *
+ * @param int $post_id ID do post.
+ * @return array{average: float, count: int}
+ */
+function teoriageek_get_community_score( $post_id ) {
+	$pid   = (int) $post_id;
+	$count = max( 0, (int) get_post_meta( $pid, '_tg_community_score_count', true ) );
+	$sum   = max( 0.0, (float) get_post_meta( $pid, '_tg_community_score_sum', true ) );
+	$avg   = ( $count > 0 ) ? round( min( 10.0, max( 0.0, $sum / $count ) ), 1 ) : 0.0;
+	return array(
+		'average' => $avg,
+		'count'   => $count,
+	);
 }
 
 /**
@@ -877,13 +947,6 @@ function teoriageek_strip_emojis( $text ) {
 	return trim( (string) preg_replace( '/\s+/u', ' ', (string) $clean ) );
 }
 
-/**
- * Extrai até 3 pontos-chave do post (Ficha Editorial ou extração limpa de parágrafos narrativos).
- *
- * @param int  $post_id   ID do post.
- * @param bool $only_meta Quando true, retorna apenas pontos explicitamente preenchidos pelo redator.
- * @return string[]
- */
 /**
  * Extrai até 3 pontos-chave distintos da matéria (meta manual _tg_bullet_1..3 ou sentenças coerentes do corpo).
  * Evita repetir literalmente o subtítulo/resumo já exibido na Lâmina 1 do Reels quando `$exclude_text` é informado.
@@ -1058,6 +1121,10 @@ function teoriageek_icon( $name, $class = 'h-4 w-4' ) {
 
 	$paths = array(
 		'search'        => '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+		'bell'          => '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+		'pause'         => '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
+		'bookmark'      => '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+		'message'       => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
 		'sun'           => '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
 		'moon'          => '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
 		'newspaper'     => '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/>',
@@ -1185,7 +1252,7 @@ function teoriageek_get_home_blocks() {
 		return $runtime_cache;
 	}
 
-	$transient_key = 'teoriageek_home_blocks_v4';
+	$transient_key = 'teoriageek_home_blocks_v5';
 	$id_map        = get_transient( $transient_key );
 
 	if ( ! is_array( $id_map ) || empty( $id_map['hero_slides'] ) ) {
@@ -1332,11 +1399,11 @@ function teoriageek_get_home_blocks() {
 			}
 		}
 
-		// 5. Giro Geek — Últimas Notícias (8 cards sem repetir a dobra principal).
+		// 5. Giro Geek — Últimas Notícias (até 12 cards paginados em 3 faixas de 4 sem repetir a dobra principal).
 		$noticias_slug = teoriageek_get_mapped_category_slug( 'noticias' );
 		$noticias_term = ( '' !== $noticias_slug ) ? get_category_by_slug( $noticias_slug ) : null;
 		$giro_base     = ( $noticias_term && ! is_wp_error( $noticias_term ) ) ? array( 'cat' => (int) $noticias_term->term_id ) : array();
-		$giro_ids      = teoriageek_query_dedup_ids( $giro_base, 8, $shown_ids );
+		$giro_ids      = teoriageek_query_dedup_ids( $giro_base, 12, $shown_ids );
 
 		// 6. Críticas & Reviews (4 cards sem repetir).
 		$review_cat_ids = array();
@@ -1597,6 +1664,14 @@ function teoriageek_flush_editorial_transients( $post_id = 0 ) {
 	delete_transient( 'teoriageek_home_blocks_v2' );
 	delete_transient( 'teoriageek_home_blocks_v3' );
 	delete_transient( 'teoriageek_home_blocks_v4' );
+	delete_transient( 'teoriageek_home_blocks_v5' );
+	delete_transient( 'teoriageek_rest_alerts_v1' );
+	// Limpa também o cache de página do WP Super Cache quando ativo em produção.
+	if ( function_exists( 'wp_cache_clear_cache' ) ) {
+		wp_cache_clear_cache();
+	} elseif ( function_exists( 'wp_cache_clean_cache' ) && isset( $GLOBALS['file_prefix'] ) ) {
+		wp_cache_clean_cache( $GLOBALS['file_prefix'] );
+	}
 	delete_transient( 'teoriageek_reels_cats_v1' );
 	delete_transient( 'teoriageek_reels_cats_v2' );
 }

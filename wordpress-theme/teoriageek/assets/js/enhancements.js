@@ -1,12 +1,16 @@
 /**
- * Teoria Geek — Aprimoramentos Editoriais & UX Vanilla JS (v1.3.0, zero dependências).
- * - Sumário automático retrátil (TOC) para matérias com >= 2 subtítulos (H2/H3)
- * - Âncoras copiáveis nos subtítulos H2/H3
- * - Wrapper responsivo automático (.tgx-table-wrap) para tabelas editoriais (exceto .ficha)
- * - Letra capitular editorial (.tgx-dropcap) no primeiro parágrafo narrativo de single.php
- * - Marcação automática de links externos (.tgx-external)
- * - Lightbox acessível com zoom para imagens da matéria
- * - Botão flutuante "Voltar ao topo" (oculto na tela Reels)
+ * Teoria Geek — Aprimoramentos Editoriais & UX Vanilla JS (v2.12.0, zero dependências).
+ * 0. Fallback elegante para imagens quebradas dentro de .entry-content (além de .tg-cover-img)
+ * 1. Wrapper responsivo automático (.tgx-table-wrap) para tabelas editoriais (exceto .ficha)
+ * 2. Letra capitular editorial (.tgx-dropcap) no primeiro parágrafo narrativo de single.php
+ * 3. Âncoras copiáveis nos subtítulos H2/H3 + Sumário automático retrátil (TOC)
+ * 4. Marcação automática de links externos (.tgx-external)
+ * 5. Lightbox acessível com zoom para imagens da matéria
+ * 6. Botão flutuante "Voltar ao topo" (oculto na tela Reels)
+ * 7. Aviso nativo de Cookies/LGPD (auto-suprimido quando CookieYes está ativo)
+ * 8. Controles A- / 100% / A+ de tamanho da fonte de leitura (incluindo spans legados)
+ * 9. Desligamento de shimmer skeletons no carregamento de capas
+ * 10. Focus trap acessível (Tab / Shift+Tab) no Menu Mobile e no Modal de Busca
  */
 (function () {
   'use strict';

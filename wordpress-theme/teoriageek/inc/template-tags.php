@@ -424,31 +424,89 @@ function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array(), $wi
 		}
 	}
 
-	// 2. Fallback para contador em post_meta (`post_views_count` / `_tg_views_count`).
+	// 2. Fallback para baldes diários próprios (`_tg_views_daily` / `_tg_views_count`) e legado (`post_views_count`), respeitando $window.
 	if ( count( $posts ) < $limit ) {
 		$already    = array_merge( $exclude_ids, wp_list_pluck( $posts, 'ID' ) );
-		$meta_query = new WP_Query(
+		$date_after = ( '24h' === $window ) ? '3 days ago' : '14 days ago';
+		$cand_query = new WP_Query(
 			array(
 				'post_type'           => 'post',
 				'post_status'         => 'publish',
-				'posts_per_page'      => $limit - count( $posts ),
+				'posts_per_page'      => 20,
 				'post__not_in'        => $already,
 				'ignore_sticky_posts' => true,
-				'meta_key'            => 'post_views_count',
-				'orderby'             => 'meta_value_num',
-				'order'               => 'DESC',
+				'meta_query'          => array(
+					'relation' => 'OR',
+					array(
+						'key'     => '_tg_views_count',
+						'compare' => 'EXISTS',
+					),
+					array(
+						'key'     => 'post_views_count',
+						'compare' => 'EXISTS',
+					),
+				),
 				'date_query'          => array(
 					array(
-						'after' => '90 days ago',
+						'after' => $date_after,
 					),
 				),
 				'no_found_rows'       => true,
 			)
 		);
-		$posts = array_merge( $posts, $meta_query->posts );
+		$candidates = $cand_query->posts;
+		if ( count( $candidates ) < ( $limit - count( $posts ) ) ) {
+			$wider_after = ( '24h' === $window ) ? '30 days ago' : '90 days ago';
+			$wider_query = new WP_Query(
+				array(
+					'post_type'           => 'post',
+					'post_status'         => 'publish',
+					'posts_per_page'      => 20,
+					'post__not_in'        => array_merge( $already, wp_list_pluck( $candidates, 'ID' ) ),
+					'ignore_sticky_posts' => true,
+					'meta_query'          => array(
+						'relation' => 'OR',
+						array(
+							'key'     => '_tg_views_count',
+							'compare' => 'EXISTS',
+						),
+						array(
+							'key'     => 'post_views_count',
+							'compare' => 'EXISTS',
+						),
+					),
+					'date_query'          => array(
+						array(
+							'after' => $wider_after,
+						),
+					),
+					'no_found_rows'       => true,
+				)
+			);
+			$candidates = array_merge( $candidates, $wider_query->posts );
+		}
+		if ( ! empty( $candidates ) ) {
+			usort(
+				$candidates,
+				static function ( $a, $b ) use ( $window ) {
+					$wa = teoriageek_get_post_window_views( $a->ID, $window );
+					$wb = teoriageek_get_post_window_views( $b->ID, $window );
+					if ( $wa !== $wb ) {
+						return $wb <=> $wa;
+					}
+					$ta = teoriageek_get_post_views( $a->ID );
+					$tb = teoriageek_get_post_views( $b->ID );
+					if ( $ta !== $tb ) {
+						return $tb <=> $ta;
+					}
+					return strcmp( (string) $b->post_date_gmt, (string) $a->post_date_gmt );
+				}
+			);
+			$posts = array_merge( $posts, array_slice( $candidates, 0, $limit - count( $posts ) ) );
+		}
 	}
 
-	// 3. Fallback final garantido para posts recentes/comentados.
+	// 3. Fallback final diferenciado por janela ('24h' prioriza mais recentes; '7d' prioriza engajamento/comentários).
 	if ( count( $posts ) < $limit ) {
 		$already  = array_merge( $exclude_ids, wp_list_pluck( $posts, 'ID' ) );
 		$fallback = new WP_Query(
@@ -458,7 +516,7 @@ function teoriageek_get_most_read_posts( $limit = 5, $exclude_ids = array(), $wi
 				'posts_per_page'      => $limit - count( $posts ),
 				'post__not_in'        => $already,
 				'ignore_sticky_posts' => true,
-				'orderby'             => 'comment_count date',
+				'orderby'             => ( '24h' === $window ) ? 'date' : 'comment_count date',
 				'order'               => 'DESC',
 				'no_found_rows'       => true,
 			)
@@ -540,6 +598,7 @@ function teoriageek_render_mobile_cat_strip() {
 
 	echo '<nav aria-label="' . esc_attr__( 'Acesso rápido às editorias', 'teoriageek' ) . '" class="tgx-mobile-cat-strip lg:hidden border-t border-white/10 bg-chrome-surface">';
 	echo '<div class="tgx-mobile-cat-scroll flex items-center gap-1 overflow-x-auto px-3">';
+	echo '<a href="' . esc_url( teoriageek_get_reels_url() ) . '" class="tgx-mobile-reels-pill">' . teoriageek_icon( 'play', 'h-3 w-3 fill-current' ) . '<span>Reels</span></a>';
 	echo '<a href="' . esc_url( home_url( '/' ) ) . '"' . ( $is_home_active ? ' aria-current="page"' : '' ) . ' class="tgx-mobile-cat-pill' . ( $is_home_active ? ' is-active' : '' ) . '">' . esc_html__( 'Capa', 'teoriageek' ) . '</a>';
 	foreach ( $items as $term ) {
 		$is_curr = ( $current_cat_id === (int) $term->term_id );
@@ -547,3 +606,127 @@ function teoriageek_render_mobile_cat_strip() {
 	}
 	echo '</div></nav>';
 }
+
+/**
+ * Injeta automaticamente 1 card enxuto "Leia também" após o 4º parágrafo de matérias com 6+ parágrafos,
+ * priorizando outra publicação do mesmo Universo ou da mesma categoria primária.
+ * Renderizado no HTML (cacheável pelo WP Super Cache, zero JavaScript adicional).
+ *
+ * @param string $content HTML do conteúdo do post.
+ * @return string
+ */
+function teoriageek_inject_inline_read_more( $content ) {
+	if ( is_admin() || is_feed() || ! is_singular( 'post' ) || ! in_the_loop() || ! is_main_query() ) {
+		return $content;
+	}
+	if ( ! is_string( $content ) || false !== strpos( $content, 'tg-inline-read-more' ) ) {
+		return $content;
+	}
+
+	$parts = preg_split( '/(<\/p>)/i', $content, -1, PREG_SPLIT_DELIM_CAPTURE );
+	if ( ! is_array( $parts ) || count( $parts ) < 13 ) {
+		// Exige ao menos 6 parágrafos completos para não interromper notas curtas.
+		return $content;
+	}
+
+	$pid = (int) get_the_ID();
+	if ( $pid <= 0 ) {
+		return $content;
+	}
+
+	$transient_key = 'tg_inline_rm_' . $pid;
+	$related_data  = get_transient( $transient_key );
+
+	if ( ! is_array( $related_data ) ) {
+		$related_post = null;
+		if ( taxonomy_exists( 'universo' ) ) {
+			$u_terms = get_the_terms( $pid, 'universo' );
+			if ( ! empty( $u_terms ) && ! is_wp_error( $u_terms ) ) {
+				$uq = new WP_Query(
+					array(
+						'post_type'              => 'post',
+						'post_status'            => 'publish',
+						'posts_per_page'         => 1,
+						'post__not_in'           => array( $pid ),
+						'ignore_sticky_posts'    => true,
+						'no_found_rows'          => true,
+						'update_post_meta_cache' => false,
+						'tax_query'              => array(
+							array(
+								'taxonomy' => 'universo',
+								'field'    => 'term_id',
+								'terms'    => (int) $u_terms[0]->term_id,
+							),
+						),
+					)
+				);
+				if ( ! empty( $uq->posts ) ) {
+					$related_post = $uq->posts[0];
+				}
+			}
+		}
+
+		if ( ! $related_post instanceof WP_Post ) {
+			$cat = teoriageek_get_primary_category( $pid );
+			if ( $cat instanceof WP_Term ) {
+				$cq = new WP_Query(
+					array(
+						'post_type'              => 'post',
+						'post_status'            => 'publish',
+						'posts_per_page'         => 1,
+						'post__not_in'           => array( $pid ),
+						'cat'                    => (int) $cat->term_id,
+						'ignore_sticky_posts'    => true,
+						'no_found_rows'          => true,
+						'update_post_meta_cache' => false,
+					)
+				);
+				if ( ! empty( $cq->posts ) ) {
+					$related_post = $cq->posts[0];
+				}
+			}
+		}
+
+		if ( $related_post instanceof WP_Post ) {
+			$rid          = (int) $related_post->ID;
+			$rcat         = teoriageek_get_primary_category( $rid );
+			$related_data = array(
+				'id'    => $rid,
+				'title' => teoriageek_clean_title( get_the_title( $rid ) ),
+				'url'   => get_permalink( $rid ),
+				'cat'   => $rcat ? html_entity_decode( $rcat->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : __( 'Teoria Geek', 'teoriageek' ),
+				'thumb' => (string) get_the_post_thumbnail_url( $rid, 'thumbnail' ),
+			);
+		} else {
+			$related_data = array();
+		}
+
+		set_transient( $transient_key, $related_data, 30 * MINUTE_IN_SECONDS );
+	}
+
+	if ( empty( $related_data['url'] ) || empty( $related_data['title'] ) ) {
+		return $content;
+	}
+
+	$thumb_html = '';
+	if ( ! empty( $related_data['thumb'] ) ) {
+		$thumb_html = '<img src="' . esc_url( $related_data['thumb'] ) . '" alt="" loading="lazy" decoding="async" class="tg-inline-rm-thumb" />';
+	}
+
+	$box = '<aside aria-label="' . esc_attr__( 'Leia também', 'teoriageek' ) . '" class="tg-inline-read-more">'
+		. '<a href="' . esc_url( $related_data['url'] ) . '" class="tg-inline-rm-link">'
+		. $thumb_html
+		. '<span class="tg-inline-rm-body">'
+		. '<span class="tg-inline-rm-kicker">' . esc_html__( 'Leia também', 'teoriageek' ) . ' · ' . esc_html( $related_data['cat'] ) . '</span>'
+		. '<span class="tg-inline-rm-title">' . esc_html( $related_data['title'] ) . '</span>'
+		. '</span>'
+		. '</a>'
+		. '</aside>';
+
+	// Insere logo após o 4º </p> (índice 7 em array [texto, </p>, texto, </p>, ...]).
+	$parts[7] .= "
+" . $box . "
+";
+	return implode( '', $parts );
+}
+add_filter( 'the_content', 'teoriageek_inject_inline_read_more', 22 );

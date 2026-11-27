@@ -34,6 +34,7 @@ function teoriageek_render_editorial_meta_box( $post ) {
 
 	$is_main_headline = (bool) get_post_meta( $post->ID, '_tg_main_headline', true );
 	$is_plantao       = (bool) get_post_meta( $post->ID, '_tg_plantao', true );
+	$has_spoilers     = (bool) get_post_meta( $post->ID, '_tg_has_spoilers', true );
 	$editorial_format = (string) get_post_meta( $post->ID, '_tg_editorial_format', true );
 	$review_score     = (string) get_post_meta( $post->ID, '_tg_review_score', true );
 	$bullet_1         = (string) get_post_meta( $post->ID, '_tg_bullet_1', true );
@@ -71,6 +72,10 @@ function teoriageek_render_editorial_meta_box( $post ) {
 			<label class="tg-metabox-check" for="tg_plantao">
 				<input type="checkbox" id="tg_plantao" name="tg_plantao" value="1" <?php checked( $is_plantao ); ?> />
 				<span><?php esc_html_e( 'Destacar no Plantão Geek (topo)', 'teoriageek' ); ?></span>
+			</label>
+			<label class="tg-metabox-check" for="tg_has_spoilers">
+				<input type="checkbox" id="tg_has_spoilers" name="tg_has_spoilers" value="1" <?php checked( $has_spoilers ); ?> />
+				<span><?php esc_html_e( 'Esta matéria contém spoilers (exibir botão para revelar)', 'teoriageek' ); ?></span>
 			</label>
 
 			<div class="tg-metabox-field" style="margin-top: 10px;">
@@ -165,6 +170,12 @@ function teoriageek_save_editorial_meta( $post_id ) {
 		update_post_meta( $post_id, '_tg_plantao', '1' );
 	} else {
 		delete_post_meta( $post_id, '_tg_plantao' );
+	}
+
+	if ( isset( $_POST['tg_has_spoilers'] ) && '1' === $_POST['tg_has_spoilers'] ) {
+		update_post_meta( $post_id, '_tg_has_spoilers', '1' );
+	} else {
+		delete_post_meta( $post_id, '_tg_has_spoilers' );
 	}
 
 	$allowed_formats = array( '', 'noticia', 'critica', 'review', 'especial' );

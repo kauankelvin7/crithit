@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Part: Bloco configurável de convite para Canal WhatsApp / Telegram (Customizer).
+ * Template Part: Bloco configurável de convite para Canal WhatsApp, Telegram e Google Notícias (Customizer).
  *
  * @package TeoriaGeek
  */
@@ -11,15 +11,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $tg_wa = teoriageek_safe_http_url( (string) get_theme_mod( 'teoriageek_channel_whatsapp', '' ) );
 $tg_tg = teoriageek_safe_http_url( (string) get_theme_mod( 'teoriageek_channel_telegram', '' ) );
+$tg_gn = teoriageek_safe_http_url( (string) get_theme_mod( 'teoriageek_channel_google_news', '' ) );
 
-if ( '' === $tg_wa && '' === $tg_tg ) {
+if ( '' === $tg_wa && '' === $tg_tg && '' === $tg_gn ) {
 	return;
 }
 
 $tg_title = (string) get_theme_mod( 'teoriageek_channel_title', __( 'Entre na Comunidade Teoria Geek', 'teoriageek' ) );
 $tg_sub   = (string) get_theme_mod( 'teoriageek_channel_subtitle', __( 'Receba notícias de games, cinema, séries e críticas direto no celular, sem spam.', 'teoriageek' ) );
 ?>
-<section aria-label="<?php esc_attr_e( 'Canais oficiais no WhatsApp e Telegram', 'teoriageek' ); ?>" data-chrome="dark" class="mt-10 rounded-sm border border-white/15 bg-chrome p-5 text-chrome-ink sm:p-6">
+<section aria-label="<?php esc_attr_e( 'Canais oficiais no WhatsApp, Telegram e Google Notícias', 'teoriageek' ); ?>" data-chrome="dark" class="mt-10 rounded-sm border border-white/15 bg-chrome p-5 text-chrome-ink sm:p-6">
 	<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 		<div class="space-y-1.5">
 			<span class="inline-block rounded-sm bg-highlight px-2 py-0.5 font-sans text-[11px] font-extrabold uppercase tracking-wider text-ink-highlight">
@@ -44,6 +45,12 @@ $tg_sub   = (string) get_theme_mod( 'teoriageek_channel_subtitle', __( 'Receba n
 				<a href="<?php echo esc_url( $tg_tg ); ?>" target="_blank" rel="noopener noreferrer" class="tactile-btn inline-flex min-h-[40px] items-center gap-2 rounded-sm border border-white/25 bg-chrome-surface px-4 py-2.5 font-sans text-xs font-bold uppercase text-white hover:border-highlight hover:text-highlight">
 					<?php echo teoriageek_icon( 'send', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					<span><?php esc_html_e( 'Canal no Telegram', 'teoriageek' ); ?></span>
+				</a>
+			<?php endif; ?>
+			<?php if ( '' !== $tg_gn ) : ?>
+				<a href="<?php echo esc_url( $tg_gn ); ?>" target="_blank" rel="noopener noreferrer" class="tactile-btn inline-flex min-h-[40px] items-center gap-2 rounded-sm border border-white/25 bg-chrome-surface px-4 py-2.5 font-sans text-xs font-bold uppercase text-white hover:border-highlight hover:text-highlight">
+					<?php echo teoriageek_icon( 'star', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<span><?php esc_html_e( 'Seguir no Google Notícias', 'teoriageek' ); ?></span>
 				</a>
 			<?php endif; ?>
 		</div>

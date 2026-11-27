@@ -96,3 +96,42 @@ $tg_has_legacy_selo = (bool) preg_match( '/\b(?:div-selo|selo-teoria-geek)\b/i',
 	<?php endif; ?>
 </aside>
 <?php endif; ?>
+
+<?php
+$tg_comm       = teoriageek_get_community_score( $tg_pid );
+$tg_comm_avg   = ( $tg_comm['count'] > 0 ) ? number_format( $tg_comm['average'], 1, '.', '' ) : '—';
+$tg_comm_count = (int) $tg_comm['count'];
+?>
+<div class="tg-community-score" data-tg-community-score="<?php echo esc_attr( (string) $tg_pid ); ?>">
+	<div class="tg-community-score-head">
+		<div class="tg-community-score-info">
+			<span class="tg-community-score-kicker"><?php esc_html_e( 'Nota da Comunidade', 'teoriageek' ); ?></span>
+			<div class="tg-community-score-summary">
+				<strong data-tg-cs-avg class="tg-community-score-val"><?php echo esc_html( $tg_comm_avg ); ?></strong><span class="tg-community-score-max">/10</span>
+				<span data-tg-cs-meta class="tg-community-score-meta">
+					<?php
+					if ( $tg_comm_count > 0 ) {
+						echo esc_html(
+							sprintf(
+								/* translators: %d: quantidade de votos */
+								_n( '· %d voto', '· %d votos', $tg_comm_count, 'teoriageek' ),
+								$tg_comm_count
+							)
+						);
+					} else {
+						esc_html_e( '· Seja o primeiro a dar sua nota', 'teoriageek' );
+					}
+					?>
+				</span>
+			</div>
+		</div>
+		<span data-tg-cs-feedback class="tg-community-score-feedback"><?php esc_html_e( 'Qual é a sua nota?', 'teoriageek' ); ?></span>
+	</div>
+	<div class="tg-community-score-buttons" role="group" aria-label="<?php esc_attr_e( 'Escolha sua nota de 1 a 10', 'teoriageek' ); ?>">
+		<?php for ( $tg_n = 1; $tg_n <= 10; $tg_n++ ) : ?>
+			<button type="button" data-tg-rate-btn="<?php echo esc_attr( (string) $tg_n ); ?>" class="tg-cs-btn">
+				<?php echo esc_html( (string) $tg_n ); ?>
+			</button>
+		<?php endfor; ?>
+	</div>
+</div>

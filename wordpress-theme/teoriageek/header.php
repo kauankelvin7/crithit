@@ -1,6 +1,6 @@
 <?php
 /**
- * Cabeçalho global do tema Teoria Geek.
+ * Cabeçalho global do tema Teoria Geek (v2.12.0).
  *
  * @package TeoriaGeek
  */
@@ -16,7 +16,8 @@ $tg_socials  = teoriageek_get_social_links();
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="theme-color" content="#0B0F19">
+	<meta name="theme-color" id="tg-theme-color-meta" content="#102042">
+	<link rel="manifest" href="<?php echo esc_url( TEORIAGEEK_URI . '/manifest.json' ); ?>">
 	<link rel="profile" href="https://gmpg.org/xfn/11">
 	<?php wp_head(); ?>
 </head>
@@ -46,6 +47,7 @@ $tg_socials  = teoriageek_get_social_links();
 						type="search"
 						name="s"
 						value="<?php echo esc_attr( get_search_query() ); ?>"
+						data-tg-desktop-search
 						aria-label="<?php esc_attr_e( 'Buscar no Teoria Geek', 'teoriageek' ); ?>"
 						placeholder="<?php esc_attr_e( 'Buscar no Teoria Geek...', 'teoriageek' ); ?>"
 						class="h-10 w-60 lg:w-72 xl:w-[22rem] rounded-sm border border-white/20 bg-chrome-surface py-1.5 pl-9 pr-3 font-sans text-sm text-chrome-ink placeholder:text-chrome-muted focus:border-highlight focus:outline-none"
@@ -57,12 +59,17 @@ $tg_socials  = teoriageek_get_social_links();
 				</button>
 			<?php endif; ?>
 
-			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" <?php echo $tg_is_reels ? 'aria-current="page"' : ''; ?> class="tg-header-reels-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-2.5 sm:px-3.5 font-sans text-xs font-extrabold uppercase tracking-wider text-ink-highlight">
+			<a href="<?php echo esc_url( teoriageek_get_reels_url() ); ?>" <?php echo $tg_is_reels ? 'aria-current="page"' : ''; ?> class="tg-header-reels-btn hidden md:inline-flex h-10 shrink-0 items-center gap-1.5 rounded-sm border border-[#0B0F19] bg-highlight px-3.5 font-sans text-xs font-extrabold uppercase tracking-wider text-ink-highlight">
 				<?php echo teoriageek_icon( 'film', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<span>Reels</span>
 			</a>
 
-			<button type="button" data-tg-theme-toggle aria-label="<?php esc_attr_e( 'Alternar entre modo claro e escuro', 'teoriageek' ); ?>" aria-pressed="false" title="<?php esc_attr_e( 'Alternar tema claro/escuro', 'teoriageek' ); ?>" class="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
+			<button type="button" data-tg-alerts-open aria-label="<?php esc_attr_e( 'Abrir alertas e últimas notícias', 'teoriageek' ); ?>" title="<?php esc_attr_e( 'Alertas e Últimas', 'teoriageek' ); ?>" class="relative inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
+				<?php echo teoriageek_icon( 'bell', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<span data-tg-alerts-dot class="tg-alerts-dot hidden" aria-hidden="true"></span>
+			</button>
+
+			<button type="button" data-tg-theme-toggle aria-label="<?php esc_attr_e( 'Alternar entre modo claro e escuro', 'teoriageek' ); ?>" aria-pressed="false" title="<?php esc_attr_e( 'Alternar tema claro/escuro', 'teoriageek' ); ?>" class="hidden md:inline-flex h-10 w-10 items-center justify-center rounded-sm border border-white/20 bg-chrome-surface text-chrome-ink transition-colors hover:border-highlight hover:text-highlight">
 				<span data-tg-theme-icon="moon" class="inline-flex"><?php echo teoriageek_icon( 'moon', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 				<span data-tg-theme-icon="sun" class="hidden"><?php echo teoriageek_icon( 'sun', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 			</button>

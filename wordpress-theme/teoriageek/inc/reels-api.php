@@ -1,7 +1,7 @@
 <?php
 /**
- * Teoria Geek — Rota virtual `/reels/` e endpoints REST `teoriageek/v1`
- * para Reels, Busca Instantânea, Curtidas, Visualizações e Comentários.
+ * Teoria Geek — Rota virtual `/reels/` e endpoints REST públicos `teoriageek/v1`
+ * para Busca Instantânea, Reels, Alertas, Visualizações, Curtidas e Nota da Comunidade.
  *
  * @package TeoriaGeek
  */
@@ -145,7 +145,25 @@ function teoriageek_serialize_post_card( $post ) {
 }
 
 /**
- * Registra endpoints REST `teoriageek/v1`.
+ * Limita taxa de requisições POST por IP (protege MySQL contra bots em /like, /view e /community-score).
+ *
+ * @param string $bucket Identificador da ação.
+ * @param int    $limit  Máximo de chamadas por minuto.
+ * @return bool True se permitido, false se excedeu.
+ */
+function teoriageek_rest_rate_limit_ok( $bucket, $limit = 25 ) {
+	$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
+	$key = 'tg_rl_' . sanitize_key( $bucket ) . '_' . md5( $ip );
+	$cnt = (int) get_transient( $key );
+	if ( $cnt >= $limit ) {
+		return false;
+	}
+	set_transient( $key, $cnt + 1, MINUTE_IN_SECONDS );
+	return true;
+}
+
+/**
+ * Registra endpoints REST públicos `teoriageek/v1` (/search, /reels, /alerts, /posts/{id}/like, /view e /community-score).
  */
 function teoriageek_register_rest_routes() {
 	register_rest_route(
@@ -162,9 +180,14 @@ function teoriageek_register_rest_routes() {
 				),
 			),
 			'callback'            => static function ( WP_REST_Request $request ) {
-				$q = trim( (string) $request->get_param( 'q' ) );
+				$q = mb_substr( trim( (string) $request->get_param( 'q' ) ), 0, 80 );
 				if ( mb_strlen( $q ) < 2 ) {
 					return rest_ensure_response( array( 'items' => array() ) );
+				}
+				$cache_key = 'tg_search_' . md5( mb_strtolower( $q ) );
+				$cached    = get_transient( $cache_key );
+				if ( is_array( $cached ) ) {
+					return rest_ensure_response( array( 'items' => $cached ) );
 				}
 				$query = new WP_Query(
 					array(
@@ -193,6 +216,7 @@ function teoriageek_register_rest_routes() {
 						'dateRelative' => teoriageek_get_relative_date( $pid ),
 					);
 				}
+				set_transient( $cache_key, $items, 3 * MINUTE_IN_SECONDS );
 				return rest_ensure_response( array( 'items' => $items ) );
 			},
 		)
@@ -286,6 +310,9 @@ function teoriageek_register_rest_routes() {
 			'methods'             => WP_REST_Server::CREATABLE,
 			'permission_callback' => '__return_true',
 			'callback'            => static function ( WP_REST_Request $request ) {
+				if ( ! teoriageek_rest_rate_limit_ok( 'like', 30 ) ) {
+					return new WP_Error( 'rate_limited', __( 'Muitas requisições. Tente em instantes.', 'teoriageek' ), array( 'status' => 429 ) );
+				}
 				$pid  = (int) $request['id'];
 				$post = get_post( $pid );
 				if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
@@ -293,6 +320,7 @@ function teoriageek_register_rest_routes() {
 				}
 				$delta = ( 'unlike' === sanitize_key( (string) $request->get_param( 'action' ) ) ) ? -1 : 1;
 				$next  = max( 0, teoriageek_get_post_likes( $pid ) + $delta );
+				update_post_meta( $pid, '_tg_likes_count', $next );
 				return rest_ensure_response( array( 'likes' => $next ) );
 			},
 		)
@@ -305,6 +333,9 @@ function teoriageek_register_rest_routes() {
 			'methods'             => WP_REST_Server::CREATABLE,
 			'permission_callback' => '__return_true',
 			'callback'            => static function ( WP_REST_Request $request ) {
+				if ( ! teoriageek_rest_rate_limit_ok( 'view', 40 ) ) {
+					return new WP_Error( 'rate_limited', __( 'Muitas requisições. Tente em instantes.', 'teoriageek' ), array( 'status' => 429 ) );
+				}
 				$pid  = (int) $request['id'];
 				$post = get_post( $pid );
 				if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
@@ -313,9 +344,92 @@ function teoriageek_register_rest_routes() {
 				if ( function_exists( 'pvc_view_post' ) ) {
 					pvc_view_post( $pid );
 				}
-				return rest_ensure_response( array( 'views' => teoriageek_get_post_views( $pid ) ) );
+				$views = teoriageek_increment_post_views( $pid );
+				return rest_ensure_response(
+					array(
+						'views'    => $views,
+						'views24h' => teoriageek_get_post_window_views( $pid, '24h' ),
+					)
+				);
 			},
 		)
 	);
+
+	register_rest_route(
+		'teoriageek/v1',
+		'/posts/(?P<id>\d+)/community-score',
+		array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'permission_callback' => '__return_true',
+			'callback'            => static function ( WP_REST_Request $request ) {
+				if ( ! teoriageek_rest_rate_limit_ok( 'community_score', 20 ) ) {
+					return new WP_Error( 'rate_limited', __( 'Muitas avaliações em sequência. Tente em instantes.', 'teoriageek' ), array( 'status' => 429 ) );
+				}
+				$pid  = (int) $request['id'];
+				$post = get_post( $pid );
+				if ( ! $post || 'post' !== $post->post_type || 'publish' !== $post->post_status ) {
+					return new WP_Error( 'not_found', __( 'Crítica não encontrada.', 'teoriageek' ), array( 'status' => 404 ) );
+				}
+				$score = (int) $request->get_param( 'score' );
+				if ( $score < 1 || $score > 10 ) {
+					return new WP_Error( 'invalid_score', __( 'Escolha uma nota inteira entre 1 e 10.', 'teoriageek' ), array( 'status' => 400 ) );
+				}
+				$count = max( 0, (int) get_post_meta( $pid, '_tg_community_score_count', true ) ) + 1;
+				$sum   = max( 0.0, (float) get_post_meta( $pid, '_tg_community_score_sum', true ) ) + $score;
+				update_post_meta( $pid, '_tg_community_score_count', $count );
+				update_post_meta( $pid, '_tg_community_score_sum', $sum );
+				return rest_ensure_response( teoriageek_get_community_score( $pid ) );
+			},
+		)
+	);
+
+	register_rest_route(
+		'teoriageek/v1',
+		'/alerts',
+		array(
+			'methods'             => WP_REST_Server::READABLE,
+			'permission_callback' => '__return_true',
+			'callback'            => static function () {
+				$cached = get_transient( 'teoriageek_rest_alerts_v1' );
+				if ( is_array( $cached ) ) {
+					return rest_ensure_response( $cached );
+				}
+				$q = new WP_Query(
+					array(
+						'post_type'              => 'post',
+						'post_status'            => 'publish',
+						'posts_per_page'         => 6,
+						'ignore_sticky_posts'    => true,
+						'no_found_rows'          => true,
+						'update_post_meta_cache' => false,
+					)
+				);
+				$items = array();
+				foreach ( $q->posts as $p ) {
+					$pid   = (int) $p->ID;
+					$cat   = teoriageek_get_primary_category( $pid );
+					$style = teoriageek_get_category_style( $cat ? $cat->slug : 'noticias' );
+					$items[] = array(
+						'id'           => $pid,
+						'slug'         => (string) $p->post_name,
+						'title'        => teoriageek_clean_title( get_the_title( $pid ) ),
+						'url'          => get_permalink( $pid ),
+						'thumb'        => (string) get_the_post_thumbnail_url( $pid, 'thumbnail' ),
+						'categoryName' => $cat ? html_entity_decode( $cat->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : __( 'Notícias', 'teoriageek' ),
+						'fillColor'    => $style['fill'],
+						'inkColor'     => $style['ink'],
+						'dateRelative' => teoriageek_get_relative_date( $pid ),
+					);
+				}
+				$payload = array(
+					'latestId' => ! empty( $items ) ? (int) $items[0]['id'] : 0,
+					'items'    => $items,
+				);
+				set_transient( 'teoriageek_rest_alerts_v1', $payload, 3 * MINUTE_IN_SECONDS );
+				return rest_ensure_response( $payload );
+			},
+		)
+	);
+
 }
 add_action( 'rest_api_init', 'teoriageek_register_rest_routes' );

@@ -123,7 +123,10 @@ add_filter( 'the_content', 'teoriageek_strip_orphan_legacy_shortcodes', 8 );
 add_filter( 'get_the_excerpt', 'teoriageek_strip_orphan_legacy_shortcodes', 8 );
 
 /**
- * Repara mojibake UTF-8 e filtra Ficha Técnica de resumos em tempo de renderização.
+ * Repara mojibake UTF-8 em títulos e conteúdo em tempo de renderização.
+ *
+ * @param string $text Texto bruto renderizado pelo WordPress.
+ * @return string
  */
 function teoriageek_filter_clean_text_output( $text ) {
 	if ( is_admin() ) {
@@ -135,6 +138,12 @@ add_filter( 'the_title', 'teoriageek_filter_clean_text_output', 5 );
 add_filter( 'single_post_title', 'teoriageek_filter_clean_text_output', 5 );
 add_filter( 'the_content', 'teoriageek_filter_clean_text_output', 5 );
 
+/**
+ * Remove blocos legados de Ficha Técnica e repara mojibake UTF-8 em resumos (excerpts).
+ *
+ * @param string $excerpt Resumo bruto do post.
+ * @return string
+ */
 function teoriageek_filter_clean_excerpt( $excerpt ) {
 	if ( is_admin() ) {
 		return $excerpt;
@@ -171,14 +180,15 @@ add_filter( 'document_title_parts', 'teoriageek_filter_document_title_mojibake',
 function teoriageek_spoiler_shortcode( $atts, $content = null ) {
 	$atts  = shortcode_atts(
 		array(
-			'titulo' => __( 'Alerta de Spoiler — Clique para revelar', 'teoriageek' ),
+			'titulo' => __( 'Clique aqui se quiser ver o spoiler mesmo assim (por sua conta e risco)', 'teoriageek' ),
 		),
 		(array) $atts,
 		'spoiler'
 	);
 	$inner = do_shortcode( wp_kses_post( (string) $content ) );
 	return sprintf(
-		'<details class="tg-spoiler"><summary class="tg-spoiler-summary">%1$s</summary><div class="tg-spoiler-body">%2$s</div></details>',
+		'<details class="tg-spoiler"><summary class="tg-spoiler-summary"><span class="tg-spoiler-tag">%1$s</span><span class="tg-spoiler-cta">%2$s</span></summary><div class="tg-spoiler-body">%3$s</div></details>',
+		esc_html__( 'ALERTA DE SPOILER', 'teoriageek' ),
 		esc_html( $atts['titulo'] ),
 		$inner
 	);

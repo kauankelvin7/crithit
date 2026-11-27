@@ -57,6 +57,23 @@ $tg_term  = get_search_query();
 					class="min-h-[42px] w-full rounded-sm border border-border-subtle bg-surface-alt py-2.5 pl-10 pr-4 font-sans text-base text-ink-primary placeholder:text-ink-placeholder focus:border-brand focus:outline-none"
 				/>
 			</div>
+			<?php
+			$tg_sel_cat   = isset( $_GET['tg_cat'] ) ? absint( $_GET['tg_cat'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$tg_sel_ordem = isset( $_GET['ordem'] ) ? sanitize_key( wp_unslash( $_GET['ordem'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$tg_all_cats  = get_categories( array( 'hide_empty' => true, 'parent' => 0, 'number' => 14 ) );
+			?>
+			<select name="tg_cat" aria-label="<?php esc_attr_e( 'Filtrar por editoria', 'teoriageek' ); ?>" class="min-h-[42px] rounded-sm border border-border-subtle bg-surface-alt px-3 py-2 font-sans text-xs font-semibold text-ink-primary focus:border-brand focus:outline-none">
+				<option value="0"><?php esc_html_e( 'Todas as editorias', 'teoriageek' ); ?></option>
+				<?php foreach ( $tg_all_cats as $tg_c_opt ) : ?>
+					<option value="<?php echo esc_attr( (string) $tg_c_opt->term_id ); ?>" <?php selected( $tg_sel_cat, (int) $tg_c_opt->term_id ); ?>>
+						<?php echo esc_html( html_entity_decode( $tg_c_opt->name, ENT_QUOTES, 'UTF-8' ) ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+			<select name="ordem" aria-label="<?php esc_attr_e( 'Ordenar resultados', 'teoriageek' ); ?>" class="min-h-[42px] rounded-sm border border-border-subtle bg-surface-alt px-3 py-2 font-sans text-xs font-semibold text-ink-primary focus:border-brand focus:outline-none">
+				<option value="" <?php selected( $tg_sel_ordem, '' ); ?>><?php esc_html_e( 'Mais relevantes', 'teoriageek' ); ?></option>
+				<option value="recentes" <?php selected( $tg_sel_ordem, 'recentes' ); ?>><?php esc_html_e( 'Mais recentes', 'teoriageek' ); ?></option>
+			</select>
 			<button type="submit" class="tactile-btn min-h-[42px] rounded-sm border border-[#0B0F19] bg-highlight px-5 py-2.5 font-sans text-xs font-extrabold uppercase text-ink-highlight">
 				<?php esc_html_e( 'Pesquisar', 'teoriageek' ); ?>
 			</button>

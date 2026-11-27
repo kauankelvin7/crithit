@@ -1,7 +1,7 @@
 <?php
 /**
- * Template Part: Dobra Principal da Home (Carrossel Editorial Hero 8 cols + 3 Secundárias
- * + Reels em Destaque vertical 3:4 com Facade Pattern + Radar na Redação).
+ * Template Part: Dobra Principal da Home (Carrossel Editorial Hero 8 cols com Halftone HQ WebGL
+ * + 3 Secundárias + Reels em Destaque vertical 3:4 com Facade Pattern + Radar na Redação).
  *
  * @package TeoriaGeek
  * @var array $args { hero?: WP_Post|null, hero_slides?: WP_Post[], secondary: WP_Post[], reel: WP_Post|null, urgent: WP_Post[] }
@@ -30,18 +30,9 @@ $tg_is_carousel = $tg_slide_count > 1;
 $tg_secondary = isset( $args['secondary'] ) && is_array( $args['secondary'] ) ? $args['secondary'] : array();
 $tg_reel      = isset( $args['reel'] ) && $args['reel'] instanceof WP_Post ? $args['reel'] : $tg_hero;
 $tg_urgent    = isset( $args['urgent'] ) && is_array( $args['urgent'] ) ? $args['urgent'] : array();
-
-$tg_grid_cols_class = 'md:grid-cols-4';
-if ( 2 === $tg_slide_count ) {
-	$tg_grid_cols_class = 'md:grid-cols-2';
-} elseif ( 3 === $tg_slide_count ) {
-	$tg_grid_cols_class = 'md:grid-cols-3';
-} elseif ( 5 === $tg_slide_count ) {
-	$tg_grid_cols_class = 'md:grid-cols-5';
-}
 ?>
 <section aria-label="<?php esc_attr_e( 'Destaques principais da capa', 'teoriageek' ); ?>" class="grid gap-6 lg:grid-cols-12">
-	<div class="min-w-0 space-y-6 lg:col-span-8">
+	<div class="tg-hero-main-col min-w-0 space-y-6 lg:col-span-8">
 		<?php if ( $tg_slide_count > 0 ) : ?>
 			<div
 				class="tg-hero-carousel tgx-hero-card relative overflow-hidden"
@@ -50,7 +41,7 @@ if ( 2 === $tg_slide_count ) {
 				aria-label="<?php esc_attr_e( 'Carrossel editorial de destaques', 'teoriageek' ); ?>"
 				<?php if ( $tg_is_carousel ) : ?>
 					data-tg-hero-carousel
-					data-interval="6000"
+					data-interval="4200"
 				<?php endif; ?>
 			>
 				<div class="relative">
@@ -64,11 +55,13 @@ if ( 2 === $tg_slide_count ) {
 							$tg_s_title  = teoriageek_clean_title( get_the_title( $tg_s_id ) );
 							$tg_s_lead   = teoriageek_get_post_lead( $tg_s_id, 210 );
 							$tg_s_url    = get_permalink( $tg_s_id );
+							$tg_s_thumb  = get_the_post_thumbnail_url( $tg_s_id, 'tg-hero' );
 							$tg_h_tag    = $tg_is_first ? 'h1' : 'h2';
 							?>
 							<article
 								class="tg-hero-slide editorial-card group<?php echo $tg_is_first ? ' is-active' : ''; ?>"
 								data-tg-hero-slide="<?php echo esc_attr( (string) $tg_s_idx ); ?>"
+								data-tg-hero-img="<?php echo esc_url( is_string( $tg_s_thumb ) ? $tg_s_thumb : '' ); ?>"
 								role="group"
 								aria-roledescription="<?php esc_attr_e( 'slide', 'teoriageek' ); ?>"
 								aria-label="<?php echo esc_attr( sprintf( __( '%1$d de %2$d: %3$s', 'teoriageek' ), $tg_s_idx + 1, $tg_slide_count, $tg_s_title ) ); ?>"
@@ -117,7 +110,7 @@ if ( 2 === $tg_slide_count ) {
 										</a>
 									</<?php echo esc_html( $tg_h_tag ); ?>>
 
-									<p class="tg-hero-stagger tg-hero-stagger-3 line-clamp-2 min-h-[2.95em] font-reading text-sm leading-relaxed text-ink-secondary sm:text-base">
+									<p class="tg-hero-lead tg-hero-stagger tg-hero-stagger-3 line-clamp-2 min-h-[2.95em] font-reading text-sm leading-relaxed text-ink-secondary sm:text-base">
 										<?php echo esc_html( '' !== $tg_s_lead ? $tg_s_lead : $tg_s_title ); ?>
 									</p>
 
@@ -137,59 +130,68 @@ if ( 2 === $tg_slide_count ) {
 					</div>
 
 					<?php if ( $tg_is_carousel ) : ?>
-						<!-- Controles sobrepostos à moldura de mídia (setas retas no desktop + barras de progresso 3px) -->
-						<div class="tg-hero-media-chrome pointer-events-none absolute inset-x-0 top-0 z-30 w-full aspect-[16/9] lg:h-[360px] lg:aspect-auto">
-							<button
-								type="button"
-								data-tg-hero-prev
-								aria-label="<?php esc_attr_e( 'Slide anterior', 'teoriageek' ); ?>"
-								class="tg-hero-arrow pointer-events-auto absolute left-3 top-1/2 hidden h-10 w-9 -translate-y-1/2 items-center justify-center rounded-sm border border-white/25 bg-[#0B0F19]/80 text-white transition-colors hover:border-highlight hover:bg-highlight hover:text-[#0B0F19] md:inline-flex"
-							>
-								<?php echo teoriageek_icon( 'chevron-left', 'h-5 w-5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-							</button>
+						<!-- Camada WebGL Halftone HQ + dock discreto no canto inferior direito (foto 100% limpa) -->
+						<div class="tg-hero-media-chrome pointer-events-none absolute inset-x-0 top-0 z-30 w-full aspect-[16/9] overflow-hidden rounded-sm lg:h-[360px] lg:aspect-auto">
+							<canvas class="tg-hero-gl" data-tg-hero-gl aria-hidden="true"></canvas>
 
-							<button
-								type="button"
-								data-tg-hero-next
-								aria-label="<?php esc_attr_e( 'Próximo slide', 'teoriageek' ); ?>"
-								class="tg-hero-arrow pointer-events-auto absolute right-3 top-1/2 hidden h-10 w-9 -translate-y-1/2 items-center justify-center rounded-sm border border-white/25 bg-[#0B0F19]/80 text-white transition-colors hover:border-highlight hover:bg-highlight hover:text-[#0B0F19] md:inline-flex"
-							>
-								<?php echo teoriageek_icon( 'chevron-right', 'h-5 w-5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-							</button>
+							<div class="tg-hero-nav-dock pointer-events-auto">
+								<span class="tg-hero-dock-counter" aria-live="off">
+									<em data-tg-hero-current>01</em> / <?php echo esc_html( sprintf( '%02d', $tg_slide_count ) ); ?>
+								</span>
+								<button
+									type="button"
+									data-tg-hero-pause
+									aria-pressed="false"
+									aria-label="<?php esc_attr_e( 'Pausar troca automática', 'teoriageek' ); ?>"
+									class="tg-hero-dock-btn tg-hero-dock-pause"
+								>
+									<span data-tg-pause-icon="pause" class="inline-flex"><?php echo teoriageek_icon( 'pause', 'h-3.5 w-3.5' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<span data-tg-pause-icon="play" class="hidden"><?php echo teoriageek_icon( 'play', 'h-3.5 w-3.5 fill-current' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+								</button>
+								<button
+									type="button"
+									data-tg-hero-prev
+									aria-label="<?php esc_attr_e( 'Slide anterior', 'teoriageek' ); ?>"
+									class="tg-hero-dock-btn"
+								>
+									<?php echo teoriageek_icon( 'chevron-left', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+								</button>
+								<button
+									type="button"
+									data-tg-hero-next
+									aria-label="<?php esc_attr_e( 'Próximo slide', 'teoriageek' ); ?>"
+									class="tg-hero-dock-btn"
+								>
+									<?php echo teoriageek_icon( 'chevron-right', 'h-4 w-4' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+								</button>
+							</div>
 
-							<div class="tg-hero-progress-wrap pointer-events-auto absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-6">
-								<div class="flex items-center gap-2">
-									<div class="tg-hero-bars grid flex-1 gap-1.5" style="grid-template-columns: repeat(<?php echo esc_attr( (string) $tg_slide_count ); ?>, minmax(0, 1fr));" role="tablist" aria-label="<?php esc_attr_e( 'Selecionar destaque', 'teoriageek' ); ?>">
-										<?php foreach ( $tg_hero_slides as $tg_b_idx => $tg_b_post ) : ?>
-											<?php $tg_b_active = ( 0 === $tg_b_idx ); ?>
-											<button
-												type="button"
-												role="tab"
-												data-tg-hero-go="<?php echo esc_attr( (string) $tg_b_idx ); ?>"
-												data-tg-hero-bar="<?php echo esc_attr( (string) $tg_b_idx ); ?>"
-												aria-label="<?php echo esc_attr( sprintf( __( 'Ir para o destaque %d', 'teoriageek' ), $tg_b_idx + 1 ) ); ?>"
-												aria-selected="<?php echo $tg_b_active ? 'true' : 'false'; ?>"
-												aria-current="<?php echo $tg_b_active ? 'true' : 'false'; ?>"
-												class="tg-hero-bar-btn group/bar flex h-5 items-center py-2<?php echo $tg_b_active ? ' is-active' : ''; ?>"
-											>
-												<span class="tg-hero-bar-track block h-[3px] w-full overflow-hidden rounded-sm bg-white/30">
-													<span class="tg-hero-bar-fill block h-full w-full bg-highlight"></span>
-												</span>
-											</button>
-										<?php endforeach; ?>
-									</div>
-									<span data-tg-hero-counter class="shrink-0 rounded-sm bg-[#0B0F19]/80 px-1.5 py-0.5 font-mono text-[11px] font-bold text-white md:hidden">
-										<?php echo esc_html( sprintf( '01 / %02d', $tg_slide_count ) ); ?>
-									</span>
-								</div>
+							<div class="tg-hero-minimap pointer-events-auto" style="grid-template-columns: repeat(<?php echo esc_attr( (string) $tg_slide_count ); ?>, minmax(0, 1fr));" aria-label="<?php esc_attr_e( 'Mapa de destaques', 'teoriageek' ); ?>">
+								<?php for ( $tg_m_idx = 0; $tg_m_idx < $tg_slide_count; $tg_m_idx++ ) : ?>
+									<button
+										type="button"
+										data-tg-hero-go="<?php echo esc_attr( (string) $tg_m_idx ); ?>"
+										data-tg-hero-seg="<?php echo esc_attr( (string) $tg_m_idx ); ?>"
+										aria-label="<?php echo esc_attr( sprintf( __( 'Destaque %1$d de %2$d', 'teoriageek' ), $tg_m_idx + 1, $tg_slide_count ) ); ?>"
+										class="tg-hero-seg<?php echo 0 === $tg_m_idx ? ' is-active' : ''; ?>"
+									>
+										<span class="tg-hero-seg-track"><span class="tg-hero-seg-fill"></span></span>
+									</button>
+								<?php endfor; ?>
 							</div>
 						</div>
 					<?php endif; ?>
 				</div>
 
 				<?php if ( $tg_is_carousel ) : ?>
-					<!-- Mini-abas numeradas editoriais (Desktop >= 768px) para troca instantânea com 1 clique -->
-					<div class="tg-hero-tabs mt-3 hidden gap-2 border-t border-border-subtle pt-3 md:grid <?php echo esc_attr( $tg_grid_cols_class ); ?>" role="tablist" aria-label="<?php esc_attr_e( 'Índice de destaques da capa', 'teoriageek' ); ?>">
+					<!-- Trilho numerado editorial com barra de progresso 2px sincronizada (Desktop + Mobile) -->
+					<div
+						class="tg-hero-rail mt-3 grid border-t border-border-subtle"
+						style="grid-template-columns: repeat(<?php echo esc_attr( (string) $tg_slide_count ); ?>, minmax(0, 1fr));"
+						role="tablist"
+						data-tg-hero-rail
+						aria-label="<?php esc_attr_e( 'Índice de destaques da capa', 'teoriageek' ); ?>"
+					>
 						<?php foreach ( $tg_hero_slides as $tg_t_idx => $tg_t_post ) : ?>
 							<?php
 							$tg_t_active = ( 0 === $tg_t_idx );
@@ -200,14 +202,19 @@ if ( 2 === $tg_slide_count ) {
 								role="tab"
 								data-tg-hero-go="<?php echo esc_attr( (string) $tg_t_idx ); ?>"
 								data-tg-hero-tab="<?php echo esc_attr( (string) $tg_t_idx ); ?>"
+								tabindex="<?php echo $tg_t_active ? '0' : '-1'; ?>"
 								aria-selected="<?php echo $tg_t_active ? 'true' : 'false'; ?>"
 								aria-current="<?php echo $tg_t_active ? 'true' : 'false'; ?>"
-								class="tg-hero-tab flex min-w-0 flex-col items-start gap-0.5 rounded-sm border-t-2 px-2 py-1.5 text-left transition-colors<?php echo $tg_t_active ? ' is-active' : ''; ?>"
+								aria-label="<?php echo esc_attr( sprintf( __( 'Ir para o destaque %1$d: %2$s', 'teoriageek' ), $tg_t_idx + 1, $tg_t_title ) ); ?>"
+								class="tg-hero-tab<?php echo $tg_t_active ? ' is-active' : ''; ?>"
 							>
+								<span class="tg-hero-tab-prog" aria-hidden="true">
+									<span class="tg-hero-tab-prog-fill"></span>
+								</span>
 								<span class="tg-hero-tab-num font-display text-sm font-extrabold leading-none tracking-wider">
 									<?php echo esc_html( sprintf( '%02d', $tg_t_idx + 1 ) ); ?>
 								</span>
-								<span class="tg-hero-tab-title block w-full truncate font-sans text-xs font-semibold leading-snug">
+								<span class="tg-hero-tab-title w-full font-sans text-xs font-semibold leading-snug">
 									<?php echo esc_html( $tg_t_title ); ?>
 								</span>
 							</button>

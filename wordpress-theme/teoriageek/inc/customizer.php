@@ -106,7 +106,7 @@ function teoriageek_customize_register( $wp_customize ) {
 	$color_controls = array(
 		'teoriageek_color_primary' => array(
 			'label'   => __( 'Cor Primária Estrutural / Azul (--tg-primary)', 'teoriageek' ),
-			'default' => '#1D4ED8',
+			'default' => '#0073E6',
 		),
 		'teoriageek_color_accent'  => array(
 			'label'   => __( 'Cor de Destaque Editorial / Amarelo (--tg-accent)', 'teoriageek' ),
@@ -442,6 +442,88 @@ function teoriageek_customize_register( $wp_customize ) {
 			'type'    => 'url',
 		)
 	);
+
+	$wp_customize->add_setting(
+		'teoriageek_channel_google_news',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_channel_google_news',
+		array(
+			'label'       => __( 'Link do Google Notícias (https://news.google.com/publications/...)', 'teoriageek' ),
+			'description' => __( 'Ativa o botão "Seguir no Google Notícias" na comunidade, alertas e rodapé.', 'teoriageek' ),
+			'section'     => 'teoriageek_editorial_extras',
+			'type'        => 'url',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_newsletter_action_url',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_newsletter_action_url',
+		array(
+			'label'       => __( 'Newsletter — URL de envio do formulário (MailerLite, Brevo, etc.)', 'teoriageek' ),
+			'description' => __( 'Quando preenchida, exibe a caixa leve de 1 campo no fim dos artigos e no rodapé. Deixe vazio para ocultar.', 'teoriageek' ),
+			'section'     => 'teoriageek_editorial_extras',
+			'type'        => 'url',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_newsletter_email_field',
+		array(
+			'default'           => 'email',
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_newsletter_email_field',
+		array(
+			'label'       => __( 'Newsletter — Nome do campo de e-mail (ex.: email, EMAIL ou fields[email])', 'teoriageek' ),
+			'section'     => 'teoriageek_editorial_extras',
+			'type'        => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_newsletter_title',
+		array(
+			'default'           => 'Resumo Semanal Teoria Geek',
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_newsletter_title',
+		array(
+			'label'   => __( 'Newsletter — Título', 'teoriageek' ),
+			'section' => 'teoriageek_editorial_extras',
+			'type'    => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'teoriageek_newsletter_desc',
+		array(
+			'default'           => 'Uma curadoria por semana com as melhores críticas, trailers e guias — sem spam.',
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+	$wp_customize->add_control(
+		'teoriageek_newsletter_desc',
+		array(
+			'label'   => __( 'Newsletter — Descrição curta', 'teoriageek' ),
+			'section' => 'teoriageek_editorial_extras',
+			'type'    => 'text',
+		)
+	);
 }
 add_action( 'customize_register', 'teoriageek_customize_register' );
 
@@ -450,6 +532,9 @@ add_action( 'customize_register', 'teoriageek_customize_register' );
  */
 function teoriageek_flush_premieres_cache() {
 	delete_transient( 'teoriageek_weekly_premieres_v1' );
+	if ( function_exists( 'wp_cache_clear_cache' ) ) {
+		wp_cache_clear_cache();
+	}
 }
 add_action( 'customize_save_after', 'teoriageek_flush_premieres_cache' );
 
@@ -460,7 +545,7 @@ add_action( 'customize_save_after', 'teoriageek_flush_premieres_cache' );
  * @return string
  */
 function teoriageek_get_customizer_css() {
-	$tg_primary = sanitize_hex_color( get_theme_mod( 'teoriageek_color_primary', '#1D4ED8' ) ) ?: '#1D4ED8';
+	$tg_primary = sanitize_hex_color( get_theme_mod( 'teoriageek_color_primary', '#0073E6' ) ) ?: '#0073E6';
 	$tg_accent  = sanitize_hex_color( get_theme_mod( 'teoriageek_color_accent', '#FACC15' ) ) ?: '#FACC15';
 	$tg_bg      = sanitize_hex_color( get_theme_mod( 'teoriageek_color_bg', '#FFFFFF' ) ) ?: '#FFFFFF';
 	$tg_surface = sanitize_hex_color( get_theme_mod( 'teoriageek_color_surface', '#FFFFFF' ) ) ?: '#FFFFFF';
@@ -489,7 +574,7 @@ function teoriageek_get_customizer_css() {
 		. '}'
 		. '[data-theme="dark"],.dark{'
 		. '--tg-primary:%1$s;--tg-accent:%2$s;--tg-accent-strong:%3$s;--tg-on-accent:%4$s;'
-		. '--tg-bg:#0B0F19;--tg-surface:#131A2A;--tg-surface-alt:#1B2438;--tg-text:#F1F5F9;'
+		. '--tg-bg:#0D1933;--tg-surface:#122244;--tg-surface-alt:#182C56;--tg-text:#F1F5F9;'
 		. '--bg-base:var(--tg-bg);--bg-surface:var(--tg-surface);--bg-surface-alt:var(--tg-surface-alt);--ink-primary:var(--tg-text);'
 		. '--accent-brand:%11$s;--fill-brand:var(--tg-primary);--ink-on-fill-brand:%10$s;'
 		. '--highlight-comic:var(--tg-accent);--ink-on-highlight:#0B0F19;'

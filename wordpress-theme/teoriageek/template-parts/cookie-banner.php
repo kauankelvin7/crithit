@@ -37,7 +37,7 @@ if ( '' === $tg_privacy_url ) {
 		<div class="tgx-cookie-copy">
 			<p class="tgx-cookie-title"><?php esc_html_e( 'Privacidade e Cookies (LGPD)', 'teoriageek' ); ?></p>
 			<p class="tgx-cookie-text">
-				<?php esc_html_e( 'Utilizamos cookies essenciais e de preferência (como modo claro/escuro e matérias salvas) para melhorar sua leitura no Teoria Geek.', 'teoriageek' ); ?>
+				<?php esc_html_e( 'Utilizamos cookies essenciais e de preferência (como modo claro/escuro e tamanho do texto) para melhorar sua leitura no Teoria Geek.', 'teoriageek' ); ?>
 				<?php if ( '' !== $tg_privacy_url ) : ?>
 					<a href="<?php echo esc_url( $tg_privacy_url ); ?>" class="tgx-cookie-link"><?php esc_html_e( 'Política de Privacidade', 'teoriageek' ); ?></a>.
 				<?php endif; ?>

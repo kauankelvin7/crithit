@@ -22,7 +22,7 @@ $tg_heading_tag = isset( $args['heading_tag'] ) && in_array( $args['heading_tag'
 $tg_cat         = teoriageek_get_primary_category( $tg_pid );
 $tg_format      = teoriageek_get_post_format_badge( $tg_pid );
 $tg_score       = teoriageek_get_post_score( $tg_pid );
-$tg_has_video   = teoriageek_post_has_video( $tg_pid );
+$tg_has_spoiler = (bool) get_post_meta( $tg_pid, '_tg_has_spoilers', true );
 $tg_permalink   = get_permalink( $tg_pid );
 $tg_title       = teoriageek_clean_title( get_the_title( $tg_pid ) );
 $tg_lead        = teoriageek_get_post_lead( $tg_pid, 145 );
@@ -53,11 +53,8 @@ $tg_rel_date    = teoriageek_get_relative_date( $tg_pid );
 			<div class="min-w-0">
 				<?php teoriageek_category_badge( $tg_cat, true, 'sm' ); ?>
 			</div>
-			<?php if ( $tg_has_video ) : ?>
-				<span class="tgx-video-pill inline-flex shrink-0 items-center gap-1 rounded-sm bg-black/80 px-2 py-0.5 font-sans text-[11px] font-bold uppercase tracking-wider text-white">
-					<?php echo teoriageek_icon( 'play', 'h-2.5 w-2.5 fill-current text-highlight' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-					<span><?php esc_html_e( 'Vídeo', 'teoriageek' ); ?></span>
-				</span>
+			<?php if ( $tg_has_spoiler ) : ?>
+				<span class="tg-card-spoiler-pill"><?php esc_html_e( 'Spoiler', 'teoriageek' ); ?></span>
 			<?php endif; ?>
 		</div>
 
